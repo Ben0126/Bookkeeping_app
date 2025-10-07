@@ -5,7 +5,7 @@ import { addAccount } from '../../db/accounts';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import CurrencySelector from '../../components/CurrencySelector';
-import AccountTypeSelector from '../../components/AccountTypeSelector';
+import CountryBasedAccountTypeSelector from '../../components/CountryBasedAccountTypeSelector';
 import { useTranslation } from 'react-i18next';
 
 interface AddAccountFormProps {
@@ -55,11 +55,10 @@ const AddAccountForm: React.FC<AddAccountFormProps> = ({ onSuccess }) => {
         />
       </div>
       <div>
-        <AccountTypeSelector
+        <CountryBasedAccountTypeSelector
           value={type}
           onChange={setType}
           showLabel={true}
-          groupByCategory={true}
         />
       </div>
       <div>

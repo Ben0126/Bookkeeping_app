@@ -34,6 +34,11 @@
     "addAccount": "新增帳戶",
     "accountName": "帳戶名稱",
     "accountType": "帳戶類型",
+    "country": "國家/地區",
+    "selectCountry": "請選擇國家/地區",
+    "selectAccountType": "請選擇帳戶類型",
+    "selectCountryFirst": "請先選擇國家/地區",
+    "noAccountTypesForCountry": "該國家/地區暫無可用帳戶類型",
     "currency": "貨幣",
     "balance": "餘額",
     "initialBalance": "初始餘額",
@@ -261,6 +266,16 @@
     "hkd": "港幣",
     "sgd": "新加坡幣",
     "nzd": "紐幣"
+  },
+  "countries": {
+    "unitedstates": "美國",
+    "unitedkingdom": "英國",
+    "australia": "澳洲",
+    "taiwan": "台灣",
+    "europeanunion": "歐盟",
+    "japan": "日本",
+    "canada": "加拿大",
+    "global": "全球通用"
   },
   "validation": {
     "required": "此欄位為必填",

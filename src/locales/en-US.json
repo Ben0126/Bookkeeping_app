@@ -34,6 +34,11 @@
     "addAccount": "Add Account",
     "accountName": "Account Name",
     "accountType": "Account Type",
+    "country": "Country/Region",
+    "selectCountry": "Please select country/region",
+    "selectAccountType": "Please select account type",
+    "selectCountryFirst": "Please select country/region first",
+    "noAccountTypesForCountry": "No account types available for this country/region",
     "currency": "Currency",
     "balance": "Balance",
     "initialBalance": "Initial Balance",
@@ -261,6 +266,16 @@
     "hkd": "Hong Kong Dollar",
     "sgd": "Singapore Dollar",
     "nzd": "New Zealand Dollar"
+  },
+  "countries": {
+    "unitedstates": "United States",
+    "unitedkingdom": "United Kingdom",
+    "australia": "Australia",
+    "taiwan": "Taiwan",
+    "europeanunion": "European Union",
+    "japan": "Japan",
+    "canada": "Canada",
+    "global": "Global"
   },
   "validation": {
     "required": "This field is required",
