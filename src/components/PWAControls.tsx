@@ -8,6 +8,7 @@ const PWAControls: React.FC = () => {
   const [isOffline, setIsOffline] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
+  const [isDevControlsVisible, setIsDevControlsVisible] = useState(true);
 
   useEffect(() => {
     // 初始化狀態
@@ -84,6 +85,10 @@ const PWAControls: React.FC = () => {
 
   const handleShare = async () => {
     await PWAService.shareApp();
+  };
+
+  const handleCloseDevControls = () => {
+    setIsDevControlsVisible(false);
   };
 
   return (
@@ -205,11 +210,20 @@ const PWAControls: React.FC = () => {
       )}
 
       {/* 手動控制 (開發模式) */}
-      {import.meta.env.DEV && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-          <h4 className="text-sm font-medium text-yellow-800 mb-2">
-            PWA Controls (Dev Mode)
-          </h4>
+      {import.meta.env.DEV && isDevControlsVisible && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 relative">
+          <div className="flex justify-between items-center mb-2">
+            <h4 className="text-sm font-medium text-yellow-800">
+              PWA Controls (Dev Mode)
+            </h4>
+            <button
+              onClick={handleCloseDevControls}
+              className="text-yellow-600 hover:text-yellow-800 text-lg font-bold leading-none"
+              title="關閉 PWA Controls"
+            >
+              ×
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             {isInstallAvailable && !isInstalled && (
               <button
@@ -246,6 +260,19 @@ const PWAControls: React.FC = () => {
             <p>App Installed: {isInstalled ? '✅' : '❌'}</p>
             <p>Network: {isOffline ? '❌ Offline' : '✅ Online'}</p>
           </div>
+        </div>
+      )}
+
+      {/* 重新顯示 PWA Controls 按鈕 (開發模式) */}
+      {import.meta.env.DEV && !isDevControlsVisible && (
+        <div className="bg-gray-100 border border-gray-300 rounded-lg p-2">
+          <button
+            onClick={() => setIsDevControlsVisible(true)}
+            className="text-xs text-gray-600 hover:text-gray-800"
+            title="重新顯示 PWA Controls"
+          >
+            🔧 顯示 PWA Controls
+          </button>
         </div>
       )}
     </div>
