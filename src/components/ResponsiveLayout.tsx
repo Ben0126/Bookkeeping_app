@@ -14,16 +14,26 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   showSidebar = false,
   sidebarContent
 }) => {
-  const { deviceType, isDesktop } = useResponsive();
+  const { deviceType, isDesktop, isMobile, isTablet } = useResponsive();
   
   const config = layoutConfig[deviceType];
   const shouldShowSidebar = showSidebar && isDesktop;
+
+  // 根據設備類型添加適當的間距
+  const getContentPadding = () => {
+    if (isDesktop) {
+      return 'pt-16'; // 桌面版：為頂部導航欄留空間
+    } else if (isMobile || isTablet) {
+      return 'pb-20'; // 行動版：為底部導航欄留空間
+    }
+    return '';
+  };
 
   return (
     <div className={`min-h-screen bg-gray-50 ${className}`}>
       <div className={`flex ${config.gap}`}>
         {/* 主內容區域 */}
-        <main className={`flex-1 ${config.padding} ${shouldShowSidebar ? 'lg:mr-6' : ''}`}>
+        <main className={`flex-1 ${config.padding} ${getContentPadding()} ${shouldShowSidebar ? 'lg:mr-6' : ''}`}>
           {children}
         </main>
         
