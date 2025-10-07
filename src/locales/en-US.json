@@ -105,6 +105,7 @@
   "home": {
     "quickStart": "Quick Start",
     "welcome": "Welcome to StudyBudget Pro!",
+    "subtitle": "Your personal budgeting companion for studying abroad",
     "manageAccounts": "Manage Accounts",
     "manageAccountsDesc": "Add bank accounts",
     "startTracking": "Start Tracking",

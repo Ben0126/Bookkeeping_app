@@ -105,6 +105,7 @@
   "home": {
     "quickStart": "快速開始",
     "welcome": "歡迎使用 StudyBudget Pro！",
+    "subtitle": "您的個人留學記帳伴侶",
     "manageAccounts": "管理帳戶",
     "manageAccountsDesc": "新增銀行帳戶",
     "startTracking": "開始記錄",

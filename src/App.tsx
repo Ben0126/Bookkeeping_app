@@ -3,6 +3,7 @@ import { Route, Routes, Link, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 // 懶加載頁面組件
+const DashboardPage = lazy(() => import('./pages/Dashboard'));
 const AccountsPage = lazy(() => import('./pages/Accounts'));
 const TransactionsPage = lazy(() => import('./pages/Transactions'));
 const StatisticsPage = lazy(() => import('./pages/Statistics'));
@@ -108,32 +109,9 @@ function App() {
           <Routes>
             <Route path="/" element={<Layout />}>
         <Route index element={
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">{t('common.appName')}</h1>
-              <p className="text-gray-600 text-base md:text-lg">Your personal budgeting companion for studying abroad</p>
-            </div>
-            <div className="bg-white p-4 md:p-6 lg:p-8 rounded-lg shadow-sm border border-gray-200 text-center">
-              <h2 className="text-lg md:text-xl font-semibold mb-4">{t('home.quickStart')}</h2>
-              <div className="space-y-3">
-                <p className="text-gray-600">{t('home.welcome')}</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                  <Link to="/accounts" className="bg-blue-100 text-blue-700 p-3 md:p-4 rounded-lg hover:bg-blue-200 transition-colors">
-                    <div className="font-medium text-sm md:text-base">{t('home.manageAccounts')}</div>
-                    <div className="text-xs md:text-sm">{t('home.manageAccountsDesc')}</div>
-                  </Link>
-                  <Link to="/transactions" className="bg-green-100 text-green-700 p-3 md:p-4 rounded-lg hover:bg-green-200 transition-colors">
-                    <div className="font-medium text-sm md:text-base">{t('home.startTracking')}</div>
-                    <div className="text-xs md:text-sm">{t('home.startTrackingDesc')}</div>
-                  </Link>
-                </div>
-                <Link to="/statistics" className="bg-purple-100 text-purple-700 p-3 md:p-4 rounded-lg block text-center hover:bg-purple-200 transition-colors">
-                  <div className="font-medium text-sm md:text-base">{t('statistics.title')}</div>
-                  <div className="text-xs md:text-sm">{t('statistics.incomeExpense')}</div>
-                </Link>
-              </div>
-            </div>
-          </div>
+          <PageWrapper>
+            <DashboardPage />
+          </PageWrapper>
         } />
         <Route path="accounts" element={
           <PageWrapper>
