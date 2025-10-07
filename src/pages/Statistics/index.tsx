@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useTranslation } from 'react-i18next';
 import { getAllTransactions } from '../../db/transactions';
 import { getAllAccounts } from '../../db/accounts';
 import { getAllCategories } from '../../db/categories';
@@ -188,6 +189,7 @@ const StatisticsUtils = {
 };
 
 const StatisticsPage = () => {
+  const { t } = useTranslation();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter' | 'year' | 'custom'>('month');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
@@ -220,13 +222,13 @@ const StatisticsPage = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Statistics</h1>
-        <p className="text-gray-600 text-sm">Analyze your financial data</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('statistics.title')}</h1>
+        <p className="text-gray-600 text-sm">{t('statistics.subtitle')}</p>
       </div>
 
       {/* Period Selector */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold mb-3 text-gray-900">Time Period</h2>
+        <h2 className="text-lg font-semibold mb-3 text-gray-900">{t('statistics.timePeriod')}</h2>
         <div className="grid grid-cols-3 gap-2 mb-3">
           {(['week', 'month', 'quarter'] as const).map((period) => (
             <button
@@ -238,7 +240,7 @@ const StatisticsPage = () => {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              {period}
+              {t(`statistics.${period}`)}
             </button>
           ))}
         </div>
@@ -251,7 +253,7 @@ const StatisticsPage = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Year
+            {t('statistics.year')}
           </button>
           <button
             onClick={() => setSelectedPeriod('custom')}
@@ -261,18 +263,18 @@ const StatisticsPage = () => {
                 : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
             }`}
           >
-            Custom Range
+            {t('statistics.customRange')}
           </button>
         </div>
 
         {/* Custom Date Range Selector */}
         {selectedPeriod === 'custom' && (
           <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-            <h3 className="text-sm font-medium text-purple-800 mb-3">Select Date Range</h3>
+            <h3 className="text-sm font-medium text-purple-800 mb-3">{t('statistics.selectDateRange')}</h3>
             <div className="grid grid-cols-1 gap-3">
               <div>
                 <label className="block text-xs font-medium text-purple-700 mb-1">
-                  Start Date
+                  {t('statistics.startDate')}
                 </label>
                 <input
                   type="date"
@@ -283,7 +285,7 @@ const StatisticsPage = () => {
               </div>
               <div>
                 <label className="block text-xs font-medium text-purple-700 mb-1">
-                  End Date
+                  {t('statistics.endDate')}
                 </label>
                 <input
                   type="date"
@@ -295,9 +297,9 @@ const StatisticsPage = () => {
             </div>
             {customStartDate && customEndDate && (
               <div className="mt-3 p-2 bg-purple-100 rounded text-xs text-purple-800">
-                <strong>Selected Range:</strong> {new Date(customStartDate).toLocaleDateString()} - {new Date(customEndDate).toLocaleDateString()}
+                <strong>{t('statistics.selectedRange')}:</strong> {new Date(customStartDate).toLocaleDateString()} - {new Date(customEndDate).toLocaleDateString()}
                 <br />
-                <strong>Duration:</strong> {Math.ceil((new Date(customEndDate).getTime() - new Date(customStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} days
+                <strong>{t('statistics.duration')}:</strong> {Math.ceil((new Date(customEndDate).getTime() - new Date(customStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} {t('statistics.days')}
               </div>
             )}
           </div>
@@ -306,7 +308,7 @@ const StatisticsPage = () => {
 
       {/* Income vs Expense Overview */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900">Income vs Expense</h2>
+        <h2 className="text-lg font-semibold mb-4 text-gray-900">{t('statistics.incomeExpense')}</h2>
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">
@@ -317,7 +319,7 @@ const StatisticsPage = () => {
                 maximumFractionDigits: 2,
               }).format(income)}
             </div>
-            <div className="text-sm text-gray-600">Income</div>
+            <div className="text-sm text-gray-600">{t('transactions.income')}</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-red-600">
@@ -328,7 +330,7 @@ const StatisticsPage = () => {
                 maximumFractionDigits: 2,
               }).format(expense)}
             </div>
-            <div className="text-sm text-gray-600">Expense</div>
+            <div className="text-sm text-gray-600">{t('transactions.expense')}</div>
           </div>
           <div className="text-center">
             <div className={`text-2xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -339,37 +341,37 @@ const StatisticsPage = () => {
                 maximumFractionDigits: 2,
               }).format(balance)}
             </div>
-            <div className="text-sm text-gray-600">Net Balance</div>
+            <div className="text-sm text-gray-600">{t('statistics.netBalance')}</div>
           </div>
         </div>
       </div>
 
       {/* Trend Chart */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900">Income vs Expense Trend</h2>
+        <h2 className="text-lg font-semibold mb-4 text-gray-900">{t('statistics.trendAnalysis')}</h2>
         <TrendChart data={trendData} />
       </div>
 
       {/* Category Breakdown with Chart */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900">Expense by Category</h2>
+        <h2 className="text-lg font-semibold mb-4 text-gray-900">{t('statistics.categoryBreakdown')}</h2>
         
         {categoryStats.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p>No expense data available</p>
-            <p className="text-sm">Add some expense transactions to see category breakdown</p>
+            <p>{t('statistics.noExpenseData')}</p>
+            <p className="text-sm">{t('statistics.addExpenseTransactions')}</p>
           </div>
         ) : (
           <div className="space-y-6">
             {/* Pie Chart */}
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Category Distribution</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">{t('statistics.categoryDistribution')}</h3>
               <CategoryPieChart data={categoryStats} />
             </div>
             
             {/* Category List */}
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Category Details</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">{t('statistics.categoryDetails')}</h3>
               <div className="space-y-3">
                 {categoryStats.map((stat, index) => (
                   <div key={stat.name} className="flex items-center justify-between">
@@ -379,7 +381,7 @@ const StatisticsPage = () => {
                       }}></div>
                       <div>
                         <div className="font-medium text-gray-900">{stat.name}</div>
-                        <div className="text-sm text-gray-600">{stat.count} transactions</div>
+                        <div className="text-sm text-gray-600">{stat.count} {t('statistics.transactions')}</div>
                       </div>
                     </div>
                     <div className="text-right">
@@ -405,7 +407,7 @@ const StatisticsPage = () => {
 
       {/* Account Summary with Chart */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900">Account Summary</h2>
+        <h2 className="text-lg font-semibold mb-4 text-gray-900">{t('statistics.accountSummary')}</h2>
         
         <div className="space-y-6">
           {/* Summary Cards */}
@@ -419,7 +421,7 @@ const StatisticsPage = () => {
                   maximumFractionDigits: 2,
                 }).format(accountStats.totalUSD)}
               </div>
-              <div className="text-sm text-gray-600">Total USD</div>
+              <div className="text-sm text-gray-600">{t('statistics.totalUSD')}</div>
             </div>
             <div className="text-center">
               <div className="text-xl font-bold text-gray-900">
@@ -430,19 +432,19 @@ const StatisticsPage = () => {
                   maximumFractionDigits: 0,
                 }).format(accountStats.totalTWD)}
               </div>
-              <div className="text-sm text-gray-600">Total TWD</div>
+              <div className="text-sm text-gray-600">{t('statistics.totalTWD')}</div>
             </div>
           </div>
 
           {/* Account Balance Chart */}
           <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Account Balance Distribution</h3>
+            <h3 className="text-sm font-medium text-gray-700 mb-3">{t('statistics.accountBalanceDistribution')}</h3>
             <AccountBalanceChart data={accountBalanceData} />
           </div>
           
           {/* Account List */}
           <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Account Details</h3>
+            <h3 className="text-sm font-medium text-gray-700 mb-3">{t('statistics.accountDetails')}</h3>
             <div className="space-y-2">
               {accounts.map((account) => (
                 <div key={account.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
@@ -469,33 +471,33 @@ const StatisticsPage = () => {
 
       {/* Monthly Comparison Chart */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900">Monthly Income vs Expense</h2>
+        <h2 className="text-lg font-semibold mb-4 text-gray-900">{t('statistics.monthlyComparison')}</h2>
         <MonthlyComparisonChart data={monthlyData} />
       </div>
 
       {/* Transaction Summary */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900">Transaction Summary</h2>
+        <h2 className="text-lg font-semibold mb-4 text-gray-900">{t('statistics.transactionSummary')}</h2>
         <div className="grid grid-cols-2 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">{filteredTransactions.length}</div>
-            <div className="text-sm text-gray-600">Total Transactions</div>
+            <div className="text-sm text-gray-600">{t('statistics.totalTransactions')}</div>
             <div className="text-xs text-gray-500 mt-1">
               {selectedPeriod === 'custom' ? 
                 (customStartDate && customEndDate ? 
                   `${new Date(customStartDate).toLocaleDateString()} - ${new Date(customEndDate).toLocaleDateString()}` : 
-                  'custom range') :
-                selectedPeriod === 'week' ? 'last week' : 
-                selectedPeriod === 'month' ? 'last month' :
-                selectedPeriod === 'quarter' ? 'last quarter' : 'last year'
+                  t('statistics.customRange')) :
+                selectedPeriod === 'week' ? t('statistics.lastWeek') : 
+                selectedPeriod === 'month' ? t('statistics.lastMonth') :
+                selectedPeriod === 'quarter' ? t('statistics.lastQuarter') : t('statistics.lastYear')
               }
             </div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">{transactions.length}</div>
-            <div className="text-sm text-gray-600">All Time</div>
+            <div className="text-sm text-gray-600">{t('statistics.allTime')}</div>
             <div className="text-xs text-gray-500 mt-1">
-              Total transactions recorded
+              {t('statistics.totalTransactionsRecorded')}
             </div>
           </div>
         </div>

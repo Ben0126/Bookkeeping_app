@@ -1,5 +1,5 @@
 import React, { lazy } from 'react';
-import { Route, Routes, Link, Outlet } from 'react-router-dom';
+import { Route, Routes, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 // 懶加載頁面組件
@@ -64,8 +64,6 @@ const Layout = () => {
 
 
 function App() {
-  const { t } = useTranslation();
-  
   // 在開發模式下顯示偵測資訊
   React.useEffect(() => {
     if (import.meta.env.DEV) {

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useTranslation } from 'react-i18next';
 import { NotificationService, NotificationType } from '../../services/notificationService';
 import type { NotificationRecord } from '../../services/notificationService';
 import { notificationDb } from '../../services/notificationService';
 
 const NotificationsPage = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'notifications' | 'settings'>('notifications');
   
   // 使用 useLiveQuery 來即時更新通知
@@ -28,10 +30,10 @@ const NotificationsPage = () => {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffMins < 1) return t('notifications.justNow');
+    if (diffMins < 60) return t('notifications.minutesAgo', { count: diffMins });
+    if (diffHours < 24) return t('notifications.hoursAgo', { count: diffHours });
+    if (diffDays < 7) return t('notifications.daysAgo', { count: diffDays });
     
     return date.toLocaleDateString();
   };
@@ -39,11 +41,11 @@ const NotificationsPage = () => {
   // 獲取通知類型的顯示名稱
   const getNotificationTypeName = (type: NotificationType): string => {
     const typeNames = {
-      [NotificationType.DAILY_REMINDER]: 'Daily Reminder',
-      [NotificationType.BUDGET_EXCEEDED]: 'Budget Alert',
-      [NotificationType.LOW_BALANCE]: 'Low Balance',
-      [NotificationType.WEEKLY_SUMMARY]: 'Weekly Report',
-      [NotificationType.MONTHLY_SUMMARY]: 'Monthly Report',
+      [NotificationType.DAILY_REMINDER]: t('notifications.dailyReminder'),
+      [NotificationType.BUDGET_EXCEEDED]: t('notifications.budgetAlert'),
+      [NotificationType.LOW_BALANCE]: t('notifications.balanceAlert'),
+      [NotificationType.WEEKLY_SUMMARY]: t('notifications.weeklyReport'),
+      [NotificationType.MONTHLY_SUMMARY]: t('notifications.monthlyReport'),
     };
     return typeNames[type] || type;
   };
@@ -111,8 +113,8 @@ const NotificationsPage = () => {
   // 測試通知
   const handleTestNotification = async () => {
     await NotificationService.sendBrowserNotification(
-      '🧪 Test Notification',
-      'This is a test notification from StudyBudget Pro!'
+      t('notifications.testNotificationTitle'),
+      t('notifications.testNotificationMessage')
     );
   };
 
@@ -121,9 +123,9 @@ const NotificationsPage = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('notifications.title')}</h1>
           <p className="text-gray-600 text-sm">
-            {unreadCount > 0 ? `${unreadCount} unread notifications` : 'All caught up!'}
+            {unreadCount > 0 ? `${unreadCount} ${t('notifications.unreadNotifications')}` : t('notifications.allCaughtUp')}
           </p>
         </div>
         {unreadCount > 0 && (
@@ -131,7 +133,7 @@ const NotificationsPage = () => {
             onClick={handleMarkAllAsRead}
             className="text-sm text-blue-600 hover:text-blue-800"
           >
-            Mark all as read
+            {t('notifications.markAllAsRead')}
           </button>
         )}
       </div>
@@ -147,7 +149,7 @@ const NotificationsPage = () => {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Notifications {unreadCount > 0 && (
+            {t('notifications.notifications')} {unreadCount > 0 && (
               <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">
                 {unreadCount}
               </span>
@@ -161,7 +163,7 @@ const NotificationsPage = () => {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Settings
+            {t('common.settings')}
           </button>
         </div>
 
@@ -172,8 +174,8 @@ const NotificationsPage = () => {
               {notifications.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <div className="text-4xl mb-4">🔔</div>
-                  <p>No notifications yet</p>
-                  <p className="text-sm">We'll notify you about important updates</p>
+                  <p>{t('notifications.noNotificationsYet')}</p>
+                  <p className="text-sm">{t('notifications.notifyImportantUpdates')}</p>
                 </div>
               ) : (
                 notifications.map((notification) => (
@@ -221,15 +223,15 @@ const NotificationsPage = () => {
             <div className="space-y-6">
               {/* Test Notification */}
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h3 className="font-medium text-yellow-800 mb-2">Test Notifications</h3>
+                <h3 className="font-medium text-yellow-800 mb-2">{t('notifications.testNotifications')}</h3>
                 <p className="text-sm text-yellow-700 mb-3">
-                  Make sure browser notifications are working properly.
+                  {t('notifications.browserNotificationsWorking')}
                 </p>
                 <button
                   onClick={handleTestNotification}
                   className="bg-yellow-600 text-white px-4 py-2 rounded-md text-sm hover:bg-yellow-700"
                 >
-                  Send Test Notification
+                  {t('notifications.sendTestNotification')}
                 </button>
               </div>
 
@@ -244,16 +246,16 @@ const NotificationsPage = () => {
                         </h3>
                         <p className="text-sm text-gray-600">
                           {setting.type === NotificationType.DAILY_REMINDER && 
-                            'Reminds you to record transactions daily'
+                            t('notifications.dailyReminderDesc')
                           }
                           {setting.type === NotificationType.LOW_BALANCE && 
-                            'Alerts when account balance is low'
+                            t('notifications.lowBalanceDesc')
                           }
                           {setting.type === NotificationType.WEEKLY_SUMMARY && 
-                            'Weekly spending summary'
+                            t('notifications.weeklySummaryDesc')
                           }
                           {setting.type === NotificationType.MONTHLY_SUMMARY && 
-                            'Monthly financial report'
+                            t('notifications.monthlySummaryDesc')
                           }
                         </p>
                       </div>
@@ -273,7 +275,7 @@ const NotificationsPage = () => {
                         {setting.time && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Notification Time
+                              {t('notifications.notificationTime')}
                             </label>
                             <input
                               type="time"
@@ -287,7 +289,7 @@ const NotificationsPage = () => {
                         {setting.type === NotificationType.LOW_BALANCE && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Alert when balance is below ($)
+                              {t('notifications.alertWhenBalanceBelow')}
                             </label>
                             <input
                               type="number"
