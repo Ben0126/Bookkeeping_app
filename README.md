@@ -4,6 +4,8 @@
 
 **StudyBudget Pro** 是專為留學生設計的個人記帳應用程式，支援多國貨幣、多語言，完全離線運作。
 
+🌐 **線上體驗**: [https://bookkeeping-app-three.vercel.app/](https://bookkeeping-app-three.vercel.app/)
+
 ### ✨ 核心特色
 - 🌍 **多語言支援** - 繁體中文/英文切換
 - 💱 **多國貨幣** - USD/TWD/GBP/AUD/EUR 等12種貨幣
@@ -120,7 +122,7 @@ src/
 | Phase 4: 國際化支援 | 100% | ✅ 完成 |
 | Phase 5: 部署準備 | 100% | ✅ 完成 |
 | Phase 6: 測試與優化 | 20% | 🔄 進行中 |
-| **整體進度** | **95%** | 🚀 準備上線 |
+| **整體進度** | **98%** | 🌟 已上線 |
 
 ## ✅ 已完成項目
 
@@ -130,6 +132,7 @@ src/
 3. **生產環境建置** - `npm run build` 成功執行
 4. **部署配置準備** - GitHub Actions + 多平台部署指南
 5. **代碼品質優化** - 清理未使用變數，修復類型定義
+6. **🚀 正式上線** - [Vercel 部署完成](https://bookkeeping-app-three.vercel.app/)
 
 ### 🚀 部署準備完成
 - ✅ Vercel 部署配置
@@ -184,7 +187,7 @@ src/
 
 | 平台 | 狀態 | 網址 | 備註 |
 |------|------|------|------|
-| Vercel | ✅ 準備就緒 | 待部署 | 推薦平台 |
+| Vercel | ✅ 已上線 | [https://bookkeeping-app-three.vercel.app/](https://bookkeeping-app-three.vercel.app/) | 🌟 正式版本 |
 | Netlify | ✅ 準備就緒 | 待部署 | 簡單易用 |
 | GitHub Pages | ✅ 準備就緒 | 待部署 | 完全免費 |
 | Firebase | ✅ 準備就緒 | 待部署 | Google 平台 |
@@ -205,6 +208,7 @@ src/
 
 ---
 
-**版本**: 1.0.0 (準備上線)  
+**版本**: 1.0.0 (已上線)  
 **最後更新**: 2025年10月8日  
-**授權**: 私有專案
+**授權**: 私有專案  
+**線上網址**: [https://bookkeeping-app-three.vercel.app/](https://bookkeeping-app-three.vercel.app/)
