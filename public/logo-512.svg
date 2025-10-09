@@ -1,0 +1,29 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圓形 -->
+  <circle cx="256" cy="256" r="240" fill="url(#gradient)" stroke="#4F46E5" stroke-width="8"/>
+  
+  <!-- 學士帽 -->
+  <path d="M160 224 L352 224 L336 192 L176 192 Z" fill="#1F2937"/>
+  <path d="M176 192 L336 192 L320 160 L192 160 Z" fill="#374151"/>
+  <circle cx="256" cy="160" r="12" fill="#F59E0B"/>
+  
+  <!-- 錢幣 -->
+  <circle cx="256" cy="320" r="64" fill="#10B981" stroke="#059669" stroke-width="4"/>
+  <circle cx="256" cy="320" r="40" fill="#D1FAE5"/>
+  <text x="256" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#059669">$</text>
+  
+  <!-- 地球圖標 -->
+  <circle cx="384" cy="128" r="48" fill="#3B82F6" stroke="#1D4ED8" stroke-width="3"/>
+  <path d="M336 128 Q384 96 432 128" stroke="#1D4ED8" stroke-width="3" fill="none"/>
+  <path d="M336 128 Q384 160 432 128" stroke="#1D4ED8" stroke-width="3" fill="none"/>
+  <circle cx="384" cy="128" r="16" fill="#1D4ED8"/>
+  
+  <!-- 漸層定義 -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#7C3AED;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EC4899;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+</svg>
