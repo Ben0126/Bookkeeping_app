@@ -39,25 +39,25 @@ const NotificationsPage = () => {
   };
 
   // 獲取通知類型的顯示名稱
-  const getNotificationTypeName = (type: NotificationType): string => {
+  const getNotificationTypeName = (type: keyof typeof NotificationType): string => {
     const typeNames = {
-      [NotificationType.DAILY_REMINDER]: t('notifications.dailyReminder'),
-      [NotificationType.BUDGET_EXCEEDED]: t('notifications.budgetAlert'),
-      [NotificationType.LOW_BALANCE]: t('notifications.balanceAlert'),
-      [NotificationType.WEEKLY_SUMMARY]: t('notifications.weeklyReport'),
-      [NotificationType.MONTHLY_SUMMARY]: t('notifications.monthlyReport'),
+      DAILY_REMINDER: t('notifications.dailyReminder'),
+      BUDGET_EXCEEDED: t('notifications.budgetAlert'),
+      LOW_BALANCE: t('notifications.balanceAlert'),
+      WEEKLY_SUMMARY: t('notifications.weeklyReport'),
+      MONTHLY_SUMMARY: t('notifications.monthlyReport'),
     };
     return typeNames[type] || type;
   };
 
   // 獲取通知類型的圖示
-  const getNotificationIcon = (type: NotificationType): string => {
+  const getNotificationIcon = (type: keyof typeof NotificationType): string => {
     const icons = {
-      [NotificationType.DAILY_REMINDER]: '💰',
-      [NotificationType.BUDGET_EXCEEDED]: '🚨',
-      [NotificationType.LOW_BALANCE]: '💳',
-      [NotificationType.WEEKLY_SUMMARY]: '📊',
-      [NotificationType.MONTHLY_SUMMARY]: '📈',
+      DAILY_REMINDER: '💰',
+      BUDGET_EXCEEDED: '🚨',
+      LOW_BALANCE: '💳',
+      WEEKLY_SUMMARY: '📊',
+      MONTHLY_SUMMARY: '📈',
     };
     return icons[type] || '🔔';
   };

@@ -1,20 +1,20 @@
-import { db } from '../db';
+// import { db } from '../db';
 import { getAllTransactions } from '../db/transactions';
 import { getAllAccounts } from '../db/accounts';
 
 // 提醒類型
-export enum NotificationType {
-  DAILY_REMINDER = 'daily_reminder',
-  BUDGET_EXCEEDED = 'budget_exceeded',
-  LOW_BALANCE = 'low_balance',
-  WEEKLY_SUMMARY = 'weekly_summary',
-  MONTHLY_SUMMARY = 'monthly_summary',
-}
+export const NotificationType = {
+  DAILY_REMINDER: 'daily_reminder',
+  BUDGET_EXCEEDED: 'budget_exceeded',
+  LOW_BALANCE: 'low_balance',
+  WEEKLY_SUMMARY: 'weekly_summary',
+  MONTHLY_SUMMARY: 'monthly_summary',
+} as const;
 
 // 提醒設定介面
 export interface NotificationSettings {
   id?: number;
-  type: NotificationType;
+  type: keyof typeof NotificationType;
   enabled: boolean;
   time?: string; // HH:MM 格式
   threshold?: number; // 用於餘額不足警告的閾值
@@ -26,7 +26,7 @@ export interface NotificationSettings {
 // 提醒記錄介面
 export interface NotificationRecord {
   id?: number;
-  type: NotificationType;
+  type: keyof typeof NotificationType;
   title: string;
   message: string;
   isRead: boolean;
@@ -44,7 +44,9 @@ export interface BudgetSetting {
 }
 
 // 擴展資料庫以支援提醒功能
-export class NotificationDB extends db.constructor {
+import Dexie from 'dexie';
+
+export class NotificationDB extends Dexie {
   notificationSettings!: Dexie.Table<NotificationSettings, number>;
   notificationRecords!: Dexie.Table<NotificationRecord, number>;
   budgetSettings!: Dexie.Table<BudgetSetting, number>;
@@ -103,7 +105,7 @@ export class NotificationService {
 
   // 創建應用內通知記錄
   static async createNotificationRecord(
-    type: NotificationType, 
+    type: keyof typeof NotificationType, 
     title: string, 
     message: string
   ): Promise<void> {
@@ -128,28 +130,28 @@ export class NotificationService {
       if (existingSettings === 0) {
         const defaultSettings: Omit<NotificationSettings, 'id'>[] = [
           {
-            type: NotificationType.DAILY_REMINDER,
+            type: 'DAILY_REMINDER',
             enabled: true,
             time: '20:00', // 晚上8點提醒記帳
             createdAt: new Date(),
             updatedAt: new Date(),
           },
           {
-            type: NotificationType.LOW_BALANCE,
+            type: 'LOW_BALANCE',
             enabled: true,
             threshold: 100, // 餘額低於$100時提醒
             createdAt: new Date(),
             updatedAt: new Date(),
           },
           {
-            type: NotificationType.WEEKLY_SUMMARY,
+            type: 'WEEKLY_SUMMARY',
             enabled: true,
             time: '09:00', // 週一早上9點發送週報
             createdAt: new Date(),
             updatedAt: new Date(),
           },
           {
-            type: NotificationType.MONTHLY_SUMMARY,
+            type: 'MONTHLY_SUMMARY',
             enabled: true,
             time: '09:00', // 每月1號早上9點發送月報
             createdAt: new Date(),
@@ -194,7 +196,7 @@ export class NotificationService {
       const message = "Don't forget to record your transactions today! Keep track of your spending habits.";
       
       await this.sendBrowserNotification(title, message);
-      await this.createNotificationRecord(NotificationType.DAILY_REMINDER, title, message);
+      await this.createNotificationRecord('DAILY_REMINDER', title, message);
       
       // 更新最後觸發時間
       await notificationDb.notificationSettings.update(settings.id!, {
@@ -223,7 +225,7 @@ export class NotificationService {
             : `You've used ${percentage.toFixed(1)}% of your ${budget.period} budget.`;
           
           await this.sendBrowserNotification(title, message);
-          await this.createNotificationRecord(NotificationType.BUDGET_EXCEEDED, title, message);
+          await this.createNotificationRecord('BUDGET_EXCEEDED', title, message);
         }
       }
     } catch (error) {
@@ -252,7 +254,7 @@ export class NotificationService {
         const message = `Warning: Low balance detected in ${accountNames}. Consider adding funds.`;
         
         await this.sendBrowserNotification(title, message);
-        await this.createNotificationRecord(NotificationType.LOW_BALANCE, title, message);
+        await this.createNotificationRecord('LOW_BALANCE', title, message);
       }
     } catch (error) {
       console.error('Error checking low balance:', error);
@@ -289,7 +291,7 @@ export class NotificationService {
       const message = `This week: Income $${totalIncome.toFixed(2)}, Expenses $${totalExpense.toFixed(2)}, Net: $${(totalIncome - totalExpense).toFixed(2)}`;
       
       await this.sendBrowserNotification(title, message);
-      await this.createNotificationRecord(NotificationType.WEEKLY_SUMMARY, title, message);
+      await this.createNotificationRecord('WEEKLY_SUMMARY', title, message);
 
       // 更新最後觸發時間
       await notificationDb.notificationSettings.update(settings.id!, {
@@ -331,7 +333,7 @@ export class NotificationService {
       const message = `Last month: Income $${totalIncome.toFixed(2)}, Expenses $${totalExpense.toFixed(2)}, Net: $${(totalIncome - totalExpense).toFixed(2)}`;
       
       await this.sendBrowserNotification(title, message);
-      await this.createNotificationRecord(NotificationType.MONTHLY_SUMMARY, title, message);
+      await this.createNotificationRecord('MONTHLY_SUMMARY', title, message);
 
       // 更新最後觸發時間
       await notificationDb.notificationSettings.update(settings.id!, {

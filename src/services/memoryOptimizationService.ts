@@ -8,7 +8,7 @@ export class MemoryOptimizationService {
   };
 
   private static observers = new Set<(stats: any) => void>();
-  private static monitoringInterval: number | null = null;
+  private static monitoringInterval: NodeJS.Timeout | null = null;
 
   // 初始化記憶體監控
   static initialize(): void {
@@ -165,7 +165,7 @@ export class MemoryOptimizationService {
     func: T,
     wait: number
   ): (...args: Parameters<T>) => void {
-    let timeout: number;
+    let timeout: NodeJS.Timeout;
     
     return (...args: Parameters<T>) => {
       clearTimeout(timeout);

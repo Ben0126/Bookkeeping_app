@@ -50,7 +50,7 @@ export class PWAService {
           this.handleServiceWorkerMessage(event);
         });
 
-        return registration;
+        return;
       } catch (error) {
         console.error('❌ Service Worker registration failed:', error);
         throw error;
@@ -109,7 +109,7 @@ export class PWAService {
     }
 
     // 檢查是否從主屏幕啟動
-    if (window.navigator.standalone === true) {
+    if ((window.navigator as any).standalone === true) {
       this.isInstalled = true;
       console.log('📱 App launched from home screen');
     }

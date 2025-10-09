@@ -16,7 +16,6 @@ export default defineConfig({
         name: 'StudyBudget Pro - Student Finance Manager',
         short_name: 'StudyBudget',
         description: 'A comprehensive personal bookkeeping app designed for students studying abroad. Track expenses, manage multiple currencies, and build healthy financial habits.',
-        version: '1.0.0',
         theme_color: '#3b82f6',
         background_color: '#ffffff',
         display: 'standalone',
@@ -101,9 +100,6 @@ export default defineConfig({
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
               },
-              cacheKeyWillBeUsed: async ({ request }) => {
-                return `${request.url}?version=1`;
-              }
             }
           },
           {

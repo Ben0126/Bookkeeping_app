@@ -4,13 +4,13 @@ import { getAllAccounts } from '../db/accounts';
 import { getAllCategories } from '../db/categories';
 
 // 離線同步狀態
-export enum SyncStatus {
-  ONLINE = 'online',
-  OFFLINE = 'offline',
-  SYNCING = 'syncing',
-  ERROR = 'error',
-  CONFLICT = 'conflict'
-}
+export const SyncStatus = {
+  ONLINE: 'ONLINE',
+  OFFLINE: 'OFFLINE',
+  SYNCING: 'SYNCING',
+  ERROR: 'ERROR',
+  CONFLICT: 'CONFLICT'
+} as const;
 
 // 同步記錄介面
 export interface SyncRecord {
@@ -36,15 +36,17 @@ export interface OfflineOperation {
 }
 
 // 數據衝突解決策略
-export enum ConflictResolutionStrategy {
-  LOCAL_WINS = 'local_wins',
-  REMOTE_WINS = 'remote_wins',
-  NEWEST_WINS = 'newest_wins',
-  MANUAL = 'manual'
-}
+export const ConflictResolutionStrategy = {
+  LOCAL_WINS: 'local_wins',
+  REMOTE_WINS: 'remote_wins',
+  NEWEST_WINS: 'newest_wins',
+  MANUAL: 'manual'
+} as const;
 
 // 擴展資料庫以支援離線同步
-export class OfflineSyncDB extends db.constructor {
+import Dexie from 'dexie';
+
+export class OfflineSyncDB extends Dexie {
   syncRecords!: Dexie.Table<SyncRecord, number>;
   offlineOperations!: Dexie.Table<OfflineOperation, number>;
   
@@ -67,15 +69,15 @@ export class OfflineSyncDB extends db.constructor {
 export const offlineSyncDb = new OfflineSyncDB();
 
 export class OfflineSyncService {
-  private static currentStatus: SyncStatus = SyncStatus.ONLINE;
+  private static currentStatus: keyof typeof SyncStatus = 'ONLINE';
   private static syncInterval: NodeJS.Timeout | null = null;
-  private static conflictResolutionStrategy: ConflictResolutionStrategy = ConflictResolutionStrategy.NEWEST_WINS;
+  private static conflictResolutionStrategy: keyof typeof ConflictResolutionStrategy = 'NEWEST_WINS';
 
   // 初始化離線同步服務
   static async initialize(): Promise<void> {
     try {
       // 檢測網路狀態
-      this.currentStatus = navigator.onLine ? SyncStatus.ONLINE : SyncStatus.OFFLINE;
+      this.currentStatus = navigator.onLine ? 'ONLINE' : 'OFFLINE';
       
       // 監聽網路狀態變化
       window.addEventListener('online', () => {
@@ -101,31 +103,31 @@ export class OfflineSyncService {
   // 處理網路上線
   private static async handleNetworkOnline(): Promise<void> {
     console.log('🌐 Network online - starting sync');
-    this.currentStatus = SyncStatus.SYNCING;
+    this.currentStatus = 'SYNCING';
     
     try {
       await this.syncOfflineOperations();
       await this.processConflicts();
-      this.currentStatus = SyncStatus.ONLINE;
+      this.currentStatus = 'ONLINE';
       
       // 通知應用程式網路已恢復
       window.dispatchEvent(new CustomEvent('offline-sync-status', {
-        detail: { status: SyncStatus.ONLINE }
+        detail: { status: 'ONLINE' }
       }));
     } catch (error) {
       console.error('❌ Sync failed:', error);
-      this.currentStatus = SyncStatus.ERROR;
+      this.currentStatus = 'ERROR';
     }
   }
 
   // 處理網路離線
   private static async handleNetworkOffline(): Promise<void> {
     console.log('📴 Network offline - switching to offline mode');
-    this.currentStatus = SyncStatus.OFFLINE;
+    this.currentStatus = 'OFFLINE';
     
     // 通知應用程式進入離線模式
     window.dispatchEvent(new CustomEvent('offline-sync-status', {
-      detail: { status: SyncStatus.OFFLINE }
+      detail: { status: 'OFFLINE' }
     }));
   }
 
@@ -133,7 +135,7 @@ export class OfflineSyncService {
   private static startPeriodicSync(): void {
     // 每5分鐘檢查一次同步狀態
     this.syncInterval = setInterval(async () => {
-      if (this.currentStatus === SyncStatus.ONLINE) {
+      if (this.currentStatus === 'ONLINE') {
         await this.checkForPendingSync();
       }
     }, 5 * 60 * 1000);
@@ -179,7 +181,7 @@ export class OfflineSyncService {
 
   // 同步離線操作
   private static async syncOfflineOperations(): Promise<void> {
-    if (this.currentStatus !== SyncStatus.ONLINE) {
+    if (this.currentStatus !== 'ONLINE') {
       return;
     }
 
@@ -281,23 +283,23 @@ export class OfflineSyncService {
       let resolvedData: any;
 
       switch (this.conflictResolutionStrategy) {
-        case ConflictResolutionStrategy.LOCAL_WINS:
+        case 'LOCAL_WINS':
           resolvedData = conflict.data;
           break;
           
-        case ConflictResolutionStrategy.REMOTE_WINS:
+        case 'REMOTE_WINS':
           // 在實際應用中，這裡會從服務器獲取最新數據
           resolvedData = conflict.data; // 模擬遠端數據
           break;
           
-        case ConflictResolutionStrategy.NEWEST_WINS:
+        case 'NEWEST_WINS':
           // 比較時間戳，使用最新的數據
           resolvedData = conflict.data; // 簡化處理
           break;
           
-        case ConflictResolutionStrategy.MANUAL:
+        case 'MANUAL':
           // 需要用戶手動解決
-          this.currentStatus = SyncStatus.CONFLICT;
+          this.currentStatus = 'CONFLICT';
           window.dispatchEvent(new CustomEvent('offline-sync-conflict', {
             detail: { conflict }
           }));
@@ -343,7 +345,7 @@ export class OfflineSyncService {
         console.log(`📋 Found ${operations.length} offline operations to process`);
         
         // 如果網路可用，立即同步
-        if (this.currentStatus === SyncStatus.ONLINE) {
+        if (this.currentStatus === 'ONLINE') {
           await this.syncOfflineOperations();
         }
       }
@@ -353,7 +355,7 @@ export class OfflineSyncService {
   }
 
   // 公共方法：獲取同步狀態
-  static getSyncStatus(): SyncStatus {
+  static getSyncStatus(): keyof typeof SyncStatus {
     return this.currentStatus;
   }
 
@@ -369,18 +371,18 @@ export class OfflineSyncService {
 
   // 公共方法：手動觸發同步
   static async manualSync(): Promise<void> {
-    if (this.currentStatus === SyncStatus.ONLINE) {
-      this.currentStatus = SyncStatus.SYNCING;
+    if (this.currentStatus === 'ONLINE') {
+      this.currentStatus = 'SYNCING';
       
       try {
         await this.syncOfflineOperations();
         await this.processConflicts();
-        this.currentStatus = SyncStatus.ONLINE;
+        this.currentStatus = 'ONLINE';
         
         console.log('✅ Manual sync completed');
       } catch (error) {
         console.error('❌ Manual sync failed:', error);
-        this.currentStatus = SyncStatus.ERROR;
+        this.currentStatus = 'ERROR';
       }
     }
   }
@@ -400,13 +402,13 @@ export class OfflineSyncService {
   }
 
   // 公共方法：設置衝突解決策略
-  static setConflictResolutionStrategy(strategy: ConflictResolutionStrategy): void {
+  static setConflictResolutionStrategy(strategy: keyof typeof ConflictResolutionStrategy): void {
     this.conflictResolutionStrategy = strategy;
     console.log(`⚙️ Conflict resolution strategy set to: ${strategy}`);
   }
 
   // 公共方法：獲取衝突解決策略
-  static getConflictResolutionStrategy(): ConflictResolutionStrategy {
+  static getConflictResolutionStrategy(): keyof typeof ConflictResolutionStrategy {
     return this.conflictResolutionStrategy;
   }
 

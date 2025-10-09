@@ -1,4 +1,9 @@
 // StudyBudget Pro Service Worker
+import { precacheAndRoute } from 'workbox-precaching';
+
+// Workbox 預快取清單注入點
+precacheAndRoute(self.__WB_MANIFEST);
+
 // 版本控制
 const CACHE_NAME = 'studybudget-pro-v1.0.0';
 const STATIC_CACHE_NAME = 'studybudget-static-v1.0.0';

@@ -8,8 +8,8 @@ const StudentFeaturesPage: React.FC = () => {
   const { t } = useTranslation();
   const [selectedCategory, setSelectedCategory] = useState<StudentCategory>('tuition_fees');
 
-  const essentialCategories = StudentCategoryService.getEssentialCategories();
-  const commonCategories = StudentCategoryService.getCommonCategories();
+  // const essentialCategories = StudentCategoryService.getEssentialCategories();
+  // const commonCategories = StudentCategoryService.getCommonCategories();
 
   return (
     <div className="space-y-6">
