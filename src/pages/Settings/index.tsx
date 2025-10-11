@@ -14,6 +14,7 @@ const SettingsPage = () => {
   const [pendingOperations, setPendingOperations] = useState<number>(0);
   const [syncStatus, setSyncStatus] = useState<string>('online');
 
+
   useEffect(() => {
     loadSettingsData();
   }, []);
@@ -344,6 +345,7 @@ const SettingsPage = () => {
           </div>
         </div>
       </div>
+      
     </div>
   );
 };

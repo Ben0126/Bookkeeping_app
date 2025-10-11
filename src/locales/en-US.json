@@ -331,6 +331,196 @@
     "minLength": "At least {{min}} characters required",
     "maxLength": "Maximum {{max}} characters allowed"
   },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Financial Overview",
+    "welcome": "Welcome to StudyBudget Pro!",
+    "welcomeSubtitle": "Your personal budgeting companion for studying abroad",
+    "financialOverview": "Financial Overview",
+    "totalAssets": "Total Assets",
+    "monthlyIncome": "Monthly Income",
+    "monthlyExpense": "Monthly Expense",
+    "netWorthChange": "Net Worth Change",
+    "accountSummaryTitle": "Account Summary",
+    "recentTransactionsTitle": "Recent Transactions",
+    "statisticsPreviewTitle": "Statistics Preview",
+    "notificationsSummaryTitle": "Notifications Summary",
+    "quickActionsTitle": "Quick Actions",
+    "addTransaction": "Add Transaction",
+    "addAccount": "Add Account",
+    "viewStatistics": "View Statistics",
+    "viewSettings": "View Settings",
+    "viewAll": "View All",
+    "noData": "No Data",
+    "noAccounts": "No accounts added yet",
+    "noTransactions": "No transactions recorded yet",
+    "noNotifications": "No notifications yet",
+    "getStarted": "Get Started",
+    "userStatus": {
+      "new": "New User",
+      "active": "Active User",
+      "experienced": "Experienced User"
+    },
+    "tips": {
+      "new": [
+        "Click \"Add Account\" to start tracking your finances",
+        "Record every transaction promptly to build good habits",
+        "Check statistics regularly to understand spending patterns"
+      ],
+      "active": [
+        "Set budget goals to control spending",
+        "Use categories to better manage your finances",
+        "Back up data regularly to ensure data security"
+      ],
+      "experienced": [
+        "Use advanced statistics to analyze your financial situation",
+        "Set up automatic categorization rules to improve efficiency",
+        "Export financial reports to share with accountants or advisors"
+      ]
+    },
+    "accountSummary": {
+      "moreAccounts": "more accounts",
+      "account": "account",
+      "accounts": "accounts"
+    },
+    "recentTransactions": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "daysAgo": "{{count}} days ago",
+      "viewAllTransactions": "View all transactions"
+    },
+    "statisticsPreview": {
+      "incomeExpenseRatio": "Income/Expense Ratio",
+      "monthlyTrend": "Monthly Trend",
+      "topCategories": "Top Categories",
+      "thisMonth": "This month",
+      "incomeExceedsExpenses": "Income exceeds expenses",
+      "expensesExceedIncome": "Expenses exceed income",
+      "spendingIncreased": "Spending increased",
+      "spendingDecreased": "Spending decreased",
+      "spendingStable": "Spending stable",
+      "viewDetailedBreakdown": "View detailed breakdown"
+    },
+    "notificationsSummary": {
+      "markAllRead": "Mark all read",
+      "priority": "priority",
+      "viewAllNotifications": "View all {{count}} notifications"
+    },
+    "quickActions": {
+      "add-transaction": "Add Transaction",
+      "add-account": "Add Account", 
+      "view-statistics": "View Statistics",
+      "view-settings": "Settings",
+      "settings": "Settings"
+    },
+    "welcomeSection": {
+      "whyChoose": "Why Choose StudyBudget Pro?",
+      "description": "A smart accounting tool designed for international students, making your financial management simpler and more secure",
+      "smartCategorization": "Smart Categorization",
+      "smartCategorizationDesc": "Automatically identify transaction types, saving recording time",
+      "multiCurrency": "Multi-Currency Support",
+      "multiCurrencyDesc": "Support for major global currencies, perfect for international students",
+      "offlineSync": "Offline Sync",
+      "offlineSyncDesc": "Record even without internet, automatic data synchronization",
+      "dataSecurity": "Data Security",
+      "dataSecurityDesc": "Local storage, privacy protection, secure and reliable data",
+      "startJourney": "Start your smart accounting journey, make every expense meaningful, and make financial management easy and enjoyable!",
+      "getStarted": "Get Started",
+      "personalSettings": "Personal Settings"
+    },
+    "integration": {
+      "statistics": {
+        "title": "Statistics Integration",
+        "period": "Time Period",
+        "week": "Week",
+        "month": "Month",
+        "quarter": "Quarter",
+        "year": "Year",
+        "custom": "Custom",
+        "incomeExpense": "Income & Expense",
+        "categoryStats": "Category Statistics",
+        "trendData": "Trend Data",
+        "financialMetrics": "Financial Metrics",
+        "accountStats": "Account Statistics",
+        "monthlyData": "Monthly Data"
+      },
+      "notifications": {
+        "title": "Notifications Integration",
+        "markAllRead": "Mark All Read",
+        "clearRead": "Clear Read",
+        "deleteNotification": "Delete Notification",
+        "notificationSettings": "Notification Settings",
+        "priority": "Priority",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low",
+        "type": "Type",
+        "dailyReminder": "Daily Reminder",
+        "budgetAlert": "Budget Alert",
+        "balanceAlert": "Balance Alert",
+        "weeklyReport": "Weekly Report",
+        "monthlyReport": "Monthly Report"
+      },
+      "navigationDetails": {
+        "title": "Quick Navigation",
+        "navigating": "Navigating...",
+        "back": "Back",
+        "forward": "Forward",
+        "refresh": "Refresh",
+        "home": "Home",
+        "dashboard": "Dashboard",
+        "accounts": "Accounts",
+        "transactions": "Transactions",
+        "statistics": "Statistics",
+        "notifications": "Notifications",
+        "settings": "Settings",
+        "backup": "Backup",
+        "studentFeatures": "Student Features"
+      }
+    },
+    "loading": {
+      "initializing": "Initializing application...",
+      "loadingData": "Loading data...",
+      "refreshing": "Refreshing data..."
+    },
+    "financialOverviewDetails": {
+      "subtitle": "Your financial overview at a glance",
+      "currency": "Currency",
+      "total": "Total",
+      "income": "Income",
+      "expense": "Expense",
+      "profit": "Profit",
+      "loss": "Loss",
+      "emptyState": "Add accounts to view your financial overview"
+    },
+    "accountSummaryDetails": {
+      "subtitle": "Manage all your accounts",
+      "currency": "Currency",
+      "accounts": "accounts",
+      "emptyState": "Add your first account to start managing finances",
+      "viewAll": "View All Accounts"
+    },
+    "recentTransactionsDetails": {
+      "subtitle": "Recent transaction records",
+      "emptyState": "Start recording transactions to track your spending",
+      "viewAll": "View All Transactions"
+    },
+    "statisticsPreviewDetails": {
+      "subtitle": "Financial statistics and analysis",
+      "emptyState": "Record more transactions to view statistical analysis",
+      "viewAll": "View Detailed Statistics"
+    },
+    "notificationsSummaryDetails": {
+      "subtitle": "Important reminders and notifications",
+      "emptyState": "No notifications yet",
+      "viewAll": "View All Notifications"
+    },
+    "quickActionsDetails": {
+      "subtitle": "Quick Actions",
+      "emptyState": "Choose an action to get started",
+      "tip": "Click any action to get started quickly"
+    }
+  },
   "messages": {
     "success": {
       "accountCreated": "Account created successfully",

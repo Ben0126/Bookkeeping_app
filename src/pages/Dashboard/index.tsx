@@ -1,211 +1,264 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ResponsiveCard, ResponsiveGrid, ResponsiveTitle } from '../../components/ResponsiveLayout';
+import { ResponsiveGrid } from '../../components/ResponsiveLayout';
+import { useDashboardData } from './hooks/useDashboardData';
+import { useUserStatus } from './hooks/useUserStatus';
+import { useDynamicContent } from './hooks/useDynamicContent';
+import { useLoadingStates } from './hooks/useLoadingStates';
+import { usePerformanceMonitoring } from './hooks/usePerformanceMonitoring';
+import { useNotificationsIntegration } from './hooks/useNotificationsIntegration';
+import { useQuickNavigation } from './hooks/useQuickNavigation';
+import { 
+  FinancialOverview, 
+  AccountSummary, 
+  RecentTransactions, 
+  StatisticsPreview, 
+  NotificationsSummary, 
+  QuickActions, 
+  WelcomeSection,
+  PageTransition,
+  LoadingTransition,
+  ErrorTransition
+} from './components';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
+  const { userStatus, isLoading: userStatusLoading, isFirstTimeUser, transitionReady } = useUserStatus();
+  const { data: dashboardData, isLoading: dataLoading, error } = useDashboardData();
+  const dynamicContent = useDynamicContent();
+  const loadingStates = useLoadingStates();
+  const performanceMonitoring = usePerformanceMonitoring();
+  const notificationsIntegration = useNotificationsIntegration();
+  const quickNavigation = useQuickNavigation();
 
-  const quickActionCards = [
-    {
-      title: t('home.manageAccounts'),
-      description: t('home.manageAccountsDesc'),
-      icon: '💳',
-      link: '/accounts',
-      gradient: 'from-blue-500 to-blue-600',
-      hoverGradient: 'from-blue-600 to-blue-700',
-      textColor: 'text-white',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200'
-    },
-    {
-      title: t('home.startTracking'),
-      description: t('home.startTrackingDesc'),
-      icon: '💰',
-      link: '/transactions',
-      gradient: 'from-green-500 to-green-600',
-      hoverGradient: 'from-green-600 to-green-700',
-      textColor: 'text-white',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200'
-    },
-    {
-      title: t('statistics.title'),
-      description: t('statistics.incomeExpense'),
-      icon: '📊',
-      link: '/statistics',
-      gradient: 'from-purple-500 to-purple-600',
-      hoverGradient: 'from-purple-600 to-purple-700',
-      textColor: 'text-white',
-      bgColor: 'bg-purple-50',
-      borderColor: 'border-purple-200'
+  // 開始性能監控
+  React.useEffect(() => {
+    performanceMonitoring.startMonitoring();
+    performanceMonitoring.startRenderTimer();
+    
+    return () => {
+      performanceMonitoring.endRenderTimer();
+      performanceMonitoring.stopMonitoring();
+    };
+  }, []);
+
+  // 結束渲染計時
+  React.useEffect(() => {
+    if (!loadingStates.isLoading) {
+      performanceMonitoring.endRenderTimer();
     }
-  ];
+  }, [loadingStates.isLoading]);
 
-  const featureCards = [
-    {
-      title: '智能分類',
-      description: '自動識別交易類型，節省記錄時間',
-      icon: '🤖',
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50',
-      borderColor: 'border-indigo-200'
-    },
-    {
-      title: '多幣種支持',
-      description: '支持全球主要貨幣，適合留學生使用',
-      icon: '🌍',
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50',
-      borderColor: 'border-emerald-200'
-    },
-    {
-      title: '離線同步',
-      description: '無網絡時也能記錄，自動同步數據',
-      icon: '📱',
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      borderColor: 'border-orange-200'
-    },
-    {
-      title: '數據安全',
-      description: '本地存儲，隱私保護，數據安全可靠',
-      icon: '🔒',
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
-      borderColor: 'border-red-200'
+  // 更新動態內容
+  React.useEffect(() => {
+    if (transitionReady) {
+      dynamicContent.updateContentMode(userStatus);
     }
-  ];
+  }, [userStatus, transitionReady]);
 
+  // 如果正在加載用戶狀態，顯示加載畫面
+  if (userStatusLoading || loadingStates.isInitialLoad) {
+    return (
+      <ErrorBoundary>
+        <LoadingTransition 
+          isVisible={true}
+          message={t('dashboard.loading.initializing')}
+        />
+      </ErrorBoundary>
+    );
+  }
+
+  // 如果是新用戶，顯示歡迎頁面
+  if (isFirstTimeUser) {
+    return (
+      <ErrorBoundary>
+        <PageTransition isVisible={true}>
+          <WelcomeSection 
+            onGetStarted={() => {
+              quickNavigation.navigateToAddAccount();
+            }}
+            onViewSettings={() => {
+              quickNavigation.navigateToSettings();
+            }}
+          />
+        </PageTransition>
+      </ErrorBoundary>
+    );
+  }
+
+  // 如果有錯誤，顯示錯誤頁面
+  if (error) {
+    return (
+      <ErrorBoundary>
+        <ErrorTransition 
+          isVisible={true}
+          error={error}
+          onRetry={() => window.location.reload()}
+        />
+      </ErrorBoundary>
+    );
+  }
+
+  // 如果沒有數據，顯示加載畫面
+  if (!dashboardData || loadingStates.isLoading) {
+    return (
+      <ErrorBoundary>
+        <LoadingTransition 
+          isVisible={true}
+          message={loadingStates.loadingMessage || t('dashboard.loading.loadingData')}
+        />
+      </ErrorBoundary>
+    );
+  }
+
+  // 獲取顯示組件配置
+  const displayConfig = dynamicContent.getDisplayComponents(userStatus);
+
+  // 主頁面 - 銀行級儀表板
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full -translate-y-48 translate-x-48"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-green-400/10 to-blue-400/10 rounded-full translate-y-32 -translate-x-32"></div>
-        
-        <div className="relative z-10 px-6 py-12 lg:py-20">
-          <div className="max-w-6xl mx-auto text-center">
-            {/* Logo and Title */}
-            <div className="mb-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl shadow-lg mb-6">
-                <span className="text-3xl">💰</span>
-              </div>
-              <ResponsiveTitle level={1} className="mb-4 bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
-                {t('common.appName')}
-              </ResponsiveTitle>
-              <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                {t('home.subtitle') || 'Your personal budgeting companion for studying abroad'}
-              </p>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="mb-16">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-8">
-                {t('home.quickStart')}
-              </h2>
-              <ResponsiveGrid cols={{ mobile: 1, tablet: 2, desktop: 3 }} className="max-w-5xl mx-auto">
-                {quickActionCards.map((card, index) => (
-                  <Link
-                    key={index}
-                    to={card.link}
-                    className="group block transform transition-all duration-300 hover:scale-105 hover:-translate-y-2"
-                  >
-                    <ResponsiveCard className={`relative overflow-hidden border-2 ${card.borderColor} ${card.bgColor} group-hover:shadow-xl group-hover:shadow-blue-500/20`}>
-                      {/* Gradient Overlay */}
-                      <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
-                      
-                      <div className="relative z-10 text-center">
-                        <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                          {card.icon}
-                        </div>
-                        <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-700 transition-colors duration-300">
-                          {card.title}
-                        </h3>
-                        <p className="text-sm md:text-base text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
-                          {card.description}
-                        </p>
-                      </div>
-                      
-                      {/* Hover Effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                    </ResponsiveCard>
-                  </Link>
-                ))}
-              </ResponsiveGrid>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Features Section */}
-      <div className="px-6 py-16 bg-white/50 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
-              為什麼選擇 StudyBudget Pro？
-            </h2>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              專為留學生設計的智能記帳工具，讓您的財務管理更簡單、更安全
-            </p>
-          </div>
-
-          <ResponsiveGrid cols={{ mobile: 1, tablet: 2, desktop: 4 }} className="gap-6">
-            {featureCards.map((feature, index) => (
-              <ResponsiveCard
-                key={index}
-                className={`${feature.bgColor} ${feature.borderColor} border-2 hover:shadow-lg transition-all duration-300 hover:-translate-y-1`}
-              >
-                <div className="text-center">
-                  <div className="text-3xl mb-4">{feature.icon}</div>
-                  <h3 className={`text-lg font-bold ${feature.color} mb-2`}>
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    {feature.description}
-                  </p>
+    <ErrorBoundary>
+      <PageTransition isVisible={true}>
+        <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+          {/* 簡化的頂部標題欄 */}
+          <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/20 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">SB</span>
                 </div>
-              </ResponsiveCard>
-            ))}
-          </ResponsiveGrid>
-        </div>
-      </div>
-
-      {/* Welcome Message */}
-      <div className="px-6 py-16">
-        <div className="max-w-4xl mx-auto text-center">
-          <ResponsiveCard className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200">
-            <div className="py-8">
-              <div className="text-4xl mb-6">🎉</div>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
-                {t('home.welcome')}
-              </h2>
-              <p className="text-gray-600 text-lg mb-6 max-w-2xl mx-auto">
-                開始您的智能記帳之旅，讓每一筆支出都有意義，讓財務管理變得輕鬆愉快！
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  to="/accounts"
-                  className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
+                  <p className="text-sm text-gray-600">{t('dashboard.subtitle')}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                {/* 通知鈴鐺 */}
+                <button 
+                  onClick={() => quickNavigation.navigateToNotifications()}
+                  className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <span className="mr-2">💳</span>
-                  開始使用
-                </Link>
-                <Link
-                  to="/settings"
-                  className="inline-flex items-center justify-center px-8 py-3 bg-white text-gray-700 font-semibold rounded-lg border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-300 transform hover:scale-105"
-                >
-                  <span className="mr-2">⚙️</span>
-                  個人設定
-                </Link>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.5 19.5L9 15H4l5-5V4l-5 5H9l-5 5v5z" />
+                  </svg>
+                  {notificationsIntegration.unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {notificationsIntegration.unreadCount}
+                    </span>
+                  )}
+                </button>
+                
+                {/* 用戶狀態指示器 */}
+                <div className="flex items-center space-x-2 px-3 py-2 bg-gray-100 rounded-lg">
+                  <div className={`w-2 h-2 rounded-full ${
+                    userStatus === 'new' ? 'bg-green-500' : 
+                    userStatus === 'active' ? 'bg-blue-500' : 'bg-purple-500'
+                  }`} />
+                  <span className="text-sm font-medium text-gray-700">
+                    {t(`dashboard.userStatus.${userStatus}`)}
+                  </span>
+                </div>
               </div>
             </div>
-          </ResponsiveCard>
+          </div>
+            {/* 財務概覽 */}
+            {displayConfig.showFinancialOverview && (
+              <FinancialOverview
+                overview={dashboardData.financialOverview}
+                isLoading={dataLoading}
+              />
+            )}
+
+            {/* 主要內容網格 */}
+            <ResponsiveGrid cols={{ mobile: 1, tablet: 2, desktop: 3 }} className="gap-6">
+              {/* 左側：帳戶摘要 */}
+              {displayConfig.showAccountSummary && (
+                <div className="space-y-6">
+                  <AccountSummary 
+                    accounts={dashboardData.accountSummaries}
+                    isLoading={dataLoading}
+                    onAccountClick={(accountId) => {
+                      quickNavigation.navigateToAccount(accountId.toString());
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* 中間：最近交易 */}
+              {displayConfig.showRecentTransactions && (
+                <div className="space-y-6">
+                  <RecentTransactions 
+                    transactions={dashboardData.recentTransactions}
+                    isLoading={dataLoading}
+                    onTransactionClick={(transactionId) => {
+                      quickNavigation.navigateToTransaction(transactionId.toString());
+                    }}
+                    onAddTransaction={() => {
+                      quickNavigation.navigateToAddTransaction();
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* 右側：統計預覽和通知 */}
+              <div className="space-y-6">
+                {displayConfig.showStatisticsPreview && (
+                  <StatisticsPreview 
+                    statistics={dashboardData.statisticsPreview}
+                    isLoading={dataLoading}
+                    onViewDetails={() => {
+                      quickNavigation.navigateToStatistics();
+                    }}
+                  />
+                )}
+                
+                {displayConfig.showNotificationsSummary && (
+                  <NotificationsSummary 
+                    notifications={dashboardData.notificationSummaries}
+                    isLoading={dataLoading}
+                    onNotificationClick={(notificationId) => {
+                      quickNavigation.navigateToNotification(notificationId.toString());
+                    }}
+                    onMarkAllRead={() => {
+                      notificationsIntegration.handleMarkAllAsRead();
+                    }}
+                  />
+                )}
+              </div>
+            </ResponsiveGrid>
+
+            {/* 快速操作 */}
+            {displayConfig.showQuickActions && (
+              <QuickActions 
+                actions={dashboardData.quickActions}
+                onActionClick={(actionId) => {
+                  // 根據actionId進行不同的導航
+                  switch (actionId) {
+                    case 'add-transaction':
+                      quickNavigation.navigateToAddTransaction();
+                      break;
+                    case 'add-account':
+                      quickNavigation.navigateToAddAccount();
+                      break;
+                    case 'view-statistics':
+                      quickNavigation.navigateToStatistics();
+                      break;
+                    case 'view-settings':
+                      quickNavigation.navigateToSettings();
+                      break;
+                    case 'settings':
+                      quickNavigation.navigateToSettings();
+                      break;
+                    default:
+                      console.log('Unknown action:', actionId);
+                  }
+                }}
+              />
+            )}
         </div>
-      </div>
-    </div>
+      </PageTransition>
+    </ErrorBoundary>
   );
 };
 

@@ -1,8 +1,5 @@
 // StudyBudget Pro Service Worker
-import { precacheAndRoute } from 'workbox-precaching';
-
-// Workbox 預快取清單注入點
-precacheAndRoute(self.__WB_MANIFEST);
+// 使用傳統的 Service Worker 語法，不使用 ES6 模組
 
 // 版本控制
 const CACHE_NAME = 'studybudget-pro-v1.0.0';

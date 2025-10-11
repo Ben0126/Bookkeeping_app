@@ -9,6 +9,7 @@ const NotificationsPage = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'notifications' | 'settings'>('notifications');
   
+  
   // 使用 useLiveQuery 來即時更新通知
   const notifications = useLiveQuery(() => 
     NotificationService.getRecentNotifications(20)
@@ -310,6 +311,7 @@ const NotificationsPage = () => {
           )}
         </div>
       </div>
+      
     </div>
   );
 };

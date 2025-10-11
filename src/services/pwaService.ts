@@ -266,9 +266,25 @@ export class PWAService {
   // 工具方法：獲取應用版本
   static async getAppVersion(): Promise<string> {
     try {
-      const response = await fetch('/manifest.json');
-      const manifest = await response.json();
-      return manifest.version || '1.0.0';
+      // 嘗試從 Service Worker 獲取版本
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        return new Promise((resolve) => {
+          const messageChannel = new MessageChannel();
+          messageChannel.port1.onmessage = (event) => {
+            resolve(event.data.version || '1.0.0');
+          };
+          navigator.serviceWorker.controller?.postMessage(
+            { type: 'GET_VERSION' },
+            [messageChannel.port2]
+          );
+          
+          // 超時處理
+          setTimeout(() => resolve('1.0.0'), 1000);
+        });
+      }
+      
+      // 回退到預設版本
+      return '1.0.0';
     } catch (error) {
       console.error('❌ Failed to get app version:', error);
       return '1.0.0';

@@ -19,7 +19,7 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
   className = ''
 }) => {
   const location = useLocation();
-  const { isMobile, isTablet, isDesktop } = useResponsive();
+  const { isMobile, isTablet } = useResponsive();
 
   // 移動版底部導航
   if (isMobile) {
@@ -78,46 +78,42 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
   }
 
   // 桌面版頂部導航
-  if (isDesktop) {
-    return (
-      <nav className={`fixed top-0 left-0 right-0 bg-white border-b border-gray-200 shadow-sm z-50 ${className}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <Link to="/" className="flex items-center space-x-2">
-                <span className="text-2xl">💰</span>
-                <span className="text-xl font-bold text-gray-900">StudyBudget Pro</span>
-              </Link>
-            </div>
+  return (
+    <nav className={`fixed top-0 left-0 right-0 bg-white border-b border-gray-200 shadow-sm z-50 ${className}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center space-x-2">
+              <span className="text-2xl">💰</span>
+              <span className="text-xl font-bold text-gray-900">StudyBudget Pro</span>
+            </Link>
+          </div>
 
-            {/* 導航項目 */}
-            <div className="flex space-x-8">
-              {items.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`
-                    flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium
-                    transition-colors duration-200
-                    ${location.pathname === item.path
-                      ? 'text-blue-600 bg-blue-50'
-                      : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
-                    }
-                  `}
-                >
-                  <span className="text-lg">{item.icon}</span>
-                  <span>{item.label}</span>
-                </Link>
-              ))}
-            </div>
+          {/* 導航項目 */}
+          <div className="flex space-x-8">
+            {items.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`
+                  flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium
+                  transition-colors duration-200
+                  ${location.pathname === item.path
+                    ? 'text-blue-600 bg-blue-50'
+                    : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                  }
+                `}
+              >
+                <span className="text-lg">{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            ))}
           </div>
         </div>
-      </nav>
-    );
-  }
-
-  return null;
+      </div>
+    </nav>
+  );
 };
 
 // 響應式側邊欄組件

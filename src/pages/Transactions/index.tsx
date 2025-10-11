@@ -10,6 +10,7 @@ const TransactionsPage = () => {
   const transactions = useLiveQuery(getAllTransactions);
   const categories = useLiveQuery(getAllCategories);
 
+
   // 交易類型翻譯映射
   const getTransactionTypeTranslation = (type: string): string => {
     const typeMap: Record<string, string> = {
@@ -153,6 +154,7 @@ const TransactionsPage = () => {
           </div>
         </div>
       </div>
+      
     </div>
   );
 };

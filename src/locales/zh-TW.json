@@ -331,6 +331,196 @@
     "minLength": "至少需要 {{min}} 個字元",
     "maxLength": "最多 {{max}} 個字元"
   },
+  "dashboard": {
+    "title": "儀表板",
+    "subtitle": "財務概覽",
+    "welcome": "歡迎使用 StudyBudget Pro！",
+    "welcomeSubtitle": "您的個人留學記帳伴侶",
+    "financialOverview": "財務概覽",
+    "totalAssets": "總資產",
+    "monthlyIncome": "本月收入",
+    "monthlyExpense": "本月支出",
+    "netWorthChange": "淨值變化",
+    "accountSummaryTitle": "帳戶摘要",
+    "recentTransactionsTitle": "最近交易",
+    "statisticsPreviewTitle": "統計預覽",
+    "notificationsSummaryTitle": "通知摘要",
+    "quickActionsTitle": "快速操作",
+    "addTransaction": "新增交易",
+    "addAccount": "新增帳戶",
+    "viewStatistics": "查看統計",
+    "viewSettings": "查看設定",
+    "viewAll": "查看全部",
+    "noData": "尚無數據",
+    "noAccounts": "尚未新增任何帳戶",
+    "noTransactions": "尚未記錄任何交易",
+    "noNotifications": "尚無通知",
+    "getStarted": "開始使用",
+    "userStatus": {
+      "new": "新用戶",
+      "active": "活躍用戶",
+      "experienced": "經驗用戶"
+    },
+    "tips": {
+      "new": [
+        "點擊「新增帳戶」開始記錄您的財務狀況",
+        "每筆交易都要及時記錄，養成好習慣",
+        "定期查看統計分析，了解支出模式"
+      ],
+      "active": [
+        "設定預算目標，控制支出",
+        "使用分類功能，更好地管理財務",
+        "定期備份數據，確保數據安全"
+      ],
+      "experienced": [
+        "使用進階統計功能，深入分析財務狀況",
+        "設定自動分類規則，提高記帳效率",
+        "導出財務報告，與會計師或顧問分享"
+      ]
+    },
+    "accountSummary": {
+      "moreAccounts": "更多帳戶",
+      "account": "帳戶",
+      "accounts": "帳戶"
+    },
+    "recentTransactions": {
+      "today": "今天",
+      "yesterday": "昨天",
+      "daysAgo": "{{count}} 天前",
+      "viewAllTransactions": "查看所有交易"
+    },
+    "statisticsPreview": {
+      "incomeExpenseRatio": "收支比例",
+      "monthlyTrend": "月度趨勢",
+      "topCategories": "熱門分類",
+      "thisMonth": "本月",
+      "incomeExceedsExpenses": "收入超過支出",
+      "expensesExceedIncome": "支出超過收入",
+      "spendingIncreased": "支出增加",
+      "spendingDecreased": "支出減少",
+      "spendingStable": "支出穩定",
+      "viewDetailedBreakdown": "查看詳細分析"
+    },
+    "notificationsSummary": {
+      "markAllRead": "標記全部已讀",
+      "priority": "優先級",
+      "viewAllNotifications": "查看所有 {{count}} 筆通知"
+    },
+    "quickActions": {
+      "add-transaction": "新增交易",
+      "add-account": "新增帳戶", 
+      "view-statistics": "查看統計",
+      "view-settings": "設定",
+      "settings": "設定"
+    },
+    "welcomeSection": {
+      "whyChoose": "為什麼選擇 StudyBudget Pro？",
+      "description": "專為留學生設計的智能記帳工具，讓您的財務管理更簡單、更安全",
+      "smartCategorization": "智能分類",
+      "smartCategorizationDesc": "自動識別交易類型，節省記錄時間",
+      "multiCurrency": "多幣種支持",
+      "multiCurrencyDesc": "支持全球主要貨幣，適合留學生使用",
+      "offlineSync": "離線同步",
+      "offlineSyncDesc": "無網絡時也能記錄，自動同步數據",
+      "dataSecurity": "數據安全",
+      "dataSecurityDesc": "本地存儲，隱私保護，數據安全可靠",
+      "startJourney": "開始您的智能記帳之旅，讓每一筆支出都有意義，讓財務管理變得輕鬆愉快！",
+      "getStarted": "開始使用",
+      "personalSettings": "個人設定"
+    },
+    "integration": {
+      "statistics": {
+        "title": "統計整合",
+        "period": "時間範圍",
+        "week": "週",
+        "month": "月",
+        "quarter": "季",
+        "year": "年",
+        "custom": "自訂",
+        "incomeExpense": "收支統計",
+        "categoryStats": "分類統計",
+        "trendData": "趨勢數據",
+        "financialMetrics": "財務指標",
+        "accountStats": "帳戶統計",
+        "monthlyData": "月度數據"
+      },
+      "notifications": {
+        "title": "通知整合",
+        "markAllRead": "標記全部已讀",
+        "clearRead": "清除已讀",
+        "deleteNotification": "刪除通知",
+        "notificationSettings": "通知設定",
+        "priority": "優先級",
+        "high": "高",
+        "medium": "中",
+        "low": "低",
+        "type": "類型",
+        "dailyReminder": "每日提醒",
+        "budgetAlert": "預算警告",
+        "balanceAlert": "餘額警告",
+        "weeklyReport": "週報",
+        "monthlyReport": "月報"
+      },
+      "navigationDetails": {
+        "title": "快速導航",
+        "navigating": "導航中...",
+        "back": "返回",
+        "forward": "前進",
+        "refresh": "重新整理",
+        "home": "首頁",
+        "dashboard": "儀表板",
+        "accounts": "帳戶",
+        "transactions": "交易",
+        "statistics": "統計",
+        "notifications": "通知",
+        "settings": "設定",
+        "backup": "備份",
+        "studentFeatures": "學生功能"
+      }
+    },
+    "loading": {
+      "initializing": "正在初始化應用...",
+      "loadingData": "正在載入數據...",
+      "refreshing": "正在刷新數據..."
+    },
+    "financialOverviewDetails": {
+      "subtitle": "您的財務狀況一目了然",
+      "currency": "貨幣",
+      "total": "總計",
+      "income": "收入",
+      "expense": "支出",
+      "profit": "盈利",
+      "loss": "虧損",
+      "emptyState": "開始添加帳戶來查看財務概覽"
+    },
+    "accountSummaryDetails": {
+      "subtitle": "管理您的所有帳戶",
+      "currency": "貨幣",
+      "accounts": "個帳戶",
+      "emptyState": "添加您的第一個帳戶開始管理財務",
+      "viewAll": "查看所有帳戶"
+    },
+    "recentTransactionsDetails": {
+      "subtitle": "最近的交易記錄",
+      "emptyState": "開始記錄交易來追蹤您的支出",
+      "viewAll": "查看所有交易"
+    },
+    "statisticsPreviewDetails": {
+      "subtitle": "財務統計與分析",
+      "emptyState": "記錄更多交易來查看統計分析",
+      "viewAll": "查看詳細統計"
+    },
+    "notificationsSummaryDetails": {
+      "subtitle": "重要提醒與通知",
+      "emptyState": "暫無通知",
+      "viewAll": "查看所有通知"
+    },
+    "quickActionsDetails": {
+      "subtitle": "快速操作",
+      "emptyState": "選擇一個操作開始使用",
+      "tip": "點擊任何操作快速開始"
+    }
+  },
   "messages": {
     "success": {
       "accountCreated": "帳戶建立成功",

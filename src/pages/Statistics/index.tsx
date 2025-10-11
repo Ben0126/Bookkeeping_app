@@ -196,6 +196,7 @@ const StatisticsPage = () => {
   // 響應式設計相關變數 (目前未使用，但保留以備將來擴展)
   // const { deviceType, isMobile, isTablet, isDesktop } = useResponsive();
   
+  
   const transactions = useLiveQuery(getAllTransactions) || [];
   const accounts = useLiveQuery(getAllAccounts) || [];
   const categories = useLiveQuery(getAllCategories) || [];
@@ -502,6 +503,7 @@ const StatisticsPage = () => {
           </div>
         </div>
       </div>
+      
     </div>
   );
 };
