@@ -6,6 +6,9 @@ const CACHE_NAME = 'studybudget-pro-v1.0.0';
 const STATIC_CACHE_NAME = 'studybudget-static-v1.0.0';
 const DYNAMIC_CACHE_NAME = 'studybudget-dynamic-v1.0.0';
 
+// Workbox 注入點 - 不要修改這行
+self.__WB_MANIFEST;
+
 // 需要預先快取的靜態資源
 const STATIC_ASSETS = [
   '/',
@@ -36,7 +39,9 @@ self.addEventListener('install', (event) => {
     caches.open(STATIC_CACHE_NAME)
       .then((cache) => {
         console.log('[SW] Precaching static assets');
-        return cache.addAll(STATIC_ASSETS);
+        // 使用 Workbox 注入的清單，如果沒有則使用預設清單
+        const precacheList = self.__WB_MANIFEST || STATIC_ASSETS;
+        return cache.addAll(precacheList);
       })
       .then(() => {
         console.log('[SW] Installation complete');

@@ -49,8 +49,7 @@ const AccountTypeSelector: React.FC<AccountTypeSelectorProps> = ({
 
   // 獲取帳戶類型翻譯
   const getAccountTypeTranslation = (accountType: AccountType): string => {
-    const accountTypeKey = accountType.toLowerCase().replace(/\s+/g, '') as keyof typeof import('../locales/zh-TW.json')['accountTypes'];
-    return t(`accountTypes.${accountTypeKey}`) || AccountTypeService.getAccountTypeName(accountType);
+    return AccountTypeService.getAccountTypeName(accountType, t);
   };
 
   // 按國家分組帳戶類型

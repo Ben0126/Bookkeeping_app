@@ -6,7 +6,7 @@ import type { NotificationRecord } from '../../services/notificationService';
 import { notificationDb } from '../../services/notificationService';
 
 const NotificationsPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<'notifications' | 'settings'>('notifications');
   
   
@@ -84,6 +84,26 @@ const NotificationsPage = () => {
       });
     } catch (error) {
       console.error('Error updating notification setting:', error);
+    }
+  };
+
+  // 格式化時間顯示
+  const formatTimeDisplay = (timeString: string): string => {
+    if (!timeString) return '';
+    
+    const [hours, minutes] = timeString.split(':');
+    const hour24 = parseInt(hours, 10);
+    
+    if (i18n.language === 'zh-TW') {
+      // 中文格式：上午/下午 HH:MM
+      const period = hour24 < 12 ? '上午' : '下午';
+      const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+      return `${period} ${hour12.toString().padStart(2, '0')}:${minutes}`;
+    } else {
+      // 英文格式：HH:MM AM/PM
+      const period = hour24 < 12 ? 'AM' : 'PM';
+      const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+      return `${hour12.toString().padStart(2, '0')}:${minutes} ${period}`;
     }
   };
 
@@ -278,12 +298,17 @@ const NotificationsPage = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               {t('notifications.notificationTime')}
                             </label>
-                            <input
-                              type="time"
-                              value={setting.time}
-                              onChange={(e) => handleTimeUpdate(setting.id!, e.target.value)}
-                              className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="time"
+                                value={setting.time}
+                                onChange={(e) => handleTimeUpdate(setting.id!, e.target.value)}
+                                className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                              <span className="text-sm text-gray-500">
+                                {formatTimeDisplay(setting.time)}
+                              </span>
+                            </div>
                           </div>
                         )}
 

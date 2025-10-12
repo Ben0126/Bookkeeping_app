@@ -1,14 +1,12 @@
 import type { StudentCategory, StudentCategoryInfo, StudentCategoryType } from '../types';
 
-// 留學生分類資訊資料庫
-export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo> = {
+// 留學生分類資訊資料庫（基礎資料，不包含用戶可見文字）
+export const STUDENT_CATEGORY_INFO: Record<StudentCategory, Omit<StudentCategoryInfo, 'name' | 'description'>> = {
   // 學費相關
   'tuition': {
     code: 'tuition',
-    name: 'Tuition',
     type: 'tuition',
     country: 'Global',
-    description: 'General tuition fees',
     icon: '🎓',
     color: '#3B82F6',
     isEssential: true,
@@ -16,10 +14,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'tuition_fees': {
     code: 'tuition_fees',
-    name: 'Tuition Fees',
     type: 'tuition',
     country: 'Global',
-    description: 'Semester tuition fees',
     icon: '💰',
     color: '#1D4ED8',
     isEssential: true,
@@ -27,10 +23,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'tuition_deposit': {
     code: 'tuition_deposit',
-    name: 'Tuition Deposit',
     type: 'tuition',
     country: 'Global',
-    description: 'Tuition deposit payment',
     icon: '💳',
     color: '#1E40AF',
     isEssential: true,
@@ -38,10 +32,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'tuition_insurance': {
     code: 'tuition_insurance',
-    name: 'Tuition Insurance',
     type: 'tuition',
     country: 'Global',
-    description: 'Student health insurance',
     icon: '🛡️',
     color: '#1E3A8A',
     isEssential: true,
@@ -51,10 +43,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   // 生活費用
   'living': {
     code: 'living',
-    name: 'Living Expenses',
     type: 'living',
     country: 'Global',
-    description: 'General living expenses',
     icon: '🏠',
     color: '#10B981',
     isEssential: true,
@@ -62,10 +52,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'rent': {
     code: 'rent',
-    name: 'Rent',
     type: 'living',
     country: 'Global',
-    description: 'Monthly rent payment',
     icon: '🏘️',
     color: '#059669',
     isEssential: true,
@@ -73,10 +61,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'utilities': {
     code: 'utilities',
-    name: 'Utilities',
     type: 'living',
     country: 'Global',
-    description: 'Electricity, water, internet bills',
     icon: '⚡',
     color: '#047857',
     isEssential: true,
@@ -84,10 +70,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'groceries': {
     code: 'groceries',
-    name: 'Groceries',
     type: 'living',
     country: 'Global',
-    description: 'Food and grocery shopping',
     icon: '🛒',
     color: '#065F46',
     isEssential: true,
@@ -95,10 +79,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'dining': {
     code: 'dining',
-    name: 'Dining Out',
     type: 'living',
     country: 'Global',
-    description: 'Restaurant and takeout meals',
     icon: '🍽️',
     color: '#064E3B',
     isEssential: false,
@@ -108,10 +90,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   // 學習用品
   'books': {
     code: 'books',
-    name: 'Books',
     type: 'books',
     country: 'Global',
-    description: 'Textbooks and course materials',
     icon: '📚',
     color: '#8B5CF6',
     isEssential: true,
@@ -119,10 +99,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'supplies': {
     code: 'supplies',
-    name: 'School Supplies',
     type: 'books',
     country: 'Global',
-    description: 'Notebooks, pens, stationery',
     icon: '✏️',
     color: '#7C3AED',
     isEssential: true,
@@ -130,10 +108,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'software': {
     code: 'software',
-    name: 'Software',
     type: 'books',
     country: 'Global',
-    description: 'Educational software and licenses',
     icon: '💻',
     color: '#6D28D9',
     isEssential: false,
@@ -141,10 +117,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'equipment': {
     code: 'equipment',
-    name: 'Equipment',
     type: 'books',
     country: 'Global',
-    description: 'Laptop, calculator, lab equipment',
     icon: '🔬',
     color: '#5B21B6',
     isEssential: true,
@@ -154,10 +128,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   // 交通費用
   'transport': {
     code: 'transport',
-    name: 'Transportation',
     type: 'transport',
     country: 'Global',
-    description: 'General transportation costs',
     icon: '🚌',
     color: '#F59E0B',
     isEssential: true,
@@ -165,10 +137,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'flight': {
     code: 'flight',
-    name: 'Flight Tickets',
     type: 'transport',
     country: 'Global',
-    description: 'International and domestic flights',
     icon: '✈️',
     color: '#D97706',
     isEssential: true,
@@ -176,10 +146,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'local_transport': {
     code: 'local_transport',
-    name: 'Local Transport',
     type: 'transport',
     country: 'Global',
-    description: 'Bus, subway, taxi fares',
     icon: '🚇',
     color: '#B45309',
     isEssential: true,
@@ -187,10 +155,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'car_expenses': {
     code: 'car_expenses',
-    name: 'Car Expenses',
     type: 'transport',
     country: 'Global',
-    description: 'Gas, maintenance, insurance',
     icon: '🚗',
     color: '#92400E',
     isEssential: false,
@@ -200,10 +166,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   // 健康保險
   'health': {
     code: 'health',
-    name: 'Health',
     type: 'health',
     country: 'Global',
-    description: 'General health expenses',
     icon: '🏥',
     color: '#EF4444',
     isEssential: true,
@@ -211,10 +175,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'health_insurance': {
     code: 'health_insurance',
-    name: 'Health Insurance',
     type: 'health',
     country: 'Global',
-    description: 'Student health insurance premium',
     icon: '🏥',
     color: '#DC2626',
     isEssential: true,
@@ -222,10 +184,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'medical': {
     code: 'medical',
-    name: 'Medical',
     type: 'health',
     country: 'Global',
-    description: 'Doctor visits, medications',
     icon: '💊',
     color: '#B91C1C',
     isEssential: true,
@@ -233,10 +193,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'dental': {
     code: 'dental',
-    name: 'Dental',
     type: 'health',
     country: 'Global',
-    description: 'Dental checkups and treatments',
     icon: '🦷',
     color: '#991B1B',
     isEssential: false,
@@ -246,10 +204,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   // 簽證費用
   'visa': {
     code: 'visa',
-    name: 'Visa',
     type: 'visa',
     country: 'Global',
-    description: 'General visa expenses',
     icon: '📋',
     color: '#6B7280',
     isEssential: true,
@@ -257,10 +213,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'visa_fees': {
     code: 'visa_fees',
-    name: 'Visa Fees',
     type: 'visa',
     country: 'Global',
-    description: 'Student visa application fees',
     icon: '📄',
     color: '#4B5563',
     isEssential: true,
@@ -268,10 +222,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'visa_renewal': {
     code: 'visa_renewal',
-    name: 'Visa Renewal',
     type: 'visa',
     country: 'Global',
-    description: 'Visa renewal and extension fees',
     icon: '🔄',
     color: '#374151',
     isEssential: true,
@@ -279,10 +231,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'visa_consultation': {
     code: 'visa_consultation',
-    name: 'Visa Consultation',
     type: 'visa',
     country: 'Global',
-    description: 'Immigration lawyer consultation',
     icon: '⚖️',
     color: '#1F2937',
     isEssential: false,
@@ -292,10 +242,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   // 其他
   'other': {
     code: 'other',
-    name: 'Other',
     type: 'other',
     country: 'Global',
-    description: 'Other miscellaneous expenses',
     icon: '📦',
     color: '#9CA3AF',
     isEssential: false,
@@ -303,10 +251,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'entertainment': {
     code: 'entertainment',
-    name: 'Entertainment',
     type: 'other',
     country: 'Global',
-    description: 'Movies, games, social activities',
     icon: '🎬',
     color: '#A78BFA',
     isEssential: false,
@@ -314,10 +260,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'shopping': {
     code: 'shopping',
-    name: 'Shopping',
     type: 'other',
     country: 'Global',
-    description: 'Clothing, personal items',
     icon: '🛍️',
     color: '#C084FC',
     isEssential: false,
@@ -325,10 +269,8 @@ export const STUDENT_CATEGORY_INFO: Record<StudentCategory, StudentCategoryInfo>
   },
   'emergency': {
     code: 'emergency',
-    name: 'Emergency',
     type: 'other',
     country: 'Global',
-    description: 'Emergency and unexpected expenses',
     icon: '🚨',
     color: '#F87171',
     isEssential: true,
@@ -340,8 +282,28 @@ export class StudentCategoryService {
   /**
    * 獲取留學生分類資訊
    */
-  static getStudentCategoryInfo(category: StudentCategory): StudentCategoryInfo {
+  static getStudentCategoryInfo(category: StudentCategory): Omit<StudentCategoryInfo, 'name' | 'description'> {
     return STUDENT_CATEGORY_INFO[category];
+  }
+
+  /**
+   * 獲取分類名稱（需要國際化）
+   */
+  static getCategoryName(category: StudentCategory, t?: (key: string) => string): string {
+    if (t) {
+      return t(`studentCategories.${category}`) || category;
+    }
+    return category;
+  }
+
+  /**
+   * 獲取分類描述（需要國際化）
+   */
+  static getCategoryDescription(category: StudentCategory, t?: (key: string) => string): string {
+    if (t) {
+      return t(`studentCategories.${category}Desc`) || '';
+    }
+    return '';
   }
 
   /**
@@ -453,13 +415,6 @@ export class StudentCategoryService {
   }
 
   /**
-   * 獲取分類名稱
-   */
-  static getCategoryName(category: StudentCategory): string {
-    return this.getStudentCategoryInfo(category).name;
-  }
-
-  /**
    * 獲取分類圖示
    */
   static getCategoryIcon(category: StudentCategory): string {
@@ -471,13 +426,6 @@ export class StudentCategoryService {
    */
   static getCategoryColor(category: StudentCategory): string {
     return this.getStudentCategoryInfo(category).color;
-  }
-
-  /**
-   * 獲取分類描述
-   */
-  static getCategoryDescription(category: StudentCategory): string {
-    return this.getStudentCategoryInfo(category).description;
   }
 
   /**

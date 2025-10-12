@@ -1,253 +1,166 @@
 import type { AccountType, AccountTypeInfo } from '../types';
 
-// 帳戶類型資訊資料庫
-export const ACCOUNT_TYPE_INFO: Record<AccountType, AccountTypeInfo> = {
+// 帳戶類型資訊資料庫（基礎資料，不包含用戶可見文字）
+export const ACCOUNT_TYPE_INFO: Record<AccountType, Omit<AccountTypeInfo, 'name' | 'description' | 'features'>> = {
   // 美國帳戶類型
   'US Checking Account': {
     code: 'US Checking Account',
-    name: 'US Checking Account',
     country: 'United States',
-    category: 'bank',
-    description: 'Standard checking account for daily transactions',
-    features: ['Debit card', 'Online banking', 'Check writing', 'ATM access']
+    category: 'bank'
   },
   'US Savings Account': {
     code: 'US Savings Account',
-    name: 'US Savings Account',
     country: 'United States',
-    category: 'bank',
-    description: 'Interest-bearing savings account',
-    features: ['Interest earning', 'Limited transactions', 'Online access', 'FDIC insured']
+    category: 'bank'
   },
   'US Money Market Account': {
     code: 'US Money Market Account',
-    name: 'US Money Market Account',
     country: 'United States',
-    category: 'bank',
-    description: 'High-yield savings with check writing privileges',
-    features: ['Higher interest', 'Check writing', 'Debit card', 'FDIC insured']
+    category: 'bank'
   },
   'US Certificate of Deposit': {
     code: 'US Certificate of Deposit',
-    name: 'US Certificate of Deposit',
     country: 'United States',
-    category: 'bank',
-    description: 'Fixed-term deposit with guaranteed interest',
-    features: ['Fixed interest rate', 'Term commitment', 'FDIC insured', 'No withdrawals']
+    category: 'bank'
   },
 
   // 英國帳戶類型
   'UK Current Account': {
     code: 'UK Current Account',
-    name: 'UK Current Account',
     country: 'United Kingdom',
-    category: 'bank',
-    description: 'Standard current account for daily banking',
-    features: ['Debit card', 'Online banking', 'Direct debits', 'Overdraft facility']
+    category: 'bank'
   },
   'UK Savings Account': {
     code: 'UK Savings Account',
-    name: 'UK Savings Account',
     country: 'United Kingdom',
-    category: 'bank',
-    description: 'Interest-bearing savings account',
-    features: ['Interest earning', 'Limited withdrawals', 'Online access', 'FSCS protected']
+    category: 'bank'
   },
   'UK Individual Savings Account': {
     code: 'UK Individual Savings Account',
-    name: 'UK Individual Savings Account',
     country: 'United Kingdom',
-    category: 'bank',
-    description: 'Tax-free savings account with annual allowance',
-    features: ['Tax-free interest', 'Annual allowance', 'Flexible access', 'FSCS protected']
+    category: 'bank'
   },
   'UK Premium Account': {
     code: 'UK Premium Account',
-    name: 'UK Premium Account',
     country: 'United Kingdom',
-    category: 'bank',
-    description: 'Premium current account with additional benefits',
-    features: ['Higher interest', 'Travel insurance', 'Concierge service', 'No fees']
+    category: 'bank'
   },
 
   // 澳洲帳戶類型
   'AU Transaction Account': {
     code: 'AU Transaction Account',
-    name: 'AU Transaction Account',
     country: 'Australia',
-    category: 'bank',
-    description: 'Everyday transaction account',
-    features: ['Debit card', 'Online banking', 'ATM access', 'Direct debits']
+    category: 'bank'
   },
   'AU Savings Account': {
     code: 'AU Savings Account',
-    name: 'AU Savings Account',
     country: 'Australia',
-    category: 'bank',
-    description: 'High-interest savings account',
-    features: ['High interest', 'Online access', 'Limited transactions', 'Government guarantee']
+    category: 'bank'
   },
   'AU Term Deposit': {
     code: 'AU Term Deposit',
-    name: 'AU Term Deposit',
     country: 'Australia',
-    category: 'bank',
-    description: 'Fixed-term deposit with guaranteed returns',
-    features: ['Fixed interest', 'Term commitment', 'Government guarantee', 'No early access']
+    category: 'bank'
   },
   'AU Offset Account': {
     code: 'AU Offset Account',
-    name: 'AU Offset Account',
     country: 'Australia',
-    category: 'bank',
-    description: 'Account linked to home loan to reduce interest',
-    features: ['Offset home loan', 'Flexible access', 'Interest savings', 'Tax benefits']
+    category: 'bank'
   },
 
   // 台灣帳戶類型
   'TW Checking Account': {
     code: 'TW Checking Account',
-    name: 'TW Checking Account',
     country: 'Taiwan',
-    category: 'bank',
-    description: '台幣活期存款帳戶',
-    features: ['提款卡', '網路銀行', '支票', 'ATM提款']
+    category: 'bank'
   },
   'TW Savings Account': {
     code: 'TW Savings Account',
-    name: 'TW Savings Account',
     country: 'Taiwan',
-    category: 'bank',
-    description: '台幣定期存款帳戶',
-    features: ['固定利率', '定期存款', '網路銀行', '存款保險']
+    category: 'bank'
   },
   'TW Foreign Currency Account': {
     code: 'TW Foreign Currency Account',
-    name: 'TW Foreign Currency Account',
     country: 'Taiwan',
-    category: 'bank',
-    description: '外幣存款帳戶',
-    features: ['多幣別', '匯率優惠', '網路銀行', '外幣提款']
+    category: 'bank'
   },
 
   // 歐洲帳戶類型
   'EU Current Account': {
     code: 'EU Current Account',
-    name: 'EU Current Account',
     country: 'European Union',
-    category: 'bank',
-    description: 'Standard current account for EU residents',
-    features: ['Debit card', 'Online banking', 'SEPA transfers', 'Overdraft']
+    category: 'bank'
   },
   'EU Savings Account': {
     code: 'EU Savings Account',
-    name: 'EU Savings Account',
     country: 'European Union',
-    category: 'bank',
-    description: 'Interest-bearing savings account',
-    features: ['Interest earning', 'Online access', 'Limited transactions', 'Deposit guarantee']
+    category: 'bank'
   },
   'EU Investment Account': {
     code: 'EU Investment Account',
-    name: 'EU Investment Account',
     country: 'European Union',
-    category: 'investment',
-    description: 'Investment account for securities trading',
-    features: ['Stock trading', 'Bond trading', 'Funds', 'Online platform']
+    category: 'investment'
   },
 
   // 日本帳戶類型
   'JP Ordinary Account': {
     code: 'JP Ordinary Account',
-    name: 'JP Ordinary Account',
     country: 'Japan',
-    category: 'bank',
-    description: '普通預金口座',
-    features: ['キャッシュカード', 'ネットバンキング', '振込', 'ATM利用']
+    category: 'bank'
   },
   'JP Savings Account': {
     code: 'JP Savings Account',
-    name: 'JP Savings Account',
     country: 'Japan',
-    category: 'bank',
-    description: '定期預金口座',
-    features: ['固定金利', '定期預金', 'ネットバンキング', '預金保険']
+    category: 'bank'
   },
   'JP Foreign Currency Account': {
     code: 'JP Foreign Currency Account',
-    name: 'JP Foreign Currency Account',
     country: 'Japan',
-    category: 'bank',
-    description: '外貨預金口座',
-    features: ['多通貨', '為替レート', 'ネットバンキング', '外貨両替']
+    category: 'bank'
   },
 
   // 加拿大帳戶類型
   'CA Chequing Account': {
     code: 'CA Chequing Account',
-    name: 'CA Chequing Account',
     country: 'Canada',
-    category: 'bank',
-    description: 'Everyday chequing account',
-    features: ['Debit card', 'Online banking', 'Cheque writing', 'ATM access']
+    category: 'bank'
   },
   'CA Savings Account': {
     code: 'CA Savings Account',
-    name: 'CA Savings Account',
     country: 'Canada',
-    category: 'bank',
-    description: 'Interest-bearing savings account',
-    features: ['Interest earning', 'Online access', 'Limited transactions', 'CDIC insured']
+    category: 'bank'
   },
   'CA Tax-Free Savings Account': {
     code: 'CA Tax-Free Savings Account',
-    name: 'CA Tax-Free Savings Account',
     country: 'Canada',
-    category: 'bank',
-    description: 'Tax-free savings account with annual contribution room',
-    features: ['Tax-free growth', 'Annual contribution', 'Flexible access', 'CDIC insured']
+    category: 'bank'
   },
 
   // 通用帳戶類型
   'Cash Wallet': {
     code: 'Cash Wallet',
-    name: 'Cash Wallet',
     country: 'Global',
-    category: 'cash',
-    description: 'Physical cash wallet',
-    features: ['Immediate access', 'No fees', 'Privacy', 'No interest']
+    category: 'cash'
   },
   'Credit Card': {
     code: 'Credit Card',
-    name: 'Credit Card',
     country: 'Global',
-    category: 'credit',
-    description: 'Credit card account',
-    features: ['Credit limit', 'Rewards', 'Online payments', 'Monthly billing']
+    category: 'credit'
   },
   'Investment Account': {
     code: 'Investment Account',
-    name: 'Investment Account',
     country: 'Global',
-    category: 'investment',
-    description: 'Investment and trading account',
-    features: ['Stock trading', 'Bond trading', 'Funds', 'Portfolio management']
+    category: 'investment'
   },
   'Cryptocurrency Wallet': {
     code: 'Cryptocurrency Wallet',
-    name: 'Cryptocurrency Wallet',
     country: 'Global',
-    category: 'crypto',
-    description: 'Digital cryptocurrency wallet',
-    features: ['Crypto storage', 'Trading', 'DeFi access', 'Blockchain transactions']
+    category: 'crypto'
   },
   'Other': {
     code: 'Other',
-    name: 'Other',
     country: 'Global',
-    category: 'other',
-    description: 'Other account types',
-    features: ['Custom features', 'Flexible usage', 'Various benefits']
+    category: 'other'
   }
 };
 
@@ -255,8 +168,45 @@ export class AccountTypeService {
   /**
    * 獲取帳戶類型資訊
    */
-  static getAccountTypeInfo(accountType: AccountType): AccountTypeInfo {
+  static getAccountTypeInfo(accountType: AccountType): Omit<AccountTypeInfo, 'name' | 'description' | 'features'> {
     return ACCOUNT_TYPE_INFO[accountType];
+  }
+
+  /**
+   * 獲取帳戶類型名稱（需要國際化）
+   */
+  static getAccountTypeName(accountType: AccountType, t?: (key: string) => string): string {
+    if (t) {
+      const accountTypeKey = accountType.toLowerCase().replace(/\s+/g, '');
+      return t(`accountTypes.${accountTypeKey}`) || accountType;
+    }
+    return accountType;
+  }
+
+  /**
+   * 獲取帳戶類型描述（需要國際化）
+   */
+  static getAccountTypeDescription(accountType: AccountType, t?: (key: string) => string): string {
+    if (t) {
+      const accountTypeKey = accountType.toLowerCase().replace(/\s+/g, '');
+      return t(`accountTypes.${accountTypeKey}Desc`) || '';
+    }
+    return '';
+  }
+
+  /**
+   * 獲取帳戶類型功能（需要國際化）
+   */
+  static getAccountTypeFeatures(accountType: AccountType, t?: (key: string) => string): string[] {
+    if (t) {
+      const accountTypeKey = accountType.toLowerCase().replace(/\s+/g, '');
+      const featuresKey = `accountTypes.${accountTypeKey}Features`;
+      const features = t(featuresKey);
+      if (features && features !== featuresKey) {
+        return features.split(',').map(f => f.trim());
+      }
+    }
+    return [];
   }
 
   /**
@@ -345,13 +295,6 @@ export class AccountTypeService {
   }
 
   /**
-   * 獲取帳戶類型名稱
-   */
-  static getAccountTypeName(accountType: AccountType): string {
-    return this.getAccountTypeInfo(accountType).name;
-  }
-
-  /**
    * 獲取帳戶類型國家
    */
   static getAccountTypeCountry(accountType: AccountType): string {
@@ -363,19 +306,5 @@ export class AccountTypeService {
    */
   static getAccountTypeCategory(accountType: AccountType): AccountTypeInfo['category'] {
     return this.getAccountTypeInfo(accountType).category;
-  }
-
-  /**
-   * 獲取帳戶類型描述
-   */
-  static getAccountTypeDescription(accountType: AccountType): string {
-    return this.getAccountTypeInfo(accountType).description;
-  }
-
-  /**
-   * 獲取帳戶類型功能
-   */
-  static getAccountTypeFeatures(accountType: AccountType): string[] {
-    return this.getAccountTypeInfo(accountType).features;
   }
 }

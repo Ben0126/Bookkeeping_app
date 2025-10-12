@@ -45,8 +45,7 @@ const StudentCategorySelector: React.FC<StudentCategorySelectorProps> = ({
 
   // 獲取分類翻譯
   const getCategoryTranslation = (category: StudentCategory): string => {
-    const categoryKey = category.toLowerCase() as keyof typeof import('../locales/zh-TW.json')['studentCategories'];
-    return t(`studentCategories.${categoryKey}`) || StudentCategoryService.getCategoryName(category);
+    return StudentCategoryService.getCategoryName(category, t);
   };
 
   // 按類型分組分類

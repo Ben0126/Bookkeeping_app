@@ -123,22 +123,22 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
     };
     
     if (!validateForm(formData)) {
-      showError('Please fix the errors below before submitting');
+      showError(t('messages.error.fillRequiredFields'));
       return;
     }
     
     if (!accountId || !selectedAccount || !categoryId) {
-      showError('Please fill in all required fields');
+      showError(t('messages.error.fillRequiredFields'));
       return;
     }
     
     if (needsExchangeRate && (!exchangeRate || exchangeRate <= 0)) {
-      showError('Please enter a valid exchange rate');
+      showError(t('transactions.enterValidExchangeRate'));
       return;
     }
     
     try {
-      showLoading('Adding transaction...', 0);
+      showLoading(t('transactions.addingTransaction'), 0);
       
       const newTransaction: Omit<Transaction, 'id'> = {
         type,
@@ -175,12 +175,12 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
       setShowSuggestion(false);
 
       hideLoading();
-      showSuccess('Transaction added successfully!');
+      showSuccess(t('messages.success.transactionCreated'));
       onSuccess();
     } catch (error) {
       console.error('Failed to add transaction:', error);
       hideLoading();
-      showError('Failed to add transaction. Please try again.');
+      showError(t('messages.error.saveFailed'));
     }
   };
 
@@ -229,7 +229,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
           </div>
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{t('transactions.addTransaction')}</h2>
-            <p className="text-gray-600 text-sm">記錄您的收入與支出</p>
+            <p className="text-gray-600 text-sm">{t('transactions.trackIncomeExpense')}</p>
           </div>
         </div>
 
@@ -320,13 +320,13 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
               <div className="flex items-center mb-3">
                 <span className="text-yellow-600 mr-2">💱</span>
                 <label className="text-sm font-semibold text-gray-700">
-                  Exchange Rate (1 {transactionCurrency} = ? {selectedAccount.currency})
+                  {t('transactions.exchangeRateLabel')} (1 {transactionCurrency} = ? {selectedAccount.currency})
                 </label>
               </div>
               <Input
                 type="number"
                 step="0.0001"
-                placeholder="Enter exchange rate"
+                placeholder={t('transactions.enterValidExchangeRate')}
                 value={exchangeRate || ''}
                 onChange={(e) => setExchangeRate(Number(e.target.value) || undefined)}
                 required
@@ -335,7 +335,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
               {exchangeRate && (
                 <div className="mt-3 p-3 bg-white rounded-lg border border-yellow-200">
                   <p className="text-sm text-gray-700">
-                    <span className="font-semibold">Converted amount:</span> {convertedAmount.toFixed(2)} {selectedAccount.currency}
+                    <span className="font-semibold">{t('transactions.convertedAmount')}:</span> {convertedAmount.toFixed(2)} {selectedAccount.currency}
                   </p>
                 </div>
               )}
@@ -346,7 +346,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
           <div className="space-y-3">
             <label className="block text-sm font-semibold text-gray-700 flex items-center">
               <span className="mr-2">🏷️</span>
-              Category
+              {t('transactions.category')}
             </label>
             
             {/* Auto-suggestion alert */}
@@ -361,10 +361,10 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-sm font-semibold text-blue-800">🤖 Smart Category Suggestion</h4>
+                    <h4 className="text-sm font-semibold text-blue-800">🤖 {t('transactions.autoSuggestion')}</h4>
                     <p className="text-sm text-blue-700 mt-1">
                       {categories?.find(cat => cat.id === autoSuggestion.categoryId)?.name}
-                      <span className="text-blue-600 font-medium"> ({autoSuggestion.confidence}% confidence)</span>
+                      <span className="text-blue-600 font-medium"> ({t('transactions.confidence')}: {autoSuggestion.confidence}%)</span>
                     </p>
                     <p className="text-xs text-blue-600 mt-1">{autoSuggestion.reason}</p>
                     <div className="flex space-x-2 mt-3">
@@ -373,14 +373,14 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
                         onClick={acceptSuggestion}
                         className="text-xs bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                       >
-                        ✓ Accept
+                        ✓ {t('transactions.acceptSuggestion')}
                       </button>
                       <button
                         type="button"
                         onClick={rejectSuggestion}
                         className="text-xs bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors font-medium"
                       >
-                        ✗ Dismiss
+                        ✗ {t('transactions.rejectSuggestion')}
                       </button>
                     </div>
                   </div>
@@ -394,7 +394,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
               required
               className="block w-full p-4 text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 bg-white hover:border-gray-300"
             >
-              <option value="">Select a category</option>
+              <option value="">{t('transactions.selectCategory')}</option>
               {categories?.map((cat) => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
@@ -405,7 +405,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
           <div className="space-y-3">
             <label className="block text-sm font-semibold text-gray-700 flex items-center">
               <span className="mr-2">📅</span>
-              Date
+              {t('transactions.date')}
             </label>
             <input
               type="date"
@@ -420,12 +420,12 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
           <div className="space-y-3">
             <label className="block text-sm font-semibold text-gray-700 flex items-center">
               <span className="mr-2">📝</span>
-              Notes (Optional)
+              {t('transactions.notes')} ({t('common.optional')})
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add transaction notes..."
+              placeholder={t('transactions.addNotes')}
               className="block w-full p-4 text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 bg-white hover:border-gray-300 resize-none"
               rows={3}
             />
@@ -443,7 +443,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
               />
               <label htmlFor="isStudentExpense" className="ml-3 block text-sm font-semibold text-gray-700 flex items-center">
                 <span className="mr-2">🎓</span>
-                這是留學生相關費用
+                {t('transactions.studentRelatedExpense')}
               </label>
             </div>
             

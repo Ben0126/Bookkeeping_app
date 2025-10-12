@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { OfflineSyncService, SyncStatus } from '../services/offlineSyncService';
 
 const OfflineIndicator: React.FC = () => {
+  const { t } = useTranslation();
   const [syncStatus, setSyncStatus] = useState<keyof typeof SyncStatus>('ONLINE');
   const [pendingOperations, setPendingOperations] = useState<number>(0);
   const [showDetails, setShowDetails] = useState<boolean>(false);
@@ -82,17 +84,17 @@ const OfflineIndicator: React.FC = () => {
   const getStatusText = (status: keyof typeof SyncStatus): string => {
     switch (status) {
       case 'ONLINE':
-        return 'Online';
+        return t('settings.online');
       case 'OFFLINE':
-        return 'Offline';
+        return t('settings.offline');
       case 'SYNCING':
-        return 'Syncing...';
+        return t('settings.syncing');
       case 'ERROR':
-        return 'Sync Error';
+        return t('settings.error');
       case 'CONFLICT':
-        return 'Conflict';
+        return t('settings.conflict');
       default:
-        return 'Unknown';
+        return t('settings.unknown');
     }
   };
 
@@ -131,7 +133,7 @@ const OfflineIndicator: React.FC = () => {
               </div>
               {pendingOperations > 0 && (
                 <div className="text-xs opacity-75">
-                  {pendingOperations} operation{pendingOperations !== 1 ? 's' : ''} pending
+                  {pendingOperations} {t('settings.operations')} {t('settings.pending')}
                 </div>
               )}
             </div>
@@ -143,7 +145,7 @@ const OfflineIndicator: React.FC = () => {
                 onClick={handleManualSync}
                 className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
               >
-                Sync Now
+                {t('settings.syncNow')}
               </button>
             )}
             
@@ -152,7 +154,7 @@ const OfflineIndicator: React.FC = () => {
                 onClick={handleClearFailed}
                 className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
               >
-                Clear Failed
+                {t('settings.clearFailed')}
               </button>
             )}
             
@@ -160,7 +162,7 @@ const OfflineIndicator: React.FC = () => {
               onClick={() => setShowDetails(!showDetails)}
               className="text-xs text-gray-500 hover:text-gray-700"
             >
-              {showDetails ? 'Hide' : 'Details'}
+              {showDetails ? t('common.hide') : t('common.details')}
             </button>
           </div>
         </div>
@@ -169,23 +171,23 @@ const OfflineIndicator: React.FC = () => {
       {/* 詳細信息 */}
       {showDetails && (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <h4 className="text-sm font-medium text-gray-800 mb-2">Sync Details</h4>
+          <h4 className="text-sm font-medium text-gray-800 mb-2">{t('settings.syncDetails')}</h4>
           <div className="space-y-1 text-xs text-gray-600">
-            <div>Status: {getStatusText(syncStatus)}</div>
-            <div>Pending Operations: {pendingOperations}</div>
-            <div>Network: {navigator.onLine ? 'Online' : 'Offline'}</div>
-            <div>Last Check: {new Date().toLocaleTimeString()}</div>
+            <div>{t('settings.status')}: {getStatusText(syncStatus)}</div>
+            <div>{t('settings.pendingOperations')}: {pendingOperations}</div>
+            <div>{t('settings.network')}: {navigator.onLine ? t('settings.online') : t('settings.offline')}</div>
+            <div>{t('settings.lastCheck')}: {new Date().toLocaleTimeString()}</div>
           </div>
           
           {syncStatus === 'CONFLICT' && (
             <div className="mt-2 p-2 bg-purple-100 rounded text-xs text-purple-800">
-              <strong>Conflict Detected:</strong> Data conflicts need manual resolution.
+              <strong>{t('settings.conflictDetected')}:</strong> {t('settings.conflictResolution')}
             </div>
           )}
           
           {syncStatus === 'ERROR' && (
             <div className="mt-2 p-2 bg-yellow-100 rounded text-xs text-yellow-800">
-              <strong>Sync Error:</strong> Some operations failed to sync. Check your connection.
+              <strong>{t('settings.syncError')}:</strong> {t('settings.syncErrorDesc')}
             </div>
           )}
         </div>

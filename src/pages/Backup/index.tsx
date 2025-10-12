@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { OfflineSyncService } from '../../services/offlineSyncService';
 
 const BackupPage = () => {
+  const { t } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -31,7 +33,7 @@ const BackupPage = () => {
       console.log('✅ Data exported successfully');
     } catch (error) {
       console.error('❌ Export failed:', error);
-      alert('Export failed. Please try again.');
+      alert(t('messages.error.exportFailed'));
     } finally {
       setIsExporting(false);
     }
@@ -51,12 +53,12 @@ const BackupPage = () => {
       
       // 驗證數據格式
       if (!data.transactions || !data.accounts || !data.categories) {
-        throw new Error('Invalid backup file format');
+        throw new Error(t('messages.error.invalidBackupFormat'));
       }
 
       // 確認導入
       const confirmed = window.confirm(
-        'This will replace all your current data. Are you sure you want to continue?'
+        t('messages.confirm.importData')
       );
       
       if (confirmed) {
@@ -66,7 +68,7 @@ const BackupPage = () => {
       }
     } catch (error) {
       console.error('❌ Import failed:', error);
-      setImportError(error instanceof Error ? error.message : 'Import failed');
+      setImportError(error instanceof Error ? error.message : t('messages.error.importFailed'));
     } finally {
       setIsImporting(false);
       // 重置文件輸入
@@ -78,33 +80,33 @@ const BackupPage = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Data Backup & Restore</h1>
-        <p className="text-gray-600 text-sm">Backup your data or restore from a previous backup</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('settings.backup')}</h1>
+        <p className="text-gray-600 text-sm">{t('settings.backupDesc')}</p>
       </div>
 
       {/* Export Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Export Data</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('settings.exportData')}</h2>
         <div className="space-y-3">
           <p className="text-sm text-gray-600">
-            Download a complete backup of your data including all transactions, accounts, and categories.
+            {t('settings.exportDataDesc')}
           </p>
           <button
             onClick={handleExportData}
             disabled={isExporting}
             className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isExporting ? 'Exporting...' : '📥 Export Data'}
+            {isExporting ? t('common.loading') : `📥 ${t('settings.exportData')}`}
           </button>
         </div>
       </div>
 
       {/* Import Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Import Data</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('settings.importData')}</h2>
         <div className="space-y-3">
           <p className="text-sm text-gray-600">
-            Restore your data from a previous backup file. This will replace all current data.
+            {t('settings.importDataDesc')}
           </p>
           
           <div className="space-y-2">
@@ -117,12 +119,12 @@ const BackupPage = () => {
             />
             
             {isImporting && (
-              <div className="text-sm text-blue-600">Importing data...</div>
+              <div className="text-sm text-blue-600">{t('settings.importingData')}</div>
             )}
             
             {importSuccess && (
               <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
-                ✅ Data imported successfully!
+                ✅ {t('messages.success.dataImported')}
               </div>
             )}
             
@@ -137,41 +139,40 @@ const BackupPage = () => {
 
       {/* Data Information */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Data Information</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('settings.dataInfo')}</h2>
         <div className="space-y-2 text-sm text-gray-600">
           <div className="flex justify-between">
-            <span>Backup Format:</span>
+            <span>{t('settings.backupFormat')}:</span>
             <span className="font-medium">JSON</span>
           </div>
           <div className="flex justify-between">
-            <span>Includes:</span>
-            <span className="font-medium">Transactions, Accounts, Categories</span>
+            <span>{t('settings.includes')}:</span>
+            <span className="font-medium">{t('settings.dataIncludes')}</span>
           </div>
           <div className="flex justify-between">
-            <span>Storage:</span>
-            <span className="font-medium">Local Device Only</span>
+            <span>{t('settings.storage')}:</span>
+            <span className="font-medium">{t('settings.localStorageOnly')}</span>
           </div>
         </div>
       </div>
 
       {/* Important Notes */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <h3 className="font-medium text-yellow-800 mb-2">⚠️ Important Notes</h3>
+        <h3 className="font-medium text-yellow-800 mb-2">⚠️ {t('settings.importantNotes')}</h3>
         <ul className="text-sm text-yellow-700 space-y-1">
-          <li>• Backups are stored locally on your device</li>
-          <li>• Importing will replace all current data</li>
-          <li>• Always create a backup before importing</li>
-          <li>• Backup files contain sensitive financial information</li>
-          <li>• Keep backup files secure and private</li>
+          <li>• {t('settings.backupNote1')}</li>
+          <li>• {t('settings.backupNote2')}</li>
+          <li>• {t('settings.backupNote3')}</li>
+          <li>• {t('settings.backupNote4')}</li>
+          <li>• {t('settings.backupNote5')}</li>
         </ul>
       </div>
 
       {/* Sync Status */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-medium text-blue-800 mb-2">🔄 Sync Status</h3>
+        <h3 className="font-medium text-blue-800 mb-2">🔄 {t('settings.syncStatus')}</h3>
         <p className="text-sm text-blue-700">
-          Your data is automatically synced when you're online. Offline changes are queued 
-          and will sync when your connection is restored.
+          {t('settings.syncStatusDesc')}
         </p>
       </div>
     </div>

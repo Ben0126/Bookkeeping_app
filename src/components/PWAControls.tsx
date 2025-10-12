@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PWAService } from '../services/pwaService';
 
 const PWAControls: React.FC = () => {
+  const { t } = useTranslation();
   const [isInstallAvailable, setIsInstallAvailable] = useState(false);
   const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -219,7 +221,7 @@ const PWAControls: React.FC = () => {
             <button
               onClick={handleCloseDevControls}
               className="text-yellow-600 hover:text-yellow-800 text-lg font-bold leading-none"
-              title="關閉 PWA Controls"
+              title={t('settings.closePWAControls')}
             >
               ×
             </button>

@@ -43,10 +43,10 @@ const SettingsPage = () => {
     try {
       await PWAService.clearCache();
       await loadSettingsData(); // 重新載入數據
-      alert('Cache cleared successfully!');
+      alert(t('messages.success.cacheCleared'));
     } catch (error) {
       console.error('Failed to clear cache:', error);
-      alert('Failed to clear cache');
+      alert(t('messages.error.clearCacheFailed'));
     }
   };
 
@@ -99,7 +99,7 @@ const SettingsPage = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">{t('settings.title')}</h1>
-        <p className="text-gray-600 text-sm">Manage app preferences and settings</p>
+        <p className="text-gray-600 text-sm">{t('settings.manageAppPreferences')}</p>
       </div>
 
       {/* Language Settings */}
