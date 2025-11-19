@@ -1,5 +1,5 @@
 import React, { lazy } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import { demonstrateLocaleDetection } from './utils/localeDemo';
 import { NotificationService } from './services/notificationService';
 import { PWAService } from './services/pwaService';
@@ -70,9 +70,10 @@ function App() {
               <Route path="statistics" element={<StatisticsPage />} />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
-          
+
           {/* Global UX Components */}
           <GlobalLoadingOverlay />
           <ErrorNotification />
