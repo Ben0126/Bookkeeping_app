@@ -18,6 +18,7 @@ import { useUserFeedback } from '../../components/UserFeedback';
 import { AnimatedButton } from '../../components/AnimatedTransition';
 import { ResponsiveCard } from '../../components/ResponsiveLayout';
 import { useTranslation } from 'react-i18next';
+import { getCategoryDisplayName } from '../../utils/categoryUtils';
 
 interface AddTransactionFormProps {
   onSuccess: () => void;
@@ -27,12 +28,12 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
   const { t } = useTranslation();
   const accounts = useLiveQuery(getAllAccounts);
   const categories = useLiveQuery(() => getCategoriesByType(type));
-  
+
   // UX Hooks
   const { showLoading, hideLoading } = useLoading();
   const { showError } = useError();
   const { showSuccess } = useUserFeedback();
-  
+
   // Form validation
   const { validateForm, clearErrors } = useFormValidation({
     amount: ValidationRules.transactionAmount(t('transactions.enterValidAmount')),
@@ -40,7 +41,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
     categoryId: ValidationRules.required(t('transactions.selectCategory')),
     exchangeRate: ValidationRules.exchangeRate(t('transactions.enterValidExchangeRate'))
   });
-  
+
   const [type, setType] = useState<TransactionType>(TransactionType.EXPENSE);
   const [accountId, setAccountId] = useState<number | undefined>(undefined);
   const [amount, setAmount] = useState(0);
@@ -49,11 +50,11 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
   const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
   const [date, setDate] = useState(new Date());
   const [notes, setNotes] = useState('');
-  
+
   // 留學生分類相關狀態
   const [studentCategory, setStudentCategory] = useState<StudentCategory | undefined>(undefined);
   const [isStudentExpense, setIsStudentExpense] = useState(false);
-  
+
   // 自動分類相關狀態
   const [autoSuggestion, setAutoSuggestion] = useState<{
     categoryId: number;
@@ -76,12 +77,12 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
 
     try {
       const suggestion = await AutoCategorizationService.autoCategorizeTran(
-        notes, 
-        amount, 
-        type, 
+        notes,
+        amount,
+        type,
         categories
       );
-      
+
       if (suggestion) {
         setAutoSuggestion(suggestion);
         setShowSuggestion(true);
@@ -110,10 +111,10 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Clear previous errors
     clearErrors();
-    
+
     // Validate form data
     const formData = {
       amount,
@@ -121,25 +122,25 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
       categoryId,
       exchangeRate: needsExchangeRate ? exchangeRate : undefined
     };
-    
+
     if (!validateForm(formData)) {
       showError(t('messages.error.fillRequiredFields'));
       return;
     }
-    
+
     if (!accountId || !selectedAccount || !categoryId) {
       showError(t('messages.error.fillRequiredFields'));
       return;
     }
-    
+
     if (needsExchangeRate && (!exchangeRate || exchangeRate <= 0)) {
       showError(t('transactions.enterValidExchangeRate'));
       return;
     }
-    
+
     try {
       showLoading(t('transactions.addingTransaction'), 0);
-      
+
       const newTransaction: Omit<Transaction, 'id'> = {
         type,
         accountId,
@@ -149,9 +150,9 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
         date,
         notes: notes || undefined,
         ...(needsExchangeRate && exchangeRate ? { exchangeRate } : {}),
-        ...(isStudentExpense && studentCategory ? { 
-          studentCategory, 
-          isStudentExpense: true 
+        ...(isStudentExpense && studentCategory ? {
+          studentCategory,
+          isStudentExpense: true
         } : {}),
       };
 
@@ -220,7 +221,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-red-50 opacity-50"></div>
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-200/20 to-red-200/20 rounded-full -translate-y-16 translate-x-16"></div>
-      
+
       <div className="relative z-10">
         {/* Header */}
         <div className="flex items-center mb-8">
@@ -246,16 +247,15 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
                   key={transactionType}
                   type="button"
                   onClick={() => setType(transactionType)}
-                  className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-                    type === transactionType
+                  className={`p-3 rounded-lg border-2 transition-all duration-200 ${type === transactionType
                       ? 'border-orange-500 bg-orange-50 text-orange-700'
                       : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <div className="text-center">
                     <div className="text-lg mb-1">
-                      {transactionType === TransactionType.INCOME ? '💰' : 
-                       transactionType === TransactionType.EXPENSE ? '💸' : '🔄'}
+                      {transactionType === TransactionType.INCOME ? '💰' :
+                        transactionType === TransactionType.EXPENSE ? '💸' : '🔄'}
                     </div>
                     <div className="text-xs font-medium">
                       {getTransactionTypeTranslation(transactionType)}
@@ -348,7 +348,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
               <span className="mr-2">🏷️</span>
               {t('transactions.category')}
             </label>
-            
+
             {/* Auto-suggestion alert */}
             {showSuggestion && autoSuggestion && (
               <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
@@ -363,7 +363,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
                   <div className="flex-1">
                     <h4 className="text-sm font-semibold text-blue-800">🤖 {t('transactions.autoSuggestion')}</h4>
                     <p className="text-sm text-blue-700 mt-1">
-                      {categories?.find(cat => cat.id === autoSuggestion.categoryId)?.name}
+                      {categories?.find(cat => cat.id === autoSuggestion.categoryId) ? getCategoryDisplayName(categories.find(cat => cat.id === autoSuggestion.categoryId)!.name, t) : ''}
                       <span className="text-blue-600 font-medium"> ({t('transactions.confidence')}: {autoSuggestion.confidence}%)</span>
                     </p>
                     <p className="text-xs text-blue-600 mt-1">{autoSuggestion.reason}</p>
@@ -396,11 +396,11 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
             >
               <option value="">{t('transactions.selectCategory')}</option>
               {categories?.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                <option key={cat.id} value={cat.id}>{getCategoryDisplayName(cat.name, t)}</option>
               ))}
             </select>
           </div>
-          
+
           {/* Date */}
           <div className="space-y-3">
             <label className="block text-sm font-semibold text-gray-700 flex items-center">
@@ -446,7 +446,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
                 {t('transactions.studentRelatedExpense')}
               </label>
             </div>
-            
+
             {isStudentExpense && (
               <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
                 <StudentCategorySelector
@@ -462,8 +462,8 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onSuccess }) =>
 
           {/* Submit Button */}
           <div className="pt-4">
-            <AnimatedButton 
-              type="submit" 
+            <AnimatedButton
+              type="submit"
               className="w-full py-4 px-6 text-lg font-semibold bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             >
               <span className="flex items-center justify-center">

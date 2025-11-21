@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PWAService } from '../../services/pwaService';
 import { OfflineSyncService } from '../../services/offlineSyncService';
+import { DataResetService } from '../../services/dataResetService';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 
@@ -26,7 +27,7 @@ const SettingsPage = () => {
       const network = PWAService.getNetworkStatus();
       const pendingOps = await OfflineSyncService.getPendingOperationsCount();
       const syncStat = OfflineSyncService.getSyncStatus();
-      
+
       setAppVersion(version);
       setCacheSize(size);
       setNetworkStatus(network);
@@ -137,14 +138,13 @@ const SettingsPage = () => {
           </div>
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">{t('settings.syncStatus')}</span>
-            <span className={`text-sm font-medium ${
-              syncStatus === 'online' ? 'text-green-600' : 
-              syncStatus === 'offline' ? 'text-red-600' : 
-              syncStatus === 'syncing' ? 'text-blue-600' : 'text-yellow-600'
-            }`}>
-              {syncStatus === 'online' ? t('settings.synced') : 
-               syncStatus === 'offline' ? t('settings.offline') : 
-               syncStatus === 'syncing' ? t('settings.syncing') : t('settings.error')}
+            <span className={`text-sm font-medium ${syncStatus === 'online' ? 'text-green-600' :
+              syncStatus === 'offline' ? 'text-red-600' :
+                syncStatus === 'syncing' ? 'text-blue-600' : 'text-yellow-600'
+              }`}>
+              {syncStatus === 'online' ? t('settings.synced') :
+                syncStatus === 'offline' ? t('settings.offline') :
+                  syncStatus === 'syncing' ? t('settings.syncing') : t('settings.error')}
             </span>
           </div>
           <div className="flex justify-between items-center">
@@ -345,7 +345,32 @@ const SettingsPage = () => {
           </div>
         </div>
       </div>
-      
+
+      {/* Danger Zone */}
+      <div className="bg-white rounded-lg shadow-sm border border-red-200 p-4">
+        <h2 className="text-lg font-semibold text-red-600 mb-4">{t('settings.dangerZone')}</h2>
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600 mb-4">{t('settings.resetDataDesc')}</p>
+          <button
+            onClick={async () => {
+              if (window.confirm(t('messages.confirm.resetData'))) {
+                try {
+                  await DataResetService.resetAllData();
+                  alert(t('messages.success.dataReset'));
+                  window.location.reload();
+                } catch (error) {
+                  console.error('Failed to reset data:', error);
+                  alert(t('messages.error.resetFailed'));
+                }
+              }
+            }}
+            className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            {t('settings.resetData')}
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 };

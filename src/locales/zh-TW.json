@@ -247,7 +247,10 @@
     "conflictResolution": "資料衝突需要手動解決",
     "syncError": "同步錯誤",
     "syncErrorDesc": "部分操作同步失敗，請檢查連線。",
-    "closePWAControls": "關閉 PWA Controls"
+    "closePWAControls": "關閉 PWA Controls",
+    "dangerZone": "危險區域",
+    "resetData": "重置所有資料",
+    "resetDataDesc": "永久刪除所有資料，包括帳戶、交易和分類。此操作無法復原。"
   },
   "accountTypes": {
     "uscheckingaccount": "美國支票帳戶",
@@ -557,7 +560,7 @@
     },
     "quickActions": {
       "add-transaction": "新增交易",
-      "add-account": "新增帳戶", 
+      "add-account": "新增帳戶",
       "view-statistics": "查看統計",
       "view-settings": "設定",
       "settings": "設定"
@@ -677,7 +680,8 @@
       "settingsSaved": "設定已儲存",
       "dataExported": "資料匯出成功",
       "dataImported": "資料匯入成功！",
-      "cacheCleared": "快取清除成功！"
+      "cacheCleared": "快取清除成功！",
+      "dataReset": "所有資料已成功重置。應用程式將重新載入。"
     },
     "error": {
       "networkError": "網路連線錯誤",
@@ -687,13 +691,32 @@
       "exportFailed": "匯出失敗，請重試。",
       "importFailed": "匯入失敗",
       "invalidBackupFormat": "無效的備份檔案格式",
-      "clearCacheFailed": "清除快取失敗"
+      "clearCacheFailed": "清除快取失敗",
+      "resetFailed": "重置資料失敗"
     },
     "confirm": {
       "deleteAccount": "確定要刪除此帳戶嗎？",
       "deleteTransaction": "確定要刪除此交易嗎？",
       "clearCache": "確定要清除快取嗎？",
-      "importData": "這將替換您目前的所有資料。確定要繼續嗎？"
+      "importData": "這將替換您目前的所有資料。確定要繼續嗎？",
+      "resetData": "警告：這將永久刪除您的所有資料（帳戶、交易、分類）。此操作無法復原。確定要繼續嗎？"
     }
+  },
+  "categories": {
+    "Salary": "薪資",
+    "Allowance": "零用錢",
+    "Investment": "投資",
+    "OtherIncome": "其他收入",
+    "Tuition": "學費",
+    "Groceries": "食材",
+    "DiningOut": "外食",
+    "Transportation": "交通",
+    "Housing": "住宿",
+    "ClothingAndBeauty": "服飾保養",
+    "Entertainment": "其他娛樂",
+    "Utilities": "水電費",
+    "Health": "醫療",
+    "Communication": "通訊",
+    "OtherExpense": "其他支出"
   }
 }

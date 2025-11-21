@@ -209,6 +209,6 @@ src/
 ---
 
 **版本**: 1.0.0 (已上線)  
-**最後更新**: 2025年10月8日  
+**最後更新**: NOV 20 2025  
 **授權**: 私有專案  
 **線上網址**: [https://bookkeeping-app-three.vercel.app/](https://bookkeeping-app-three.vercel.app/)

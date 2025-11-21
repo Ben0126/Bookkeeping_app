@@ -247,7 +247,10 @@
     "conflictResolution": "Data conflicts need manual resolution",
     "syncError": "Sync Error",
     "syncErrorDesc": "Some operations failed to sync. Check your connection.",
-    "closePWAControls": "Close PWA Controls"
+    "closePWAControls": "Close PWA Controls",
+    "dangerZone": "Danger Zone",
+    "resetData": "Reset All Data",
+    "resetDataDesc": "Permanently delete all data including accounts, transactions, and categories. This action cannot be undone."
   },
   "accountTypes": {
     "uscheckingaccount": "US Checking Account",
@@ -557,7 +560,7 @@
     },
     "quickActions": {
       "add-transaction": "Add Transaction",
-      "add-account": "Add Account", 
+      "add-account": "Add Account",
       "view-statistics": "View Statistics",
       "view-settings": "Settings",
       "settings": "Settings"
@@ -677,7 +680,8 @@
       "settingsSaved": "Settings saved",
       "dataExported": "Data exported successfully",
       "dataImported": "Data imported successfully!",
-      "cacheCleared": "Cache cleared successfully!"
+      "cacheCleared": "Cache cleared successfully!",
+      "dataReset": "All data has been reset successfully. The app will now reload."
     },
     "error": {
       "networkError": "Network connection error",
@@ -687,13 +691,32 @@
       "exportFailed": "Export failed. Please try again.",
       "importFailed": "Import failed",
       "invalidBackupFormat": "Invalid backup file format",
-      "clearCacheFailed": "Failed to clear cache"
+      "clearCacheFailed": "Failed to clear cache",
+      "resetFailed": "Failed to reset data"
     },
     "confirm": {
       "deleteAccount": "Are you sure you want to delete this account?",
       "deleteTransaction": "Are you sure you want to delete this transaction?",
       "clearCache": "Are you sure you want to clear cache?",
-      "importData": "This will replace all your current data. Are you sure you want to continue?"
+      "importData": "This will replace all your current data. Are you sure you want to continue?",
+      "resetData": "WARNING: This will permanently delete ALL your data (accounts, transactions, categories). This action CANNOT be undone. Are you sure you want to proceed?"
     }
+  },
+  "categories": {
+    "Salary": "Salary",
+    "Allowance": "Allowance",
+    "Investment": "Investment",
+    "OtherIncome": "Other Income",
+    "Tuition": "Tuition",
+    "Groceries": "Groceries (Ingredients)",
+    "DiningOut": "Dining Out",
+    "Transportation": "Transportation",
+    "Housing": "Housing",
+    "ClothingAndBeauty": "Clothing & Beauty",
+    "Entertainment": "Entertainment",
+    "Utilities": "Utilities",
+    "Health": "Health",
+    "Communication": "Communication",
+    "OtherExpense": "Other Expense"
   }
 }

@@ -27,7 +27,7 @@ export const cleanupDuplicateCategories = async () => {
   const allCategories = await getAllCategories();
   const seen = new Set<string>();
   const toDelete: number[] = [];
-  
+
   for (const category of allCategories) {
     const key = `${category.name}-${category.type}`;
     if (seen.has(key)) {
@@ -38,7 +38,7 @@ export const cleanupDuplicateCategories = async () => {
       seen.add(key);
     }
   }
-  
+
   for (const id of toDelete) {
     await deleteCategory(id);
   }
@@ -48,31 +48,31 @@ export const cleanupDuplicateCategories = async () => {
 export const initializeDefaultCategories = async () => {
   // First clean up any duplicates
   await cleanupDuplicateCategories();
-  
+
   const existingCategories = await getAllCategories();
-  
+
   if (existingCategories.length === 0) {
     const defaultCategories: Omit<Category, 'id'>[] = [
       // Income categories
       { name: 'Salary', type: TransactionType.INCOME },
       { name: 'Allowance', type: TransactionType.INCOME },
-      { name: 'Scholarship', type: TransactionType.INCOME },
       { name: 'Investment', type: TransactionType.INCOME },
       { name: 'Other Income', type: TransactionType.INCOME },
-      
+
       // Expense categories
       { name: 'Tuition', type: TransactionType.EXPENSE },
       { name: 'Groceries', type: TransactionType.EXPENSE },
-      { name: 'Dining', type: TransactionType.EXPENSE },
+      { name: 'DiningOut', type: TransactionType.EXPENSE },
       { name: 'Transportation', type: TransactionType.EXPENSE },
       { name: 'Housing', type: TransactionType.EXPENSE },
+      { name: 'ClothingAndBeauty', type: TransactionType.EXPENSE },
       { name: 'Entertainment', type: TransactionType.EXPENSE },
       { name: 'Utilities', type: TransactionType.EXPENSE },
       { name: 'Health', type: TransactionType.EXPENSE },
       { name: 'Communication', type: TransactionType.EXPENSE },
       { name: 'Other Expense', type: TransactionType.EXPENSE },
     ];
-    
+
     for (const category of defaultCategories) {
       await addCategory(category);
     }
