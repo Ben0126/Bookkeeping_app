@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, Outlet } from 'react-router-dom';
-import { ListIcon, WalletIcon } from '../ui/icons';
+import { ListIcon, SettingsIcon, WalletIcon } from '../ui/icons';
 
 const NAV_ITEMS = [
   { to: '/transactions', labelKey: 'nav.transactions', icon: <ListIcon /> },
   { to: '/accounts', labelKey: 'nav.accounts', icon: <WalletIcon /> },
+  { to: '/settings', labelKey: 'nav.settings', icon: <SettingsIcon /> },
 ] as const;
 
 export function Layout() {
@@ -54,7 +55,7 @@ export function Layout() {
         aria-label={t('nav.label')}
         className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
       >
-        <div className="mx-auto grid max-w-md grid-cols-2">
+        <div className="mx-auto grid max-w-md grid-cols-3">
           {NAV_ITEMS.map((item) => (
             <BottomNavLink key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} />
           ))}

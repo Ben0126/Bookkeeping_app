@@ -17,3 +17,11 @@ export function writePreference(key: string, value: string): void {
     // Not worth surfacing: the preference is only a default.
   }
 }
+
+export function removePreference(key: string): void {
+  try {
+    localStorage.removeItem(`studybudget.${key}`);
+  } catch {
+    // Same as above.
+  }
+}

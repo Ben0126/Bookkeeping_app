@@ -9,7 +9,8 @@
     "label": "主選單",
     "transactions": "交易",
     "accounts": "帳戶",
-    "switchLanguage": "English"
+    "switchLanguage": "English",
+    "settings": "設定"
   },
   "kinds": {
     "expense": "支出",
@@ -137,5 +138,49 @@
     "TRANSFER_AMOUNT_MISMATCH": "同幣別轉帳的兩邊金額必須相同；手續費請另記一筆支出。",
     "INVALID_BACKUP": "備份檔格式不正確。",
     "UNKNOWN": "發生錯誤，請再試一次。"
+  },
+  "settings": {
+    "title": "設定"
+  },
+  "backup": {
+    "title": "資料備份",
+    "intro": "記帳資料只存在這台裝置的瀏覽器裡。清除瀏覽器資料、換手機或換瀏覽器時，資料都會消失。請定期下載備份檔，存到雲端硬碟等安全的地方。",
+    "lastBackup": "上次備份",
+    "never": "尚未備份",
+    "lastBackupValue": "{{date}}（{{relative}}）",
+    "currentData": "目前資料",
+    "counts": "帳戶 {{accounts}} 個、交易 {{transactions}} 筆",
+    "download": "下載備份檔",
+    "share": "分享備份檔",
+    "shareHint": "分享可以直接存到 iCloud 雲碟、Google 雲端硬碟，或傳到自己的聊天室。",
+    "saveFailed": "無法儲存備份檔，請再試一次。"
+  },
+  "restore": {
+    "title": "從備份還原",
+    "intro": "選擇之前下載的備份檔（.json）。確認內容之前，不會更動任何資料。",
+    "choose": "選擇備份檔",
+    "working": "處理中…",
+    "backupTime": "備份時間",
+    "contents": "內容",
+    "replaceWarning": "還原會取代這台裝置上目前的所有資料（{{counts}}）。如果發現選錯檔案，還原後可以立即復原。",
+    "confirm": "取代並還原",
+    "done": "已還原備份：{{counts}}。",
+    "undo": "復原到還原前",
+    "undone": "已復原到還原前的資料。",
+    "tooLarge": "檔案太大（上限 50 MB），不像是 StudyBudget 的備份檔。"
+  },
+  "storage": {
+    "title": "儲存空間",
+    "persisted": "已啟用永久儲存，瀏覽器不會因為空間不足而自動清除資料。",
+    "notPersisted": "瀏覽器在儲存空間不足時，可能會自動清除這個 App 的資料。",
+    "request": "要求永久儲存",
+    "denied": "瀏覽器沒有同意。把 App 安裝到主畫面後通常就能啟用；也請記得定期備份。",
+    "iosTip": "iPhone／iPad：請用 Safari 的「分享 → 加入主畫面」安裝 App。只在瀏覽器分頁中使用時，Safari 可能會清除長時間沒開啟的網站資料。"
+  },
+  "backupReminder": {
+    "never": "你的記帳資料還沒有備份過，而且只存在這台裝置上。",
+    "stale": "上次備份是{{when}}，之後新增或修改的資料還沒有備份。",
+    "later": "稍後提醒",
+    "backUp": "立即備份"
   }
 }

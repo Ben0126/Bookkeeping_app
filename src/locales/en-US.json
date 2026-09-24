@@ -9,7 +9,8 @@
     "label": "Main",
     "transactions": "Transactions",
     "accounts": "Accounts",
-    "switchLanguage": "中文"
+    "switchLanguage": "中文",
+    "settings": "Settings"
   },
   "kinds": {
     "expense": "Expense",
@@ -138,5 +139,49 @@
     "TRANSFER_AMOUNT_MISMATCH": "Both sides of a same-currency transfer must match. Record fees as a separate expense.",
     "INVALID_BACKUP": "This backup file isn't valid.",
     "UNKNOWN": "Something went wrong. Please try again."
+  },
+  "settings": {
+    "title": "Settings"
+  },
+  "backup": {
+    "title": "Back up your data",
+    "intro": "Your data lives only in this device's browser. Clearing browser data or switching phones or browsers erases it, so download a backup regularly and keep it somewhere safe, such as cloud storage.",
+    "lastBackup": "Last backup",
+    "never": "Never",
+    "lastBackupValue": "{{date}} ({{relative}})",
+    "currentData": "Current data",
+    "counts": "Accounts: {{accounts}} · Transactions: {{transactions}}",
+    "download": "Download backup",
+    "share": "Share backup",
+    "shareHint": "Sharing lets you save it straight to iCloud Drive or Google Drive, or send it to yourself.",
+    "saveFailed": "Couldn't save the backup file. Please try again."
+  },
+  "restore": {
+    "title": "Restore from a backup",
+    "intro": "Choose a backup file (.json) you downloaded earlier. Nothing changes until you confirm what's in it.",
+    "choose": "Choose backup file",
+    "working": "Working…",
+    "backupTime": "Backed up",
+    "contents": "Contains",
+    "replaceWarning": "Restoring replaces all data on this device ({{counts}}). If it's the wrong file, you can undo right after.",
+    "confirm": "Replace and restore",
+    "done": "Backup restored: {{counts}}.",
+    "undo": "Undo restore",
+    "undone": "Your data is back to how it was before the restore.",
+    "tooLarge": "This file is too large (50 MB max) to be a StudyBudget backup."
+  },
+  "storage": {
+    "title": "Storage",
+    "persisted": "Persistent storage is on: the browser won't clear this data to free up space.",
+    "notPersisted": "When space runs low, the browser may clear this app's data.",
+    "request": "Request persistent storage",
+    "denied": "The browser declined. Installing the app to your home screen usually helps; keep making backups too.",
+    "iosTip": "iPhone/iPad: install the app with Safari's Share → Add to Home Screen. Used only in a browser tab, Safari may clear data for sites you haven't opened in a while."
+  },
+  "backupReminder": {
+    "never": "Your data has never been backed up and lives only on this device.",
+    "stale": "Your last backup was {{when}}; changes since then aren't backed up.",
+    "later": "Later",
+    "backUp": "Back up now"
   }
 }

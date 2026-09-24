@@ -21,6 +21,11 @@ export class LedgerDB extends Dexie {
       budgets: 'id, categoryId',
       settings: 'key',
     });
+    // Lets the backup reminder find changes made since the last backup.
+    this.version(2).stores({
+      accounts: 'id, updatedAt',
+      transactions: 'id, accountId, date, categoryId, transferId, updatedAt',
+    });
   }
 }
 

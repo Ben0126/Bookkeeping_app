@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { addAccount, createTestDb } from '../test/ledgerDb';
-import { exportBackup, importBackup, parseBackup, type Backup } from './backup';
+import { countBackup, exportBackup, importBackup, oldestChangeSince, parseBackup, readBackup, type Backup } from './backup';
 import { setBudget } from './budgets';
 import { seedDefaultCategories } from './categories';
 import type { LedgerDB } from './db';
 import { setExchangeRate } from './rates';
 import { updateSettings } from './settings';
-import { createTransaction } from './transactions';
+import { createTransaction, updateTransaction } from './transactions';
 
 let source: LedgerDB;
 let backup: Backup;
@@ -103,5 +103,44 @@ describe('invalid backups', () => {
 
   it('rejects text that is not JSON', async () => {
     await expect(importBackup(createTestDb(), '{oops')).rejects.toMatchObject({ code: 'INVALID_BACKUP' });
+  });
+});
+
+describe('readBackup', () => {
+  it('parses and validates file text without writing anything', () => {
+    expect(readBackup(JSON.stringify(backup)).data).toEqual(backup.data);
+    expect(() => readBackup('not json')).toThrow(expect.objectContaining({ code: 'INVALID_BACKUP' }));
+  });
+});
+
+describe('countBackup', () => {
+  it('counts a transfer once', () => {
+    expect(countBackup(backup.data)).toEqual({
+      accounts: 2,
+      categories: 21,
+      transactions: 2,
+      exchangeRates: 1,
+      budgets: 1,
+    });
+  });
+});
+
+describe('oldestChangeSince', () => {
+  it('finds the oldest account or transaction changed after a time', async () => {
+    const db = createTestDb();
+    expect(await oldestChangeSince(db)).toBeUndefined();
+
+    const now = vi.spyOn(Date, 'now');
+    now.mockReturnValue(1_000);
+    const account = await addAccount(db);
+    now.mockReturnValue(2_000);
+    const [expense] = await createTransaction(db, { kind: 'expense', accountId: account.id, amountMinor: 100, date: '2026-09-01' });
+    now.mockReturnValue(3_000);
+    await updateTransaction(db, expense.id, { kind: 'expense', accountId: account.id, amountMinor: 200, date: '2026-09-01' });
+    now.mockRestore();
+
+    expect(await oldestChangeSince(db)).toBe(1_000);
+    expect(await oldestChangeSince(db, 1_000)).toBe(3_000);
+    expect(await oldestChangeSince(db, 3_000)).toBeUndefined();
   });
 });

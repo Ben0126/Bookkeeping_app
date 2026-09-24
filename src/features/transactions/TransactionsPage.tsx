@@ -20,6 +20,7 @@ import {
   type TransactionInput,
   type TransactionKind,
 } from '../../core';
+import { BackupReminder } from '../backup/BackupReminder';
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, SearchIcon, TransferIcon } from '../../ui/icons';
 import { Modal } from '../../ui/Modal';
 import { readPreference } from '../../ui/preferences';
@@ -106,6 +107,7 @@ export function TransactionsPage() {
 
   return (
     <div className="space-y-4">
+      <BackupReminder />
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1">
           <button

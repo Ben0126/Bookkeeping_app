@@ -62,15 +62,7 @@ export async function exportBackup(db: LedgerDB): Promise<Backup> {
  * file leaves the existing data untouched.
  */
 export async function importBackup(db: LedgerDB, raw: unknown): Promise<BackupData> {
-  let value = raw;
-  if (typeof raw === 'string') {
-    try {
-      value = JSON.parse(raw);
-    } catch {
-      throw new LedgerError('INVALID_BACKUP', 'File is not valid JSON');
-    }
-  }
-  const { data } = parseBackup(value);
+  const { data } = typeof raw === 'string' ? readBackup(raw) : parseBackup(raw);
   await db.transaction('rw', db.tables, async () => {
     await Promise.all(db.tables.map((table) => table.clear()));
     await db.accounts.bulkAdd(data.accounts);
@@ -81,6 +73,57 @@ export async function importBackup(db: LedgerDB, raw: unknown): Promise<BackupDa
     await db.settings.bulkAdd(data.settings);
   });
   return data;
+}
+
+/** Parses and validates backup file text without touching the database. */
+export function readBackup(text: string): Backup {
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    throw new LedgerError('INVALID_BACKUP', 'File is not valid JSON');
+  }
+  return parseBackup(value);
+}
+
+export interface BackupCounts {
+  accounts: number;
+  categories: number;
+  /** Both legs of a transfer count as one transaction. */
+  transactions: number;
+  exchangeRates: number;
+  budgets: number;
+}
+
+export function countBackup(data: BackupData): BackupCounts {
+  const transferIds = new Set<string>();
+  let single = 0;
+  for (const t of data.transactions) {
+    if (t.transferId === undefined) single += 1;
+    else transferIds.add(t.transferId);
+  }
+  return {
+    accounts: data.accounts.length,
+    categories: data.categories.length,
+    transactions: single + transferIds.size,
+    exchangeRates: data.exchangeRates.length,
+    budgets: data.budgets.length,
+  };
+}
+
+/**
+ * When the oldest account or transaction changed after `since` (all of them
+ * when `since` is undefined) was last updated, or undefined if none were.
+ * Deletions leave no record, so they are not seen.
+ */
+export async function oldestChangeSince(db: LedgerDB, since?: number): Promise<number | undefined> {
+  return db.transaction('r', [db.accounts, db.transactions], async () => {
+    const first = (table: typeof db.accounts | typeof db.transactions) =>
+      (since === undefined ? table.orderBy('updatedAt') : table.where('updatedAt').above(since)).first();
+    const [account, transaction] = await Promise.all([first(db.accounts), first(db.transactions)]);
+    const times = [account?.updatedAt, transaction?.updatedAt].filter((t): t is number => t !== undefined);
+    return times.length > 0 ? Math.min(...times) : undefined;
+  });
 }
 
 /** Validates a backup and returns a copy holding only known fields. */
