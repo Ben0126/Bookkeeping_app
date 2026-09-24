@@ -6,6 +6,12 @@ import zhTW from './locales/zh-TW.json';
 
 export const LANGUAGES = ['zh-TW', 'en-US'] as const;
 
+/** Each language named in itself, for language pickers. */
+export const LANGUAGE_NAMES: Record<(typeof LANGUAGES)[number], string> = {
+  'zh-TW': '繁體中文',
+  'en-US': 'English',
+};
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)

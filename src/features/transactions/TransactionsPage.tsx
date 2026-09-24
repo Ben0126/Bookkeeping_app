@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useLedgerDb } from '../../app/ledgerContext';
 import {
   isMonthKey,
@@ -84,8 +84,12 @@ export function TransactionsPage() {
   const accountsById = useMemo(() => new Map((accounts ?? []).map((a) => [a.id, a])), [accounts]);
   const categoriesById = useMemo(() => new Map((categories ?? []).map((c) => [c.id, c])), [categories]);
   const activeAccounts = (accounts ?? []).filter((a) => !a.archived);
+  const hasEntries = useLiveQuery(async () => (await db.transactions.limit(1).count()) > 0, [db]);
 
-  if (!accounts || !categories) return null;
+  if (!accounts || !categories || hasEntries === undefined) return null;
+
+  // First launch: set up currencies and accounts (or restore a backup).
+  if (accounts.length === 0) return <Navigate to="/welcome" replace />;
 
   if (activeAccounts.length === 0) {
     return (
@@ -198,6 +202,11 @@ export function TransactionsPage() {
       {listed && listed.entries.length === 0 ? (
         <div className="rounded-xl bg-white px-4 py-10 text-center text-sm text-slate-500 ring-1 ring-slate-200">
           {searching || accountId || kind || categoryFilter ? t('transactions.noMatches') : t('transactions.emptyMonth')}
+          {!hasEntries && (
+            <Link to="/guide" className="mt-3 block font-medium text-indigo-700 hover:underline">
+              {t('transactions.firstTimeGuide')}
+            </Link>
+          )}
         </div>
       ) : (
         listed &&

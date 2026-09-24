@@ -95,7 +95,11 @@ export function RestoreSection({ lastBackupAt, onLastBackupChange }: RestoreSect
     t('backup.counts', { accounts: counts.accounts, transactions: counts.transactions });
 
   return (
-    <section aria-labelledby="restore-title" className="space-y-3 rounded-xl bg-white p-4 ring-1 ring-slate-200">
+    <section
+      id="restore"
+      aria-labelledby="restore-title"
+      className="scroll-mt-20 space-y-3 rounded-xl bg-white p-4 ring-1 ring-slate-200"
+    >
       <h2 id="restore-title" className="font-semibold">
         {t('restore.title')}
       </h2>

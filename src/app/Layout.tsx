@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, Outlet } from 'react-router-dom';
-import { ChartIcon, ListIcon, SettingsIcon, WalletIcon } from '../ui/icons';
+import { ChartIcon, HelpIcon, ListIcon, SettingsIcon, WalletIcon } from '../ui/icons';
 
 const NAV_ITEMS = [
   { to: '/transactions', labelKey: 'nav.transactions', icon: <ListIcon /> },
@@ -36,6 +36,16 @@ export function Layout() {
               </NavLink>
             ))}
           </nav>
+          <NavLink
+            to="/guide"
+            aria-label={t('nav.guide')}
+            title={t('nav.guide')}
+            className={({ isActive }) =>
+              'ml-auto rounded-full p-2 hover:bg-slate-100 ' + (isActive ? 'text-indigo-700' : 'text-slate-500')
+            }
+          >
+            <HelpIcon className="size-6" />
+          </NavLink>
         </div>
       </header>
 

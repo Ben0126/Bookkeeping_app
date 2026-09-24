@@ -54,9 +54,10 @@ afterEach(() => {
 const waitForDialogToClose = () => waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
 describe('TransactionsPage', () => {
-  it('asks for an account first when there is none', async () => {
-    const empty = createTestDb();
-    renderApp(empty, '/transactions');
+  it('asks for an active account when every account is archived', async () => {
+    await updateAccount(db, chase.id, { archived: true });
+    await updateAccount(db, taiwan.id, { archived: true });
+    renderApp(db, '/transactions');
     fireEvent.click(await screen.findByRole('link', { name: 'Go to accounts' }));
     expect(await screen.findByRole('heading', { name: 'Accounts' })).toBeInTheDocument();
   });

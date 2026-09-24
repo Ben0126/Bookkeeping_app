@@ -10,7 +10,8 @@
     "transactions": "Transactions",
     "accounts": "Accounts",
     "settings": "Settings",
-    "overview": "Overview"
+    "overview": "Overview",
+    "guide": "Guide"
   },
   "kinds": {
     "expense": "Expense",
@@ -81,7 +82,8 @@
     "budgetOver": "Budget exceeded by {{amount}}",
     "searchResults_one": "{{count}} match in all months",
     "searchResults_other": "{{count}} matches in all months",
-    "feeIncluded": "incl. {{fee}} fee"
+    "feeIncluded": "incl. {{fee}} fee",
+    "firstTimeGuide": "New here? Read the guide"
   },
   "transactionForm": {
     "kind": "Transaction type",
@@ -315,5 +317,123 @@
     "skip": "Skip",
     "postLabel": "Record {{name}} for {{date}}",
     "skipLabel": "Skip {{name}} for {{date}}"
+  },
+  "welcome": {
+    "title": "Welcome to StudyBudget",
+    "subtitle": "A money tracker for students abroad: no sign-up, works offline, home and local currencies side by side.",
+    "features": {
+      "currencies": {
+        "title": "Many currencies, one total",
+        "body": "Keep home and local money apart; totals convert to the currency you think in."
+      },
+      "card": {
+        "title": "Your home card abroad",
+        "body": "Type what you paid in local currency; the charge including the foreign fee is estimated for you."
+      },
+      "budget": {
+        "title": "What’s left this month",
+        "body": "Set a budget to see what you can spend per day and where the money goes."
+      },
+      "private": {
+        "title": "Stays on your phone",
+        "body": "No account, nothing uploaded; just back up now and then."
+      }
+    },
+    "readGuide": "Read the guide first",
+    "start": "Get started (about a minute)",
+    "restore": "Restore a backup",
+    "skip": "Skip",
+    "stepOf": "Step {{step}} of {{total}}",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Done, start tracking",
+    "currencies": {
+      "title": "Where are you studying?",
+      "intro": "This is used to suggest your accounts; you can change everything later.",
+      "local": "Local currency",
+      "localHint": "For cash and a local bank account.",
+      "home": "Home currency",
+      "homeHint": "For your bank account and credit card back home.",
+      "totals": "Show totals in",
+      "totalsHint": "The overview, budgets and account total are converted to this currency. You can change it in Settings."
+    },
+    "accounts": {
+      "title": "Which accounts do you use?",
+      "intro": "Tick the ones you use. Balances can stay empty; you can set them on the Accounts page later.",
+      "cash": "Cash",
+      "localBank": "Local bank account",
+      "homeBank": "Bank account back home",
+      "homeBank_taiwan": "Bank account in Taiwan",
+      "homeBank_same": "Bank account",
+      "homeCard": "Credit card from home",
+      "homeCard_taiwan": "Credit card from Taiwan",
+      "homeCard_same": "Credit card",
+      "feeRate": "Foreign fee",
+      "feeHint": "What the bank adds when you use this card abroad; 1.5% is typical for Taiwanese cards.",
+      "chooseOne": "Choose at least one account.",
+      "nameRequired": "Enter a name"
+    },
+    "safety": {
+      "title": "Your data stays on this phone",
+      "intro": "Three things to know before you start.",
+      "private": {
+        "title": "No sign-up, nothing uploaded",
+        "body": "Your records live only in this browser; the app only goes online to fetch exchange rates."
+      },
+      "backup": {
+        "title": "Back up now and then",
+        "body": "Clearing browser data or changing phones erases your records. Download a backup from Settings to your cloud drive now and then; you’ll be reminded after 7 days."
+      },
+      "install": {
+        "title": "Add it to your home screen",
+        "body": "iPhone: Safari “Share → Add to Home Screen”. Android: Chrome menu “Install app”. It then works offline, and its data is less likely to be cleared."
+      }
+    }
+  },
+  "guide": {
+    "title": "Guide",
+    "intro": "Everyday situations abroad, and how to record them in StudyBudget.",
+    "contents": "Contents",
+    "settingsHint": "How to record common situations, like card payments abroad, friends paying you back, and rent.",
+    "open": "Open the guide",
+    "accounts": {
+      "title": "Accounts and currencies",
+      "body": "Each account has its own currency, such as yen cash or a card billed in TWD. Balances come from your entries; if one doesn’t match your bank app, set the current balance on the Accounts page.\nThe overview and account total are converted to your main currency, which you can change in Settings.",
+      "link": "Go to Accounts"
+    },
+    "record": {
+      "title": "Adding an entry",
+      "body": "Tap “+”, pick the account, type the amount, tap a category and save. To enter several in a row, use “Save & add another”.\nNew entries start on the account you have used most lately; tap another to switch."
+    },
+    "foreignCard": {
+      "title": "Using your home card abroad",
+      "body": "Tap the currency next to the amount and pick the local one (e.g. JPY), then type what you paid. The charge to your card is estimated from exchange rates and the card’s foreign fee; when the statement arrives, use “Enter statement amount” to correct it.\nThe fee stays in the same entry but counts under Fees in the overview. Set the rate on the Accounts page; Taiwanese cards typically charge 1.5%. Each account remembers the currency it last paid in."
+    },
+    "refund": {
+      "title": "Friends paying you back, refunds",
+      "body": "When a friend pays you back for something you covered, choose “Refund” and the category of the original expense (e.g. Dining out). It is taken off that spending instead of counting as income. Store refunds work the same way."
+    },
+    "transfer": {
+      "title": "Transfers, cash withdrawals, card payments",
+      "body": "Money moving between your own accounts (money from home, an ATM withdrawal, paying off a card) is a “Transfer”: neither income nor spending.\nAcross currencies, enter both the amount sent and the amount received to see the rate. A fee can be added too; it is saved as a separate Fees expense."
+    },
+    "monthly": {
+      "title": "Rent, subscriptions and other monthly entries",
+      "body": "When adding the entry, open “More” and tick “Repeats monthly”. Each month when it is due, the Transactions page asks you to record or skip it. You can stop it in Settings."
+    },
+    "overview": {
+      "title": "What’s left this month",
+      "body": "Overview converts every currency into your main one: spending this month, what is left of your budget, how much you can spend per day, and which categories the money went to. Tap a category to see its entries.",
+      "link": "Go to Overview"
+    },
+    "search": {
+      "title": "Finding old entries",
+      "body": "Search looks through every month, by payee, note or category name. To analyse in a spreadsheet, export a CSV in Settings."
+    },
+    "backup": {
+      "title": "Backups and new phones",
+      "body": "Your data lives only in this browser and is never uploaded. Download a backup from Settings now and then and keep it in your cloud drive; on a new phone, restore it. You are reminded after 7 days without one.\nAdd the app to your home screen (iPhone: Safari “Share → Add to Home Screen”; Android: Chrome menu “Install app”) so it works offline and the browser is less likely to clear its data.",
+      "link": "Go to Settings"
+    }
   }
 }

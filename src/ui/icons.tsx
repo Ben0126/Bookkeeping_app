@@ -38,6 +38,13 @@ export const ChevronLeftIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const HelpIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01" />
+  </Icon>
+);
+
 export const ChevronDownIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="m6 9 6 6 6-6" />

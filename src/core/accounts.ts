@@ -20,8 +20,15 @@ export type AccountPatch = Partial<
   foreignFeeBps?: number | null;
 };
 
-export async function createAccount(db: LedgerDB, input: NewAccount): Promise<Account> {
-  const now = Date.now();
+/**
+ * `now` stamps the account; accounts are listed oldest first, so setting up
+ * several at once can keep them in a chosen order.
+ */
+export async function createAccount(
+  db: LedgerDB,
+  input: NewAccount,
+  { now = Date.now() }: { now?: number } = {},
+): Promise<Account> {
   const account: Account = {
     id: newId(),
     name: requireName(input.name),

@@ -18,6 +18,8 @@
 - **匯率**：每天自動下載（[currency-api](https://github.com/fawazahmed0/exchange-api)，含台幣，不需金鑰），存在裝置上，離線也能換算；缺匯率的幣別會標示出來，不會被當成主要幣別加總。
 - **備份與還原**：下載 JSON 備份檔（手機可直接分享到雲端硬碟）；還原前先預覽內容，還原後可立即復原；超過 7 天的資料沒備份時會提醒；可要求瀏覽器永久儲存資料。
 - **匯出 CSV**：所有交易匯出成試算表檔（Excel 開啟中文不會亂碼），欄位名稱跟著介面語言。
+- **新手引導**：第一次開啟時有三步設定：選當地和家鄉的幣別、勾選常見帳戶（現金、當地銀行、台灣的銀行和信用卡，信用卡預填 1.5% 海外手續費），並說明資料只存在手機、要記得備份。換手機的人可以直接從備份還原。
+- **使用說明**：右上角的「?」開啟使用說明，用留學生常見情況說明怎麼記：在國外刷卡、朋友還錢、匯款、房租等。
 - **介面**：繁體中文／英文；手機底部導覽，桌面上方導覽；可安裝成 App 並離線使用。
 
 ## 開發
@@ -38,7 +40,7 @@ npm run build     # 型別檢查 + 正式建置
 src/
 ├── core/        記帳核心：資料模型、IndexedDB（Dexie）、驗證、報表、備份。不依賴 UI。
 ├── app/         App 外框：版面、資料庫 Provider
-├── features/    功能頁面（transactions、accounts、overview、recurring、backup、settings、rates）
+├── features/    功能頁面（transactions、accounts、overview、recurring、backup、settings、rates、onboarding）
 ├── ui/          共用元件與格式化工具
 ├── locales/     zh-TW／en-US 翻譯
 └── test/        測試輔助（fake-indexeddb 測試資料庫、renderApp）
