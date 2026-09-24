@@ -132,9 +132,9 @@ describe('exporting to CSV', () => {
     const bytes = new Uint8Array(await saved!.arrayBuffer());
     expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
     expect((await saved!.text()).replace(/^\uFEFF/, '').split('\r\n')).toEqual([
-      'Date,Type,Account,Currency,Amount,Category,Payee,Note,Other account,Original currency,Original amount',
-      '2026-09-02,Expense,Wallet,GBP,-4.50,Dining out,"Pret, Soho",,,,',
-      '2026-09-03,Refund,Wallet,GBP,2.00,Dining out,,,,,',
+      'Date,Type,Account,Currency,Amount,Fee included,Category,Payee,Note,Other account,Original currency,Original amount',
+      '2026-09-02,Expense,Wallet,GBP,-4.50,,Dining out,"Pret, Soho",,,,',
+      '2026-09-03,Refund,Wallet,GBP,2.00,,Dining out,,,,,',
       '',
     ]);
     // A CSV is not a backup.

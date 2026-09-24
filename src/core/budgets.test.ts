@@ -75,4 +75,26 @@ describe('budgetProgress', () => {
       ['overall', 9160, 10840],
     ]);
   });
+
+  it('counts a fee included in a purchase toward the Fees budget', async () => {
+    await createTransaction(db, {
+      kind: 'expense', accountId: twd.id, amountMinor: 1091, feeMinor: 16, date: '2026-09-01', categoryId: 'default-dining',
+    });
+    const dining = await setBudget(db, { categoryId: 'default-dining', amountMinor: 5000, currency: 'TWD' });
+    const fees = await setBudget(db, { categoryId: 'default-fees', amountMinor: 100, currency: 'TWD' });
+    const overall = await setBudget(db, { amountMinor: 20000, currency: 'TWD' });
+
+    const progress = budgetProgress(
+      [dining, fees, overall],
+      await listCategories(db),
+      await db.transactions.toArray(),
+      { accounts: [usd, twd], rates: createRateResolver([]), feeCategoryId: 'default-fees' },
+      '2026-09',
+    );
+    expect(progress.map((p) => [p.budget.id, p.spentMinor])).toEqual([
+      ['category:default-dining', 1075],
+      ['category:default-fees', 16],
+      ['overall', 1091],
+    ]);
+  });
 });

@@ -20,6 +20,11 @@ export interface Account {
   currency: CurrencyCode;
   /** Balance before the first recorded transaction, in minor units. Negative for debt. */
   openingBalanceMinor: number;
+  /**
+   * Fee the bank adds when the account pays in another currency, in basis
+   * points (150 = 1.5%, typical of Taiwanese cards). Used to estimate charges.
+   */
+  foreignFeeBps?: number;
   color?: string;
   archived: boolean;
   createdAt: number;
@@ -75,6 +80,12 @@ export interface Transaction {
    */
   originalAmountMinor?: number;
   originalCurrency?: CurrencyCode;
+  /**
+   * Expenses only: the part of `amountMinor` that is a fee, such as a card's
+   * foreign transaction fee. Same sign as `amountMinor`. Reports count it
+   * under the Fees category rather than the purchase's category.
+   */
+  feeMinor?: number;
   createdAt: number;
   updatedAt: number;
 }

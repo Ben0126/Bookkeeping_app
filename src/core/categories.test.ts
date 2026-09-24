@@ -5,6 +5,7 @@ import {
   createCategory,
   DEFAULT_CATEGORIES,
   deleteCategory,
+  findFeeCategory,
   listCategories,
   seedDefaultCategories,
   updateCategory,
@@ -88,6 +89,16 @@ describe('updateCategory', () => {
     const coffee = await createCategory(db, { kind: 'expense', name: 'Coffee', parentId: food.id });
     const moved = await updateCategory(db, coffee.id, { parentId: undefined });
     expect(moved).not.toHaveProperty('parentId');
+  });
+});
+
+describe('findFeeCategory', () => {
+  it('finds the built-in Fees category, even renamed', async () => {
+    await seedDefaultCategories(db);
+    expect(findFeeCategory(await listCategories(db))?.id).toBe('default-fees');
+    await updateCategory(db, 'default-fees', { name: 'Bank charges' });
+    expect(findFeeCategory(await listCategories(db))?.id).toBe('default-fees');
+    expect(findFeeCategory([])).toBeUndefined();
   });
 });
 

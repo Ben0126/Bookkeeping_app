@@ -1,8 +1,9 @@
 import { newId, type LedgerDB } from './db';
 import { LedgerError } from './errors';
 import type { CurrencyCode } from './money';
+import { findFeeCategory } from './categories';
 import type { Account, Category, Transaction, TransactionKind } from './types';
-import { optionalText, requireCurrency, requireDate, requirePositiveMinor } from './validate';
+import { optionalText, requireCurrency, requireDate, requireMinor, requirePositiveMinor } from './validate';
 
 export interface IncomeExpenseInput {
   kind: 'income' | 'expense';
@@ -21,6 +22,11 @@ export interface IncomeExpenseInput {
    * category instead of counting as income.
    */
   refund?: boolean;
+  /**
+   * Expenses only: the part of `amountMinor` that is a fee, such as a card's
+   * foreign transaction fee (positive, less than `amountMinor`).
+   */
+  feeMinor?: number;
 }
 
 export interface TransferInput {
@@ -82,7 +88,8 @@ export async function checkTransactionInput(db: LedgerDB, input: TransactionInpu
 
 /** The built-in "fees" category, unless it has been hidden. */
 async function findFeeCategoryId(db: LedgerDB): Promise<string | undefined> {
-  const category = await db.categories.filter((c) => c.key === 'fees' && c.kind === 'expense' && !c.archived).first();
+  const category = findFeeCategory(await db.categories.toArray());
+  if (category?.archived) return undefined;
   return category?.id;
 }
 
@@ -166,12 +173,16 @@ export function toTransactionInput(group: readonly Transaction[]): TransactionIn
   if (first.originalAmountMinor !== undefined && first.originalCurrency !== undefined) {
     input.original = { amountMinor: Math.abs(first.originalAmountMinor), currency: first.originalCurrency };
   }
+  if (first.feeMinor !== undefined) input.feeMinor = Math.abs(first.feeMinor);
   return input;
 }
 
 export interface TransactionFilter {
   accountId?: string;
-  /** Matches any of these categories. */
+  /**
+   * Matches any of these categories. Listing the Fees category also matches
+   * expenses that include a fee.
+   */
   categoryIds?: readonly string[];
   kind?: TransactionKind;
   /** Inclusive "YYYY-MM-DD" bounds. */
@@ -200,16 +211,21 @@ export async function listTransactions(db: LedgerDB, filter: TransactionFilter =
       ? db.transactions.where('date').between(from ?? '', to ?? '\uffff', true, true)
       : db.transactions.toCollection();
 
+  const feeCategoryId = categoryIds || searchCategoryIds ? findFeeCategory(await db.categories.toArray())?.id : undefined;
+  const inCategories = (t: Transaction, ids: readonly string[]) =>
+    (t.categoryId !== undefined && ids.includes(t.categoryId)) ||
+    (t.feeMinor !== undefined && feeCategoryId !== undefined && ids.includes(feeCategoryId));
+
   const rows = (await collection.toArray()).filter(
     (t) =>
       (kind === undefined || t.kind === kind) &&
       (from === undefined || t.date >= from) &&
       (to === undefined || t.date <= to) &&
-      (categoryIds === undefined || (t.categoryId !== undefined && categoryIds.includes(t.categoryId))) &&
+      (categoryIds === undefined || inCategories(t, categoryIds)) &&
       (!search ||
         (t.payee?.toLocaleLowerCase().includes(search) ?? false) ||
         (t.note?.toLocaleLowerCase().includes(search) ?? false) ||
-        (t.categoryId !== undefined && (searchCategoryIds?.includes(t.categoryId) ?? false))),
+        (searchCategoryIds !== undefined && inCategories(t, searchCategoryIds))),
   );
   rows.sort(compareNewestFirst);
   return rows.slice(offset, limit === undefined ? undefined : offset + limit);
@@ -289,6 +305,14 @@ async function buildRecords(db: LedgerDB, input: TransactionInput, ctx: BuildCon
     }
     record.originalAmountMinor = sign * requirePositiveMinor(input.original.amountMinor);
     record.originalCurrency = currency;
+  }
+  if (input.feeMinor !== undefined) {
+    if (input.kind !== 'expense' || input.refund) {
+      throw new LedgerError('INVALID_FEE', 'Only expenses can include a fee');
+    }
+    const fee = requireMinor(input.feeMinor);
+    if (fee <= 0 || fee >= amountMinor) throw new LedgerError('INVALID_FEE', 'Fee must be above zero and below the amount');
+    record.feeMinor = sign * fee;
   }
   return [record];
 }

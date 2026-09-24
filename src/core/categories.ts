@@ -3,6 +3,15 @@ import { LedgerError } from './errors';
 import type { Category, CategoryKind } from './types';
 import { optionalText, requireName, requireOneOf } from './validate';
 
+/**
+ * The built-in Fees category, found by its key or, once renamed (which
+ * clears the key), by its seeded id.
+ */
+export function findFeeCategory(categories: readonly Category[]): Category | undefined {
+  const fees = categories.filter((c) => c.kind === 'expense');
+  return fees.find((c) => c.key === 'fees') ?? fees.find((c) => c.id === 'default-fees');
+}
+
 const CATEGORY_KINDS: readonly CategoryKind[] = ['income', 'expense'];
 
 interface DefaultCategory {

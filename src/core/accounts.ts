@@ -2,19 +2,23 @@ import { newId, type LedgerDB } from './db';
 import { LedgerError } from './errors';
 import type { CurrencyCode } from './money';
 import { ACCOUNT_KINDS, type Account, type AccountKind } from './types';
-import { optionalText, requireCurrency, requireMinor, requireName, requireOneOf } from './validate';
+import { optionalText, requireCurrency, requireFeeBps, requireMinor, requireName, requireOneOf } from './validate';
 
 export interface NewAccount {
   name: string;
   kind: AccountKind;
   currency: CurrencyCode;
   openingBalanceMinor?: number;
+  foreignFeeBps?: number;
   color?: string;
 }
 
 export type AccountPatch = Partial<
   Pick<Account, 'name' | 'kind' | 'currency' | 'openingBalanceMinor' | 'color' | 'archived'>
->;
+> & {
+  /** null clears the rate. */
+  foreignFeeBps?: number | null;
+};
 
 export async function createAccount(db: LedgerDB, input: NewAccount): Promise<Account> {
   const now = Date.now();
@@ -28,6 +32,7 @@ export async function createAccount(db: LedgerDB, input: NewAccount): Promise<Ac
     createdAt: now,
     updatedAt: now,
   };
+  if (input.foreignFeeBps !== undefined) account.foreignFeeBps = requireFeeBps(input.foreignFeeBps);
   const color = optionalText(input.color);
   if (color) account.color = color;
   await db.accounts.add(account);
@@ -61,6 +66,8 @@ export async function updateAccount(db: LedgerDB, id: string, patch: AccountPatc
       next.openingBalanceMinor = requireMinor(patch.openingBalanceMinor);
     }
     if (patch.archived !== undefined) next.archived = patch.archived === true;
+    if (patch.foreignFeeBps === null) delete next.foreignFeeBps;
+    else if (patch.foreignFeeBps !== undefined) next.foreignFeeBps = requireFeeBps(patch.foreignFeeBps);
     if (patch.color !== undefined) {
       const color = optionalText(patch.color);
       if (color) next.color = color;

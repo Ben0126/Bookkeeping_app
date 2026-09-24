@@ -79,7 +79,8 @@
     "budgetLeft": "預算還剩 {{amount}}",
     "budgetLeftPerDay": "預算還剩 {{amount}}，每天約可花 {{perDay}}",
     "budgetOver": "預算已超出 {{amount}}",
-    "searchResults_other": "所有月份共找到 {{count}} 筆"
+    "searchResults_other": "所有月份共找到 {{count}} 筆",
+    "feeIncluded": "含手續費 {{fee}}"
   },
   "transactionForm": {
     "kind": "交易類型",
@@ -95,10 +96,6 @@
     "category": "分類",
     "payee": "商家／對象",
     "note": "備註",
-    "foreign": "以其他幣別付款",
-    "foreignHint": "卡片扣款的幣別（{{currency}}）和實際付款的幣別不同時使用。例如用台幣卡在日本刷 ¥5,000：上方金額填帳單的台幣金額，這裡填 ¥5,000。",
-    "originalCurrency": "原幣別",
-    "originalAmount": "原幣金額",
     "confirmDelete": "確定刪除？",
     "errors": {
       "chooseAccount": "請選擇帳戶",
@@ -106,9 +103,10 @@
       "amountRequired": "請輸入金額",
       "amountInvalid": "請輸入大於 0 的數字",
       "amountTooPrecise": "{{currency}} 最多到小數點後 {{decimals}} 位",
-      "amountTooPrecise_none": "{{currency}} 金額不能有小數"
+      "amountTooPrecise_none": "{{currency}} 金額不能有小數",
+      "feeTooLarge": "手續費要小於扣款金額"
     },
-    "more": "更多：備註、以其他幣別付款",
+    "more": "更多：備註",
     "saveAndNext": "再記一筆",
     "savedNotice": "已儲存：{{entry}}。可以接著記下一筆。",
     "discardConfirm": "要放棄還沒儲存的內容嗎？",
@@ -119,7 +117,20 @@
     "monthly": "每月固定（房租、訂閱等）",
     "monthlyHint": "之後每月 {{day}} 日會提醒你記一筆，按「記上」才會記錄。",
     "monthlyHint_late": "之後每月 {{day}} 日（沒有這天的月份就在月底）會提醒你記一筆，按「記上」才會記錄。",
-    "moreWithMonthly": "更多：備註、外幣付款、每月固定"
+    "moreWithMonthly": "更多：備註、每月固定",
+    "paymentCurrency": "付款幣別",
+    "chargeEstimate": "{{account}} 約扣 {{amount}}",
+    "chargeEstimate_fee": "{{account}} 約扣 {{amount}}（含海外手續費 {{rate}}：{{fee}}）",
+    "chargeEstimate_noRate": "{{account}} 約扣 {{amount}}（這個帳戶還沒設定海外手續費）",
+    "creditEstimate": "{{account}} 約入帳 {{amount}}",
+    "chargeWillEstimate": "會依匯率估算 {{account}} 的扣款（{{currency}}）",
+    "typeCharge": "填帳單金額",
+    "charged": "扣款金額（{{currency}}）",
+    "credited": "入帳金額（{{currency}}）",
+    "estimated": "依匯率估計約 {{amount}}",
+    "noRate": "還沒有 {{from}} 對 {{to}} 的匯率，請填帳單上的金額。",
+    "cardFee": "其中海外手續費",
+    "useEstimate": "改用匯率估算"
   },
   "accounts": {
     "title": "帳戶",
@@ -143,7 +154,10 @@
     "amountOwed": "目前欠款",
     "amountOwedHint": "這張卡目前還沒繳的金額，填正數。",
     "owed": "欠 {{amount}}",
-    "totalApprox": "換算後約 {{amount}}"
+    "totalApprox": "換算後約 {{amount}}",
+    "foreignFee": "海外交易手續費",
+    "foreignFeeHint": "用其他幣別付款時銀行加收的比例，記帳時用來估算扣款。台灣發行的卡多為 1.5%，免手續費的卡填 0。",
+    "foreignFeeInvalid": "請輸入 0 到 10 之間的數字，最多到小數點後 2 位"
   },
   "errors": {
     "NOT_FOUND": "找不到資料，可能已被刪除。",
@@ -166,7 +180,8 @@
     "TRANSFER_AMOUNT_REQUIRED": "不同幣別的轉帳請輸入到帳金額。",
     "TRANSFER_AMOUNT_MISMATCH": "同幣別轉帳的兩邊金額必須相同；手續費請另記一筆支出。",
     "INVALID_BACKUP": "備份檔格式不正確。",
-    "UNKNOWN": "發生錯誤，請再試一次。"
+    "UNKNOWN": "發生錯誤，請再試一次。",
+    "INVALID_FEE": "手續費不正確。"
   },
   "settings": {
     "title": "設定",
@@ -228,6 +243,7 @@
       "account": "帳戶",
       "currency": "幣別",
       "amount": "金額",
+      "fee": "其中手續費",
       "category": "分類",
       "payee": "商家／對象",
       "note": "備註",

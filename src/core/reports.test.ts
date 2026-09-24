@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CurrencyCode } from './money';
 import { createRateResolver } from './rates';
-import { monthlyTotals, netWorth, summarize, type ReportContext } from './reports';
+import { monthlyTotals, netWorth, splitFees, summarize, type ReportContext } from './reports';
 import type { Account, Transaction } from './types';
 
 const account = (id: string, currency: CurrencyCode): Account => ({
@@ -112,5 +112,37 @@ describe('refunds', () => {
     expect(summary.byCategory.find((c) => c.categoryId === 'dining')).toMatchObject({ totalMinor: 500, count: 3 });
     expect(summary.byCurrency.TWD).toEqual({ incomeMinor: 0, expenseMinor: 5100 });
     expect(monthlyTotals(withRefund, ctx).months.at(-1)).toMatchObject({ expenseMinor: 5500 });
+  });
+});
+
+describe('fees included in expenses', () => {
+  // ¥5,000 dinner charged NT$1,091 on a TWD card, NT$16 of it the card's fee.
+  const dinner = posting({
+    kind: 'expense', accountId: 'twd', amountMinor: -1091, feeMinor: -16, date: '2026-09-06', categoryId: 'dining',
+    originalAmountMinor: -5000, originalCurrency: 'JPY',
+  });
+
+  it('count toward the Fees category, leaving totals unchanged', () => {
+    const summary = summarize([dinner], { ...ctx, feeCategoryId: 'fees' });
+    expect(summary.expenseMinor).toBe(1091);
+    expect(summary.byCategory).toEqual([
+      { categoryId: 'dining', kind: 'expense', totalMinor: 1075, count: 1 },
+      { categoryId: 'fees', kind: 'expense', totalMinor: 16, count: 1 },
+    ]);
+    expect(summary.byCurrency.TWD).toEqual({ incomeMinor: 0, expenseMinor: 1091 });
+  });
+
+  it('stay with the purchase when there is no Fees category', () => {
+    expect(summarize([dinner], ctx).byCategory).toEqual([{ categoryId: 'dining', kind: 'expense', totalMinor: 1091, count: 1 }]);
+  });
+
+  it('split into a purchase that keeps the original amount and a fee that does not', () => {
+    const [purchase, fee] = splitFees([dinner], 'fees');
+    expect(purchase).toEqual({ ...dinner, amountMinor: -1075, feeMinor: undefined });
+    expect(purchase).not.toHaveProperty('feeMinor');
+    expect(fee).toEqual({
+      id: `${dinner.id}:fee`, kind: 'expense', accountId: 'twd', amountMinor: -16, date: '2026-09-06', categoryId: 'fees',
+      createdAt: 0, updatedAt: 0,
+    });
   });
 });

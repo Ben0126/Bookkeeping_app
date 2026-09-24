@@ -1,9 +1,11 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  createAccount,
   createRecurringRule,
   createTransaction,
   getAccountBalance,
+  setExchangeRate,
   monthOf,
   seedDefaultCategories,
   shiftMonth,
@@ -377,7 +379,7 @@ describe('monthly entries', () => {
     change(within(dialog).getByLabelText('Amount'), '1200');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Rent' }));
     change(within(dialog).getByLabelText('Date'), `${lastMonth}-01`);
-    fireEvent.click(within(dialog).getByText('More: note, other currency, repeat monthly'));
+    fireEvent.click(within(dialog).getByText('More: note, repeat monthly'));
     fireEvent.click(within(dialog).getByLabelText('Repeats monthly (rent, subscriptions…)'));
     expect(within(dialog).getByText(/Each month on day 1 you’ll be asked/)).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
@@ -420,7 +422,7 @@ describe('monthly entries', () => {
     fireEvent.click(within(dialog).getByLabelText('Repeats monthly (rent, subscriptions…)'));
     fireEvent.click(within(dialog).getByRole('radio', { name: 'Refund' }));
     expect(within(dialog).queryByLabelText('Repeats monthly (rent, subscriptions…)')).not.toBeInTheDocument();
-    expect(within(dialog).getByText('More: note, paid in another currency')).toBeInTheDocument();
+    expect(within(dialog).getByText('More: note')).toBeInTheDocument();
 
     // A choice made before switching to a refund doesn't carry over.
     fireEvent.click(within(dialog).getByRole('radio', { name: /Chase/ }));
@@ -429,5 +431,90 @@ describe('monthly entries', () => {
     await waitForDialogToClose();
     expect(await db.transactions.count()).toBe(1);
     expect(await db.recurring.count()).toBe(0);
+  });
+});
+
+describe('paying in another currency', () => {
+  let visa: Account;
+
+  beforeEach(async () => {
+    visa = await createAccount(db, { name: 'Visa', kind: 'credit_card', currency: 'TWD', foreignFeeBps: 150 });
+    await setExchangeRate(db, { from: 'JPY', to: 'TWD', rate: 0.215, date: toDateKey(new Date()) });
+  });
+
+  const payIn = (dialog: HTMLElement, currency: string) =>
+    change(within(dialog).getAllByLabelText('Currency paid in')[0], currency);
+
+  it('estimates a yen purchase on a Taiwanese card, fee included, and remembers the currency', async () => {
+    renderApp(db, '/transactions');
+    let dialog = await openAddDialog();
+    fireEvent.click(within(dialog).getByRole('radio', { name: /Visa/ }));
+    payIn(dialog, 'JPY');
+    change(within(dialog).getByLabelText('Amount'), '5,000');
+    expect(within(dialog).getByText('Visa will be charged about NT$1,091, including a 1.5% foreign fee of NT$16')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Dining out' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitForDialogToClose();
+
+    expect(await screen.findByRole('button', { name: /Dining out.*Visa · incl\. NT\$16 fee.*-NT\$1,091.*¥5,000/ })).toBeInTheDocument();
+    expect(await db.transactions.toArray()).toMatchObject([
+      { amountMinor: -1091, feeMinor: -16, originalAmountMinor: -5000, originalCurrency: 'JPY' },
+    ]);
+
+    // Next time, Visa (now the most used card) starts in yen, also after switching away and back.
+    dialog = await openAddDialog();
+    expect(within(dialog).getByRole('radio', { name: /Visa/ })).toHaveAttribute('aria-checked', 'true');
+    expect(within(dialog).getAllByLabelText('Currency paid in')[0]).toHaveValue('JPY');
+    fireEvent.click(within(dialog).getByRole('radio', { name: /Chase/ }));
+    expect(within(dialog).getAllByLabelText('Currency paid in')[0]).toHaveValue('USD');
+    fireEvent.click(within(dialog).getByRole('radio', { name: /Visa/ }));
+    expect(within(dialog).getAllByLabelText('Currency paid in')[0]).toHaveValue('JPY');
+  });
+
+  it('takes the statement amount instead of the estimate', async () => {
+    renderApp(db, '/transactions');
+    const dialog = await openAddDialog();
+    fireEvent.click(within(dialog).getByRole('radio', { name: /Visa/ }));
+    payIn(dialog, 'JPY');
+    change(within(dialog).getByLabelText('Amount'), '5000');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Enter statement amount' }));
+
+    const charged = within(dialog).getByLabelText('Charged (TWD)');
+    expect(charged).toHaveValue('1091');
+    await waitFor(() => expect(charged).toHaveFocus());
+    expect(within(dialog).getByLabelText('Of which foreign fee')).toHaveValue('16');
+    change(charged, '1,100');
+    change(within(dialog).getByLabelText('Of which foreign fee'), '1100');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(await within(dialog).findByText('The fee must be less than the amount charged')).toBeInTheDocument();
+
+    change(within(dialog).getByLabelText('Of which foreign fee'), '17');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitForDialogToClose();
+    expect(await db.transactions.toArray()).toMatchObject([{ amountMinor: -1100, feeMinor: -17, originalAmountMinor: -5000 }]);
+  });
+
+  it('asks for the charge when there is no rate for the currency', async () => {
+    renderApp(db, '/transactions');
+    const dialog = await openAddDialog();
+    fireEvent.click(within(dialog).getByRole('radio', { name: /Visa/ }));
+    payIn(dialog, 'EUR');
+    change(within(dialog).getByLabelText('Amount'), '12');
+    expect(within(dialog).getByText('No EUR to TWD rate yet; enter the amount on your statement.')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(await within(dialog).findByText('Enter an amount')).toBeInTheDocument();
+    await waitFor(() => expect(within(dialog).getByLabelText('Charged (TWD)')).toHaveFocus());
+    expect(await db.transactions.count()).toBe(0);
+  });
+
+  it('counts the fee under Fees when filtering by category', async () => {
+    await createTransaction(db, {
+      kind: 'expense', accountId: visa.id, amountMinor: 1091, feeMinor: 16, date: `${thisMonth}-01`, categoryId: 'default-dining',
+      original: { amountMinor: 5000, currency: 'JPY' },
+    });
+    renderApp(db, '/transactions?category=default-fees');
+    expect(await screen.findByRole('button', { name: /Dining out.*-NT\$1,091/ })).toBeInTheDocument();
+    const spent = (await screen.findByText('Spent this month')).parentElement!;
+    await waitFor(() => expect(within(spent).getByText('NT$16')).toBeInTheDocument());
   });
 });

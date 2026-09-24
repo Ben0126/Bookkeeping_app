@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { addAccount, createTestDb } from '../test/ledgerDb';
+import { updateAccount } from './accounts';
 import { countBackup, exportBackup, importBackup, oldestChangeSince, parseBackup, readBackup, type Backup } from './backup';
 import { setBudget } from './budgets';
 import { seedDefaultCategories } from './categories';
@@ -17,6 +18,7 @@ beforeEach(async () => {
   await seedDefaultCategories(source);
   const usd = await addAccount(source, { name: 'Chase', currency: 'USD', openingBalanceMinor: 5000 });
   const twd = await addAccount(source, { name: '台銀', currency: 'TWD', color: '#123456' });
+  await updateAccount(source, twd.id, { foreignFeeBps: 150 });
   await createTransaction(source, {
     kind: 'expense', accountId: usd.id, amountMinor: 1320, date: '2026-09-01', categoryId: 'default-dining',
     payee: 'Pret', original: { amountMinor: 1200, currency: 'EUR' },
@@ -24,11 +26,15 @@ beforeEach(async () => {
   await createTransaction(source, {
     kind: 'transfer', fromAccountId: twd.id, toAccountId: usd.id, amountMinor: 32000, toAmountMinor: 100000, date: '2026-09-02',
   });
+  await createTransaction(source, {
+    kind: 'expense', accountId: twd.id, amountMinor: 1091, feeMinor: 16, date: '2026-09-03', categoryId: 'default-dining',
+    original: { amountMinor: 5000, currency: 'JPY' },
+  });
   await setExchangeRate(source, { from: 'USD', to: 'TWD', rate: 32, date: '2026-09-01' });
   await setBudget(source, { categoryId: 'default-dining', amountMinor: 5000, currency: 'TWD' });
   await updateSettings(source, { baseCurrency: 'USD' });
   await createRecurringRule(source, {
-    template: { kind: 'expense', accountId: usd.id, amountMinor: 120000, categoryId: 'default-rent' },
+    template: { kind: 'expense', accountId: usd.id, amountMinor: 121800, feeMinor: 1800, categoryId: 'default-rent' },
     dayOfMonth: 1,
     startMonth: '2026-10',
   });
@@ -91,6 +97,13 @@ describe('invalid backups', () => {
     ['missing table', (data) => { delete (data as Partial<Backup['data']>).exchangeRates; }],
     ['recurring rule on an unknown account', (data) => { data.recurring[0].template.accountId = 'ghost'; }],
     ['recurring rule on day 40', (data) => { data.recurring[0].dayOfMonth = 40; }],
+    ['recurring fee as large as the amount', (data) => { data.recurring[0].template.feeMinor = 121800; }],
+    ['fee rate above 10%', (data) => { data.accounts.find((a) => a.foreignFeeBps)!.foreignFeeBps = 2000; }],
+    ['fee as large as the charge', (data) => { data.transactions.find((t) => t.feeMinor)!.feeMinor = -1091; }],
+    ['fee on income', (data) => {
+      const income = data.transactions.find((t) => t.feeMinor)!;
+      Object.assign(income, { kind: 'income', amountMinor: 1091, categoryId: undefined });
+    }],
   ])('rejects %s and keeps existing data', async (_, mutate) => {
     const target = createTestDb();
     await addAccount(target, { name: 'Precious' });
@@ -134,7 +147,7 @@ describe('countBackup', () => {
     expect(countBackup(backup.data)).toEqual({
       accounts: 2,
       categories: 22,
-      transactions: 2,
+      transactions: 3,
       exchangeRates: 1,
       budgets: 1,
     });

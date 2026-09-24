@@ -120,6 +120,20 @@ describe('updateAccount', () => {
   });
 });
 
+describe('foreign fee rate', () => {
+  it('is set, changed and cleared in basis points', async () => {
+    const card = await createAccount(db, { name: 'Visa', kind: 'credit_card', currency: 'TWD', foreignFeeBps: 150 });
+    expect(card.foreignFeeBps).toBe(150);
+    expect((await updateAccount(db, card.id, { foreignFeeBps: 0 })).foreignFeeBps).toBe(0);
+    expect(await updateAccount(db, card.id, { foreignFeeBps: null })).not.toHaveProperty('foreignFeeBps');
+  });
+
+  it.each([1.5, -1, 1001])('rejects %s', async (foreignFeeBps) => {
+    await expect(createAccount(db, { name: 'Visa', kind: 'credit_card', currency: 'TWD', foreignFeeBps }))
+      .rejects.toMatchObject({ code: 'INVALID_FEE' });
+  });
+});
+
 describe('deleteAccount', () => {
   it('deletes an unused account', async () => {
     const account = await addAccount(db);

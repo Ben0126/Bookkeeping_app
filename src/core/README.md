@@ -12,7 +12,7 @@
 | 退款 | 金額為正的支出（`refund: true` 建立）：錢回到帳戶，並從該分類的支出扣掉，不算收入。朋友還代墊的錢也這樣記。 |
 | 轉帳 | 兩筆紀錄共用 `transferId`：轉出帳戶為負、轉入帳戶為正。同幣別時兩邊金額必須相等；跨幣別時兩邊各記實際金額。建立時可帶 `fee`，會另存成一筆「手續費」支出。 |
 | 固定收支 | `recurring` 表存每月規則（範本 + 每月幾號）。`dueRecurring` 算出到期的月份，使用者確認後 `postRecurring` 才記帳，或用 `skipRecurring` 略過；月份依序處理。刪除帳戶會一併刪除它的規則，刪除分類會把規則移到新分類。 |
-| 外幣刷卡 | `originalAmountMinor` + `originalCurrency` 記錄原幣金額；`amountMinor` 是帳戶實際被扣的金額。 |
+| 外幣刷卡 | `originalAmountMinor` + `originalCurrency` 記錄原幣金額；`amountMinor` 是帳戶實際被扣的金額。`feeMinor` 是其中的手續費（例如海外交易手續費），報表用 `splitFees` 把它算進「手續費」分類。帳戶的 `foreignFeeBps` 記錄費率（150 = 1.5%），用來估算扣款。 |
 | 日期 | `"YYYY-MM-DD"` 字串，沒有時區問題，JSON 還原後不會變型別。 |
 | ID | UUID 字串，方便日後匯入合併或雲端同步。 |
 | 寫入 | 會動到多筆紀錄的操作（編輯、刪除轉帳、刪除分類、匯入）都包在 Dexie transaction 裡，失敗時整批回滾。 |

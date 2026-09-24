@@ -127,6 +127,38 @@ describe('refunds', () => {
   });
 });
 
+describe('fees included in an expense', () => {
+  // ¥5,000 on a TWD card: NT$1,075 converted plus a 1.5% fee of NT$16.
+  const dinner = (fields: Partial<TransactionInput> = {}) =>
+    ({
+      kind: 'expense', accountId: twd.id, amountMinor: 1091, date: '2026-09-01', categoryId: 'default-dining',
+      original: { amountMinor: 5000, currency: 'JPY' }, feeMinor: 16, ...fields,
+    }) as TransactionInput;
+
+  it('stores the fee as part of the charge and round-trips it', async () => {
+    const [record] = await createTransaction(db, dinner());
+    expect(record).toMatchObject({ amountMinor: -1091, feeMinor: -16, categoryId: 'default-dining' });
+    expect(await balance(twd)).toBe(50000 - 1091);
+    expect(await getTransactionInput(db, record.id)).toEqual(dinner());
+
+    await updateTransaction(db, record.id, dinner({ amountMinor: 1100, feeMinor: 17 }));
+    expect(await db.transactions.get(record.id)).toMatchObject({ amountMinor: -1100, feeMinor: -17 });
+    await updateTransaction(db, record.id, dinner({ feeMinor: undefined }));
+    expect(await db.transactions.get(record.id)).not.toHaveProperty('feeMinor');
+  });
+
+  it.each<[string, Partial<TransactionInput>]>([
+    ['on income', { kind: 'income', categoryId: undefined }],
+    ['on a refund', { refund: true }],
+    ['of zero', { feeMinor: 0 }],
+    ['as large as the charge', { feeMinor: 1091 }],
+    ['with decimals', { feeMinor: 1.5 }],
+  ])('rejects a fee %s', async (_, fields) => {
+    await expect(createTransaction(db, dinner(fields))).rejects.toMatchObject({ code: expect.stringMatching(/INVALID_(FEE|AMOUNT)/) });
+    expect(await db.transactions.count()).toBe(0);
+  });
+});
+
 describe('transfers', () => {
   it('moves money between same-currency accounts without changing the total', async () => {
     const legs = await createTransaction(db, {
@@ -303,6 +335,19 @@ describe('listTransactions', () => {
     expect(await dates({ search: 'costco' })).toEqual(['2026-08-30:-100']);
     expect(await dates({ search: 'SCHOLAR' })).toEqual(['2026-09-01:900']);
     expect(await dates({ search: 'dining', searchCategoryIds: ['default-dining'] })).toEqual(['2026-09-03:-50']);
+  });
+
+  it('finds expenses that include a fee under the Fees category', async () => {
+    await createTransaction(db, {
+      kind: 'expense', accountId: twd.id, amountMinor: 1091, feeMinor: 16, date: '2026-09-04', categoryId: 'default-dining',
+    });
+    await createTransaction(db, { kind: 'expense', accountId: twd.id, amountMinor: 30, date: '2026-09-05', categoryId: 'default-fees' });
+    const amounts = async (filter: Parameters<typeof listTransactions>[1]) =>
+      (await listTransactions(db, filter)).map((t) => t.amountMinor);
+
+    expect(await amounts({ categoryIds: ['default-fees'] })).toEqual([-30, -1091]);
+    expect(await amounts({ search: 'fees', searchCategoryIds: ['default-fees'] })).toEqual([-30, -1091]);
+    expect(await amounts({ categoryIds: ['default-dining'] })).toEqual([-1091, -50]);
   });
 
   it('paginates', async () => {

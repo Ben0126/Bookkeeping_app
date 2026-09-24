@@ -119,3 +119,38 @@ describe('credit cards and balances', () => {
     expect(within(dialog).getByLabelText('Amount owed')).toHaveValue('50');
   });
 });
+
+describe('foreign transaction fee', () => {
+  it('saves the rate as a percentage and clears it when emptied', async () => {
+    renderApp(db, '/accounts');
+    fireEvent.click(await screen.findByRole('button', { name: 'Add account' }));
+    let dialog = await screen.findByRole('dialog', { name: 'Add account' });
+    change(within(dialog).getByLabelText('Name'), 'Visa');
+    change(within(dialog).getByLabelText('Type'), 'credit_card');
+    change(within(dialog).getByLabelText('Foreign transaction fee'), '12');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(await within(dialog).findByText('Enter a number from 0 to 10, with at most 2 decimals')).toBeInTheDocument();
+    await waitFor(() => expect(within(dialog).getByLabelText('Foreign transaction fee')).toHaveFocus());
+
+    change(within(dialog).getByLabelText('Foreign transaction fee'), '1.5');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect((await db.accounts.toArray())[0]).toMatchObject({ name: 'Visa', foreignFeeBps: 150 });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Visa/ }));
+    dialog = await screen.findByRole('dialog', { name: 'Edit account' });
+    expect(within(dialog).getByLabelText('Foreign transaction fee')).toHaveValue('1.5');
+    change(within(dialog).getByLabelText('Foreign transaction fee'), '');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect((await db.accounts.toArray())[0]).not.toHaveProperty('foreignFeeBps');
+  });
+
+  it('is not asked for cash', async () => {
+    renderApp(db, '/accounts');
+    fireEvent.click(await screen.findByRole('button', { name: 'Add account' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Add account' });
+    change(within(dialog).getByLabelText('Type'), 'cash');
+    expect(within(dialog).queryByLabelText('Foreign transaction fee')).not.toBeInTheDocument();
+  });
+});

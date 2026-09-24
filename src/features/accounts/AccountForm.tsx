@@ -19,6 +19,7 @@ import { ErrorBanner, Field } from '../../ui/form';
 import { ModalFooter } from '../../ui/Modal';
 import { dangerButtonClass, inputClass, primaryButtonClass, secondaryButtonClass } from '../../ui/styles';
 import { useFormat } from '../../ui/useFormat';
+import { feePercentInput, parseFeePercent } from './feeRate';
 
 /** Credit cards are entered as the amount owed; everything else as money held. */
 const isDebt = (kind: AccountKind) => kind === 'credit_card';
@@ -46,6 +47,7 @@ export function AccountForm({ account, currentBalanceMinor = 0, defaultCurrency,
       currency: account?.currency ?? defaultCurrency,
       // What the user sees: "balance now", or "amount owed" for a card.
       balance: account ? toMoneyInput(isDebt(kind) ? -currentBalanceMinor : currentBalanceMinor, account.currency) : '',
+      feeRate: feePercentInput(account?.foreignFeeBps),
     };
   });
   const [name, setName] = useState(initial.name);
@@ -53,15 +55,21 @@ export function AccountForm({ account, currentBalanceMinor = 0, defaultCurrency,
   const [currency, setCurrency] = useState<CurrencyCode>(initial.currency);
   const [balance, setBalance] = useState(initial.balance);
   const [balanceError, setBalanceError] = useState<string>();
+  const [feeRate, setFeeRate] = useState(initial.feeRate);
+  const [feeRateError, setFeeRateError] = useState<string>();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   useEffect(() => {
     onDirtyChange(
-      name !== initial.name || kind !== initial.kind || currency !== initial.currency || balance !== initial.balance,
+      name !== initial.name ||
+        kind !== initial.kind ||
+        currency !== initial.currency ||
+        balance !== initial.balance ||
+        feeRate !== initial.feeRate,
     );
-  }, [name, kind, currency, balance, initial, onDirtyChange]);
+  }, [name, kind, currency, balance, feeRate, initial, onDirtyChange]);
 
   const transactionCount = useLiveQuery(
     () => (account ? db.transactions.where('accountId').equals(account.id).count() : 0),
@@ -98,14 +106,21 @@ export function AccountForm({ account, currentBalanceMinor = 0, defaultCurrency,
       document.getElementById(`${id}-balance`)?.focus();
       return;
     }
+    // Cash has no card fee; a rate left from another kind is dropped.
+    const foreignFeeBps = kind === 'cash' ? undefined : parseFeePercent(feeRate);
+    if (foreignFeeBps === null) {
+      setFeeRateError(t('accounts.foreignFeeInvalid'));
+      document.getElementById(`${id}-feeRate`)?.focus();
+      return;
+    }
     const balanceMinor = isDebt(kind) ? -entered : entered;
     void run(async () => {
       if (!account) {
-        await createAccount(db, { name, kind, currency, openingBalanceMinor: balanceMinor });
+        await createAccount(db, { name, kind, currency, openingBalanceMinor: balanceMinor, foreignFeeBps });
         return;
       }
       await db.transaction('rw', [db.accounts, db.transactions, db.recurring], async () => {
-        await updateAccount(db, account.id, { name, kind, currency });
+        await updateAccount(db, account.id, { name, kind, currency, foreignFeeBps: foreignFeeBps ?? null });
         if (balance !== initial.balance) await setAccountBalance(db, account.id, balanceMinor);
       });
     });
@@ -185,6 +200,32 @@ export function AccountForm({ account, currentBalanceMinor = 0, defaultCurrency,
             />
           </div>
         </Field>
+
+        {kind !== 'cash' && (
+          <Field
+            label={t('accounts.foreignFee')}
+            htmlFor={`${id}-feeRate`}
+            error={feeRateError}
+            hint={t('accounts.foreignFeeHint')}
+          >
+            <div className="flex w-36 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-xs focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/30">
+              <input
+                id={`${id}-feeRate`}
+                className="min-w-0 flex-1 px-3 py-2 text-base tabular-nums outline-none placeholder:text-slate-300"
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="1.5"
+                value={feeRate}
+                aria-invalid={feeRateError ? true : undefined}
+                onChange={(e) => {
+                  setFeeRate(e.target.value);
+                  setFeeRateError(undefined);
+                }}
+              />
+              <span className="flex shrink-0 items-center bg-slate-100 px-3 text-sm font-bold text-slate-600">%</span>
+            </div>
+          </Field>
+        )}
       </div>
 
       <ModalFooter>

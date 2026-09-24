@@ -18,6 +18,7 @@ import {
   optionalText,
   requireCurrency,
   requireDate,
+  requireFeeBps,
   requireMinor,
   requireName,
   requireOneOf,
@@ -284,6 +285,9 @@ function parseAccount(fields: Fields, path: string): Account {
     createdAt: timestamp(fields, 'createdAt', path),
     updatedAt: timestamp(fields, 'updatedAt', path),
   };
+  if (fields.foreignFeeBps !== undefined) {
+    account.foreignFeeBps = field(`${path}.foreignFeeBps`, () => requireFeeBps(fields.foreignFeeBps));
+  }
   assignOptionalText(account, fields, ['color'], path);
   return account;
 }
@@ -343,6 +347,13 @@ function parseTransaction(fields: Fields, path: string): Transaction {
     transaction.originalAmountMinor = Math.sign(amountMinor) * original;
     transaction.originalCurrency = field(`${path}.originalCurrency`, () => requireCurrency(fields.originalCurrency));
   }
+
+  if (fields.feeMinor !== undefined) {
+    if (kind !== 'expense' || amountMinor > 0) invalid(`${path}.feeMinor`, 'only spending can include a fee');
+    const fee = field(`${path}.feeMinor`, () => requirePositiveMinor(Math.abs(fields.feeMinor as number)));
+    if (fee >= -amountMinor) invalid(`${path}.feeMinor`, 'must be less than the amount');
+    transaction.feeMinor = -fee;
+  }
   return transaction;
 }
 
@@ -394,6 +405,12 @@ function parseRecurring(fields: Fields, path: string): RecurringRule {
       amountMinor: field(`${tp}.original.amountMinor`, () => requirePositiveMinor(original.amountMinor)),
       currency: field(`${tp}.original.currency`, () => requireCurrency(original.currency)),
     };
+  }
+  if (t.feeMinor !== undefined) {
+    if (kind !== 'expense' || template.refund) invalid(`${tp}.feeMinor`, 'only spending can include a fee');
+    const fee = field(`${tp}.feeMinor`, () => requirePositiveMinor(t.feeMinor));
+    if (fee >= template.amountMinor) invalid(`${tp}.feeMinor`, 'must be less than the amount');
+    template.feeMinor = fee;
   }
 
   const day = fields.dayOfMonth;

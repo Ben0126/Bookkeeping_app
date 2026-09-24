@@ -80,7 +80,8 @@
     "budgetLeftPerDay": "{{amount}} of the budget left, about {{perDay}} a day",
     "budgetOver": "Budget exceeded by {{amount}}",
     "searchResults_one": "{{count}} match in all months",
-    "searchResults_other": "{{count}} matches in all months"
+    "searchResults_other": "{{count}} matches in all months",
+    "feeIncluded": "incl. {{fee}} fee"
   },
   "transactionForm": {
     "kind": "Transaction type",
@@ -96,10 +97,6 @@
     "category": "Category",
     "payee": "Payee",
     "note": "Note",
-    "foreign": "Paid in another currency",
-    "foreignHint": "Use this when the card is billed in {{currency}} but you paid in another currency. For example, a ¥5,000 purchase on a TWD card: enter the TWD amount from the statement above, and ¥5,000 here.",
-    "originalCurrency": "Original currency",
-    "originalAmount": "Original amount",
     "confirmDelete": "Really delete?",
     "errors": {
       "chooseAccount": "Choose an account",
@@ -107,9 +104,10 @@
       "amountRequired": "Enter an amount",
       "amountInvalid": "Enter a number above 0",
       "amountTooPrecise": "{{currency}} allows at most {{decimals}} decimal places",
-      "amountTooPrecise_none": "{{currency}} amounts have no decimals"
+      "amountTooPrecise_none": "{{currency}} amounts have no decimals",
+      "feeTooLarge": "The fee must be less than the amount charged"
     },
-    "more": "More: note, paid in another currency",
+    "more": "More: note",
     "saveAndNext": "Save & add another",
     "savedNotice": "Saved: {{entry}}. Go ahead with the next one.",
     "discardConfirm": "Discard what you entered?",
@@ -120,7 +118,20 @@
     "monthly": "Repeats monthly (rent, subscriptions…)",
     "monthlyHint": "Each month on day {{day}} you’ll be asked to record it. Nothing is recorded until you tap “Record”.",
     "monthlyHint_late": "Each month on day {{day}} (or the last day of shorter months) you’ll be asked to record it. Nothing is recorded until you tap “Record”.",
-    "moreWithMonthly": "More: note, other currency, repeat monthly"
+    "moreWithMonthly": "More: note, repeat monthly",
+    "paymentCurrency": "Currency paid in",
+    "chargeEstimate": "{{account}} will be charged about {{amount}}",
+    "chargeEstimate_fee": "{{account}} will be charged about {{amount}}, including a {{rate}} foreign fee of {{fee}}",
+    "chargeEstimate_noRate": "{{account}} will be charged about {{amount}} (no foreign fee set for this account)",
+    "creditEstimate": "About {{amount}} into {{account}}",
+    "chargeWillEstimate": "The {{currency}} charge to {{account}} is estimated from exchange rates",
+    "typeCharge": "Enter statement amount",
+    "charged": "Charged ({{currency}})",
+    "credited": "Credited ({{currency}})",
+    "estimated": "Estimated {{amount}}",
+    "noRate": "No {{from}} to {{to}} rate yet; enter the amount on your statement.",
+    "cardFee": "Of which foreign fee",
+    "useEstimate": "Use the estimate instead"
   },
   "accounts": {
     "title": "Accounts",
@@ -145,7 +156,10 @@
     "amountOwed": "Amount owed",
     "amountOwedHint": "What you currently owe on this card, as a positive number.",
     "owed": "Owe {{amount}}",
-    "totalApprox": "≈ {{amount}} converted"
+    "totalApprox": "≈ {{amount}} converted",
+    "foreignFee": "Foreign transaction fee",
+    "foreignFeeHint": "What the bank adds when you pay in another currency; used to estimate charges. Most Taiwanese cards charge 1.5%; enter 0 for fee-free cards.",
+    "foreignFeeInvalid": "Enter a number from 0 to 10, with at most 2 decimals"
   },
   "errors": {
     "NOT_FOUND": "Not found. It may have been deleted.",
@@ -168,7 +182,8 @@
     "TRANSFER_AMOUNT_REQUIRED": "Enter the amount received for a transfer between currencies.",
     "TRANSFER_AMOUNT_MISMATCH": "Both sides of a same-currency transfer must match. Record fees as a separate expense.",
     "INVALID_BACKUP": "This backup file isn't valid.",
-    "UNKNOWN": "Something went wrong. Please try again."
+    "UNKNOWN": "Something went wrong. Please try again.",
+    "INVALID_FEE": "The fee is not valid."
   },
   "settings": {
     "title": "Settings",
@@ -230,6 +245,7 @@
       "account": "Account",
       "currency": "Currency",
       "amount": "Amount",
+      "fee": "Fee included",
       "category": "Category",
       "payee": "Payee",
       "note": "Note",

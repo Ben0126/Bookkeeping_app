@@ -12,3 +12,4 @@ export * from './reports';
 export * from './settings';
 export * from './transactions';
 export * from './types';
+export { MAX_FEE_BPS } from './validate';

@@ -14,8 +14,8 @@ export interface CsvLabels {
  * One row per posting, oldest first, so each account's rows sum to its
  * change in balance. Amounts are plain signed numbers ("-12.50") that
  * spreadsheets read as numbers. Columns: date, type, account, currency,
- * amount, category, payee, note, other account (transfers), original
- * currency, original amount.
+ * amount, fee included in the amount, category, payee, note, other account
+ * (transfers), original currency, original amount.
  */
 export function transactionsToCsv(
   transactions: readonly Transaction[],
@@ -52,6 +52,7 @@ export function transactionsToCsv(
       text(account?.name ?? ''),
       currency ?? '',
       currency ? toMoneyInput(t.amountMinor, currency) : String(t.amountMinor),
+      t.feeMinor === undefined ? '' : currency ? toMoneyInput(t.feeMinor, currency) : String(t.feeMinor),
       t.kind === 'transfer' ? '' : text(labels.categoryName(t.categoryId ? categoryById.get(t.categoryId) : undefined)),
       text(t.payee ?? ''),
       text(t.note ?? ''),

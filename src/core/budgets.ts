@@ -2,7 +2,7 @@ import { monthRange } from './dates';
 import type { LedgerDB } from './db';
 import { LedgerError } from './errors';
 import type { CurrencyCode } from './money';
-import { summarize, type ReportContext } from './reports';
+import { splitFees, summarize, type ReportContext } from './reports';
 import type { Budget, Category, Transaction } from './types';
 import { requireCurrency, requirePositiveMinor } from './validate';
 
@@ -67,7 +67,8 @@ export function budgetProgress(
   month: string,
 ): BudgetProgress[] {
   const period = monthRange(month);
-  const inMonth = transactions.filter(
+  // A category budget covers purchases; fees included in them count toward the Fees category.
+  const inMonth = splitFees(transactions, ctx.feeCategoryId).filter(
     (t) => t.kind === 'expense' && t.date >= period.from && t.date <= period.to,
   );
 

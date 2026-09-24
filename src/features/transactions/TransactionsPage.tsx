@@ -78,7 +78,7 @@ export function TransactionsPage() {
     const rows = await listTransactions(db, { from, to, accountId, kind, search, categoryIds, searchCategoryIds });
     const transferIds = [...new Set(rows.flatMap((row) => (row.transferId ? [row.transferId] : [])))];
     const legs = transferIds.length > 0 ? await db.transactions.where('transferId').anyOf(transferIds).toArray() : [];
-    return { rows, entries: toEntries(rows, legs, accountId) };
+    return { rows, entries: toEntries(rows, legs, accountId), categoryIds };
   }, [db, from, to, accountId, kind, search, searchCategoryKey, categoryFilter]);
 
   const accountsById = useMemo(() => new Map((accounts ?? []).map((a) => [a.id, a])), [accounts]);
@@ -137,6 +137,7 @@ export function TransactionsPage() {
           accounts={accounts}
           categories={categories}
           filtered={Boolean(search || accountId || kind || categoryFilter)}
+          categoryIds={listed.categoryIds}
         />
       )}
 
@@ -270,7 +271,11 @@ function EntryRow({
     icon = <span className="text-xl">{category?.icon ?? (record.kind === 'income' ? '💰' : '🏷️')}</span>;
     title = record.kind === 'transfer' ? t('kinds.transfer') : fmt.categoryName(category);
     if (record.kind === 'expense' && record.amountMinor > 0) badge = t('kinds.refund');
-    details = [record.payee, account?.name, record.note].filter(Boolean).join(' · ');
+    const fee =
+      record.feeMinor !== undefined && account
+        ? t('transactions.feeIncluded', { fee: fmt.money(-record.feeMinor, account.currency) })
+        : undefined;
+    details = [record.payee, account?.name, fee, record.note].filter(Boolean).join(' · ');
     amount = account ? fmt.signedMoney(record.amountMinor, account.currency) : '';
     amountClass = record.amountMinor > 0 ? 'text-emerald-600' : 'text-slate-900';
     if (record.originalAmountMinor !== undefined && record.originalCurrency) {

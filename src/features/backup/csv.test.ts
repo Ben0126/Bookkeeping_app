@@ -10,7 +10,7 @@ const categories: Category[] = [
   { id: 'dining', kind: 'expense', name: 'Dining out', key: 'dining', archived: false, sortOrder: 0, createdAt: 0, updatedAt: 0 },
 ];
 const labels: CsvLabels = {
-  headers: ['Date', 'Type', 'Account', 'Currency', 'Amount', 'Category', 'Payee', 'Note', 'Other account', 'Original currency', 'Original amount'],
+  headers: ['Date', 'Type', 'Account', 'Currency', 'Amount', 'Fee', 'Category', 'Payee', 'Note', 'Other account', 'Original currency', 'Original amount'],
   kind: (kind) => kind.toUpperCase(),
   categoryName: (category) => category?.name ?? 'Uncategorized',
 };
@@ -22,7 +22,7 @@ describe('transactionsToCsv', () => {
   it('writes one row per posting, oldest first, transfer legs together, with plain signed amounts', () => {
     const csv = transactionsToCsv(
       [
-        tx({ id: 'b', kind: 'expense', accountId: 'usd', amountMinor: -1250, date: '2026-09-02', categoryId: 'dining', payee: 'Pret', originalAmountMinor: -1100, originalCurrency: 'EUR' }),
+        tx({ id: 'b', kind: 'expense', accountId: 'usd', amountMinor: -1250, date: '2026-09-02', categoryId: 'dining', payee: 'Pret', originalAmountMinor: -1100, originalCurrency: 'EUR', feeMinor: -18 }),
         tx({ id: 'f', kind: 'expense', accountId: 'twd', amountMinor: -150, date: '2026-09-01' }),
         tx({ id: 'o', kind: 'transfer', accountId: 'twd', amountMinor: -32000, date: '2026-09-01', transferId: 'x' }),
         tx({ id: 'i', kind: 'transfer', accountId: 'usd', amountMinor: 100000, date: '2026-09-01', transferId: 'x' }),
@@ -33,12 +33,12 @@ describe('transactionsToCsv', () => {
       labels,
     );
     expect(csv.split('\r\n')).toEqual([
-      'Date,Type,Account,Currency,Amount,Category,Payee,Note,Other account,Original currency,Original amount',
-      '2026-09-01,TRANSFER,台銀,TWD,-32000,,,,Chase,,',
-      '2026-09-01,TRANSFER,Chase,USD,1000.00,,,,台銀,,',
-      '2026-09-01,EXPENSE,台銀,TWD,-150,Uncategorized,,,,,',
-      '2026-09-02,EXPENSE,Chase,USD,-12.50,Dining out,Pret,,,EUR,-11.00',
-      '2026-09-03,REFUND,Chase,USD,20.00,Dining out,,Ben paid back,,,',
+      'Date,Type,Account,Currency,Amount,Fee,Category,Payee,Note,Other account,Original currency,Original amount',
+      '2026-09-01,TRANSFER,台銀,TWD,-32000,,,,,Chase,,',
+      '2026-09-01,TRANSFER,Chase,USD,1000.00,,,,,台銀,,',
+      '2026-09-01,EXPENSE,台銀,TWD,-150,,Uncategorized,,,,,',
+      '2026-09-02,EXPENSE,Chase,USD,-12.50,-0.18,Dining out,Pret,,,EUR,-11.00',
+      '2026-09-03,REFUND,Chase,USD,20.00,,Dining out,,Ben paid back,,,',
       '',
     ]);
   });

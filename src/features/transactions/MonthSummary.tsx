@@ -4,9 +4,11 @@ import { Link } from 'react-router-dom';
 import { useLedgerDb } from '../../app/ledgerContext';
 import {
   createRateResolver,
+  findFeeCategory,
   getSettings,
   listBudgets,
   listExchangeRates,
+  splitFees,
   summarize,
   toDateKey,
   type Account,
@@ -27,10 +29,15 @@ interface MonthSummaryProps {
   categories: readonly Category[];
   /** When the list is filtered, the monthly budget doesn't apply to what's shown. */
   filtered: boolean;
+  /**
+   * When filtered by category: only these categories' share of the rows
+   * counts, so a card fee included in a dinner counts under Fees, not Dining.
+   */
+  categoryIds?: readonly string[];
 }
 
 /** Totals of the listed rows in the main currency, plus the month's budget progress; opens the overview. */
-export function MonthSummary({ month, rows, accounts, categories, filtered }: MonthSummaryProps) {
+export function MonthSummary({ month, rows, accounts, categories, filtered, categoryIds }: MonthSummaryProps) {
   const { t } = useTranslation();
   const fmt = useFormat();
   const db = useLedgerDb();
@@ -41,11 +48,16 @@ export function MonthSummary({ month, rows, accounts, categories, filtered }: Mo
   if (!context) return null;
 
   const base = context.settings.baseCurrency;
+  const counted = categoryIds
+    ? splitFees(rows, findFeeCategory(categories)?.id).filter(
+        (t) => t.categoryId !== undefined && categoryIds.includes(t.categoryId),
+      )
+    : rows;
   const overview = month
     ? buildMonthOverview({
         month,
         today: toDateKey(new Date()),
-        transactions: rows,
+        transactions: counted,
         accounts,
         categories,
         budgets: filtered ? [] : context.budgets,
@@ -54,7 +66,7 @@ export function MonthSummary({ month, rows, accounts, categories, filtered }: Mo
       })
     : undefined;
   const summary =
-    overview?.summary ?? summarize(rows, { accounts, baseCurrency: base, rates: createRateResolver(context.rates) });
+    overview?.summary ?? summarize(counted, { accounts, baseCurrency: base, rates: createRateResolver(context.rates) });
   const nativeCurrencies = (Object.keys(summary.byCurrency) as CurrencyCode[]).sort();
   const convertible = summary.missingRates.length === 0;
   const converted = nativeCurrencies.some((currency) => currency !== base);

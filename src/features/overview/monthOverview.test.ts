@@ -53,6 +53,17 @@ describe('buildMonthOverview', () => {
     ]);
   });
 
+  it('ranks a card fee included in a purchase under Fees', () => {
+    const fees = { ...category('default-fees'), key: 'fees' };
+    const dinner = { ...expense('twd', 1091, '2026-09-10', 'food'), feeMinor: -16 };
+    const overview = build({ transactions: [dinner], categories: [...categories, fees] });
+    expect(overview.summary.expenseMinor).toBe(1091);
+    expect(overview.categories.map(({ categoryId, totalMinor }) => [categoryId, totalMinor])).toEqual([
+      ['food', 1075],
+      ['default-fees', 16],
+    ]);
+  });
+
   it('works out what is left per day in the current month', () => {
     const budgets: Budget[] = [{ id: 'overall', amountMinor: 100000, currency: 'JPY', createdAt: 0, updatedAt: 0 }];
     const { budget } = build({ budgets });

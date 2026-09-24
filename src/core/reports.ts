@@ -13,6 +13,11 @@ export interface ReportContext {
   accounts: readonly Account[];
   baseCurrency: CurrencyCode;
   rates: RateResolver;
+  /**
+   * Where fees included in expenses (`feeMinor`) are counted, usually the
+   * built-in Fees category; without it they stay with the purchase.
+   */
+  feeCategoryId?: string;
 }
 
 export interface Period {
@@ -51,12 +56,31 @@ export interface MonthTotal {
   netMinor: number;
 }
 
+/**
+ * Splits each expense that includes a fee into the purchase and the fee, so
+ * that a ¥5,000 dinner charged NT$1,091 counts NT$1,075 as dining and NT$16
+ * as fees. Totals are unchanged; other records pass through.
+ */
+export function splitFees(transactions: readonly Transaction[], feeCategoryId: string | undefined): Transaction[] {
+  if (feeCategoryId === undefined) return [...transactions];
+  return transactions.flatMap((t) => {
+    if (t.feeMinor === undefined) return [t];
+    const purchase: Transaction = { ...t, amountMinor: t.amountMinor - t.feeMinor };
+    delete purchase.feeMinor;
+    const fee: Transaction = { ...purchase, id: `${t.id}:fee`, amountMinor: t.feeMinor, categoryId: feeCategoryId };
+    delete fee.originalAmountMinor;
+    delete fee.originalCurrency;
+    return [purchase, fee];
+  });
+}
+
 /** Income and expense totals for a period. Transfers are not income or spending. */
 export function summarize(
-  transactions: readonly Transaction[],
+  allTransactions: readonly Transaction[],
   ctx: ReportContext,
   period: Period = {},
 ): Summary {
+  const transactions = splitFees(allTransactions, ctx.feeCategoryId);
   const summary: Summary = {
     currency: ctx.baseCurrency,
     incomeMinor: 0,

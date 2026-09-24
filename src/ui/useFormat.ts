@@ -44,6 +44,7 @@ export function useFormat() {
       weekday: 'short',
     });
     const rateFormat = new Intl.NumberFormat(locale, { maximumFractionDigits: 4 });
+    const percentFormat = new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 2 });
     const dateTimeFormat = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' });
     const relativeFormat = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
 
@@ -53,6 +54,8 @@ export function useFormat() {
       signedMoney: (amountMinor: number, currency: CurrencyCode) =>
         (amountMinor > 0 ? '+' : '') + formatMoney(amountMinor, currency, MONEY_LOCALE),
       rate: (value: number) => rateFormat.format(value),
+      /** Basis points as a percentage: 150 → "1.5%". */
+      percent: (bps: number) => percentFormat.format(bps / 10_000),
       currencyName: (currency: CurrencyCode) => currencyNames.of(currency) ?? currency,
       month: (month: string) => monthFormat.format(fromDateKey(`${month}-01`)),
       day: (dateKey: string) => dayFormat.format(fromDateKey(dateKey)),

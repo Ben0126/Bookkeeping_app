@@ -1,12 +1,13 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLedgerDb } from '../../app/ledgerContext';
 import {
+  createRateResolver,
   DEFAULT_SETTINGS,
   getSettings,
   getTransactionInput,
-  isCurrencyCode,
+  listExchangeRates,
   listTransactions,
   toDateKey,
   type Account,
@@ -14,15 +15,9 @@ import {
   type TransactionInput,
 } from '../../core';
 import { Modal } from '../../ui/Modal';
-import { readPreference } from '../../ui/preferences';
 import { useDiscardGuard } from '../../ui/useDiscardGuard';
-import {
-  defaultForeignCurrency,
-  emptyFormState,
-  formStateFromInput,
-  LAST_FOREIGN_CURRENCY_PREFERENCE,
-  suggestAccountId,
-} from './formState';
+import { emptyFormState, formStateFromInput, suggestAccountId, withPaymentCurrency } from './formState';
+import { readPaymentCurrency } from './paymentCurrency';
 import { TransactionForm } from './TransactionForm';
 
 /** How far back "the account you use most" looks. */
@@ -45,6 +40,8 @@ export function TransactionDialog({ editingId, accounts, categories, filterAccou
   const { setDirty, confirmDiscard } = useDiscardGuard(t('transactionForm.discardConfirm'));
   const lastSavedDate = useRef<string | undefined>(undefined);
   const settings = useLiveQuery(() => getSettings(db), [db]);
+  const storedRates = useLiveQuery(() => listExchangeRates(db), [db]);
+  const rates = useMemo(() => storedRates && createRateResolver(storedRates), [storedRates]);
   const [today] = useState(() => toDateKey(new Date()));
   const recent = useLiveQuery(
     () => (editingId ? [] : listTransactions(db, { from: toDateKey(new Date(Date.now() - RECENT_DAYS * 86_400_000)) })),
@@ -68,15 +65,16 @@ export function TransactionDialog({ editingId, accounts, categories, filterAccou
     if (confirmDiscard()) onClose(lastSavedDate.current);
   };
 
-  const remembered = readPreference(LAST_FOREIGN_CURRENCY_PREFERENCE);
-  const rememberedForeign = isCurrencyCode(remembered) ? remembered : undefined;
-
   const initial = (() => {
-    if (editingId) return edited ? formStateFromInput(edited, accounts, rememberedForeign) : undefined;
+    if (editingId) return edited ? formStateFromInput(edited, accounts) : undefined;
     if (!recent) return undefined;
     const accountId = suggestAccountId({ kind: 'expense', accounts, recent, filterAccountId });
-    const currency = accounts.find((a) => a.id === accountId)?.currency;
-    return emptyFormState({ date: today, accountId, originalCurrency: defaultForeignCurrency(currency, rememberedForeign) });
+    const account = accounts.find((a) => a.id === accountId);
+    const empty = emptyFormState({ date: today, accountId });
+    if (!account) return empty;
+    // Start in the currency this account last paid in, e.g. yen on a Taiwanese card in Japan.
+    const currency = readPaymentCurrency(account.id) ?? account.currency;
+    return { ...empty, ...withPaymentCurrency(empty, currency, account.currency) };
   })();
 
   return (
@@ -85,12 +83,14 @@ export function TransactionDialog({ editingId, accounts, categories, filterAccou
         <p className="pb-6 text-sm text-slate-600">{t('transactions.notFound')}</p>
       ) : (
         initial &&
-        settings && (
+        settings &&
+        rates && (
           <TransactionForm
             accounts={accounts}
             categories={categories}
             initial={initial}
             baseCurrency={settings.baseCurrency ?? DEFAULT_SETTINGS.baseCurrency}
+            rates={rates}
             editingId={editingId}
             onDirtyChange={setDirty}
             onSaved={(date, keepOpen) => {

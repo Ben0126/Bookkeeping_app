@@ -39,6 +39,17 @@ export function requirePositiveMinor(value: unknown): number {
   return amount;
 }
 
+/** Highest foreign transaction fee accepted: 10%. */
+export const MAX_FEE_BPS = 1000;
+
+/** A fee rate in basis points (150 = 1.5%), 0–10%. */
+export function requireFeeBps(value: unknown): number {
+  if (!Number.isSafeInteger(value) || (value as number) < 0 || (value as number) > MAX_FEE_BPS) {
+    throw new LedgerError('INVALID_FEE', `Fee rate must be 0–${MAX_FEE_BPS} basis points, got ${String(value)}`);
+  }
+  return value as number;
+}
+
 export function requireDate(value: unknown): string {
   if (!isDateKey(value)) {
     throw new LedgerError('INVALID_DATE', `Expected a YYYY-MM-DD date, got ${String(value)}`);

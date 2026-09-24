@@ -8,31 +8,35 @@ import {
   deleteTransaction,
   parseMoney,
   toMajor,
+  toMoneyInput,
   updateTransaction,
   type Account,
   type Category,
   type CurrencyCode,
+  type RateResolver,
 } from '../../core';
 import { ErrorBanner, Field, Segmented } from '../../ui/form';
 import { ModalFooter } from '../../ui/Modal';
 import { MoneyInput } from '../../ui/MoneyInput';
-import { writePreference } from '../../ui/preferences';
 import { dangerButtonClass, inputClass, primaryButtonClass, secondaryButtonClass } from '../../ui/styles';
 import { useFormat } from '../../ui/useFormat';
 import {
   categoryKindOf,
-  defaultForeignCurrency,
+  chargeMode,
+  estimateCharge,
   FORM_FIELDS,
   formStateToInput,
   isFormDirty,
-  LAST_FOREIGN_CURRENCY_PREFERENCE,
+  paymentCurrencyForAccount,
   quoteRate,
   stateForNextEntry,
+  withPaymentCurrency,
   type FormErrors,
   type FormField,
   type FormKind,
   type FormState,
 } from './formState';
+import { readPaymentCurrency, writePaymentCurrency } from './paymentCurrency';
 
 interface TransactionFormProps {
   /** All accounts and categories, archived included (for editing old entries). */
@@ -41,6 +45,8 @@ interface TransactionFormProps {
   initial: FormState;
   /** Currency rates are quoted in, e.g. "1 JPY ≈ 0.21 TWD". */
   baseCurrency: CurrencyCode;
+  /** Stored exchange rates, to estimate charges for amounts paid in another currency. */
+  rates: RateResolver;
   /** Record or transfer id when editing. */
   editingId?: string;
   /** `keepOpen` is true after "save and add another". */
@@ -54,6 +60,7 @@ export function TransactionForm({
   categories,
   initial,
   baseCurrency,
+  rates,
   editingId,
   onSaved,
   onDeleted,
@@ -70,7 +77,7 @@ export function TransactionForm({
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(initial.note !== '' || initial.foreign);
+  const [moreOpen, setMoreOpen] = useState(initial.note !== '');
   const amountInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => onDirtyChange(isFormDirty(state, baseline)), [state, baseline, onDirtyChange]);
@@ -84,6 +91,8 @@ export function TransactionForm({
   const crossCurrency = state.kind === 'transfer' && account && toAccount && account.currency !== toAccount.currency;
   // Only new income and expenses can start repeating.
   const offerMonthly = !editingId && (state.kind === 'expense' || state.kind === 'income');
+  const mode = chargeMode(state, account, rates);
+  const estimate = estimateCharge(state, account, rates);
 
   const categoryKind = categoryKindOf(state.kind);
   const categoryOptions = useMemo(() => {
@@ -110,18 +119,35 @@ export function TransactionForm({
     if (kind === 'transfer' && !state.toAccountId) {
       patch.toAccountId = selectableAccounts.find((a) => !a.archived && a.id !== state.accountId)?.id ?? '';
     }
+    // Transfers are typed in the accounts' own currencies.
+    if (kind === 'transfer' && account) Object.assign(patch, withPaymentCurrency(state, account.currency, account.currency));
     update(patch);
+  };
+
+  const changeAccount = (accountId: string) => {
+    const next = accounts.find((a) => a.id === accountId);
+    if (!next || state.kind === 'transfer') return update({ accountId });
+    const currency = paymentCurrencyForAccount(state, next, editingId ? undefined : readPaymentCurrency(next.id));
+    update({ accountId, ...withPaymentCurrency(state, currency, next.currency) });
+  };
+
+  const typeChargeIn = () => {
+    update({
+      manualCharge: true,
+      amount: estimate && account ? toMoneyInput(estimate.amountMinor, account.currency) : '',
+      cardFee: estimate?.feeMinor && account ? toMoneyInput(estimate.feeMinor, account.currency) : '',
+    });
+    setTimeout(() => document.getElementById(`${id}-amount`)?.focus(), 0);
   };
 
   const focusFirstError = (found: FormErrors) => {
     const field = FORM_FIELDS.find((f) => found[f]);
     if (!field) return;
-    if (field === 'originalAmount') setMoreOpen(true);
-    // After the render that shows the message (and opens "More" if needed).
+    // After the render that shows the message.
     setTimeout(() => document.getElementById(`${id}-${field}`)?.focus(), 0);
   };
 
-  const summarize = (entry: FormState) => {
+  const summarize = (entry: FormState, amountMinor: number) => {
     const category = fmt.categoryName(categories.find((c) => c.id === entry.categoryId));
     const title =
       entry.kind === 'transfer'
@@ -129,14 +155,13 @@ export function TransactionForm({
         : entry.kind === 'refund'
           ? `${t('kinds.refund')} · ${category}`
           : category;
-    const minor = account ? parseMoney(entry.amount, account.currency) : null;
-    return minor && account ? `${title} ${fmt.money(minor, account.currency)}` : title;
+    return account ? `${title} ${fmt.money(amountMinor, account.currency)}` : title;
   };
 
   const save = async (keepOpen: boolean) => {
     setSubmitError(null);
     setSavedNotice(null);
-    const result = formStateToInput(state, accounts);
+    const result = formStateToInput(state, accounts, rates);
     if (result.errors) {
       setErrors(result.errors);
       focusFirstError(result.errors);
@@ -148,12 +173,14 @@ export function TransactionForm({
       if (editingId) await updateTransaction(db, editingId, input);
       else if (offerMonthly && state.monthly && input.kind !== 'transfer') await createMonthlyTransaction(db, input);
       else await createTransaction(db, input);
-      if (state.foreign) writePreference(LAST_FOREIGN_CURRENCY_PREFERENCE, state.originalCurrency);
+      if (account && input.kind !== 'transfer') {
+        writePaymentCurrency(account.id, state.foreign ? state.originalCurrency : account.currency);
+      }
       if (keepOpen) {
         const next = stateForNextEntry(state);
         setBaseline(next);
         setState(next);
-        setSavedNotice(t('transactionForm.savedNotice', { entry: summarize(state) }));
+        setSavedNotice(t('transactionForm.savedNotice', { entry: summarize(state, input.amountMinor) }));
         setSaving(false);
         amountInput.current?.focus();
       }
@@ -277,27 +304,130 @@ export function TransactionForm({
             label={t('transactionForm.account')}
             accounts={selectableAccounts}
             value={state.accountId}
-            onChange={(accountId) => update({ accountId })}
+            onChange={changeAccount}
             error={errorMessage('accountId')}
           />
         )}
 
-        <Field
-          label={state.kind === 'transfer' ? t('transactionForm.amountSent') : t('transactionForm.amount')}
-          htmlFor={`${id}-amount`}
-          error={errorMessage('amount', account?.currency)}
-        >
-          <MoneyInput
-            id={`${id}-amount`}
-            inputRef={amountInput}
-            currency={account?.currency}
-            large
-            autoFocus={!editingId}
-            value={state.amount}
-            onChange={(amount) => update({ amount })}
-            invalidProps={invalidProps('amount')}
-          />
-        </Field>
+        {mode === 'none' ? (
+          <Field
+            label={state.kind === 'transfer' ? t('transactionForm.amountSent') : t('transactionForm.amount')}
+            htmlFor={`${id}-amount`}
+            error={errorMessage('amount', account?.currency)}
+          >
+            <MoneyInput
+              id={`${id}-amount`}
+              inputRef={amountInput}
+              currency={account?.currency}
+              currencies={state.kind === 'transfer' || !account ? undefined : paymentCurrencies(account.currency)}
+              onCurrencyChange={(currency) => account && update(withPaymentCurrency(state, currency, account.currency))}
+              currencyLabel={t('transactionForm.paymentCurrency')}
+              large
+              autoFocus={!editingId}
+              value={state.amount}
+              onChange={(amount) => update({ amount })}
+              invalidProps={invalidProps('amount')}
+            />
+          </Field>
+        ) : (
+          account && (
+            <>
+              <Field
+                label={t('transactionForm.amount')}
+                htmlFor={`${id}-originalAmount`}
+                error={errorMessage('originalAmount', state.originalCurrency)}
+              >
+                <MoneyInput
+                  id={`${id}-originalAmount`}
+                  inputRef={amountInput}
+                  currency={state.originalCurrency}
+                  currencies={paymentCurrencies(account.currency)}
+                  onCurrencyChange={(currency) => update(withPaymentCurrency(state, currency, account.currency))}
+                  currencyLabel={t('transactionForm.paymentCurrency')}
+                  large
+                  autoFocus={!editingId}
+                  value={state.originalAmount}
+                  onChange={(originalAmount) => update({ originalAmount })}
+                  invalidProps={invalidProps('originalAmount')}
+                />
+              </Field>
+              {mode === 'estimate' ? (
+                <div className="-mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                  <p className="flex-1" role="status">
+                    {estimate
+                      ? t(state.kind === 'expense' ? 'transactionForm.chargeEstimate' : 'transactionForm.creditEstimate', {
+                          account: account.name,
+                          amount: fmt.money(estimate.amountMinor, account.currency),
+                          fee: fmt.money(estimate.feeMinor, account.currency),
+                          rate: fmt.percent(account.foreignFeeBps ?? 0),
+                          context:
+                            state.kind !== 'expense'
+                              ? undefined
+                              : account.foreignFeeBps === undefined
+                                ? 'noRate'
+                                : estimate.feeMinor > 0
+                                  ? 'fee'
+                                  : undefined,
+                        })
+                      : t('transactionForm.chargeWillEstimate', { account: account.name, currency: account.currency })}
+                  </p>
+                  <button type="button" className="font-medium text-indigo-700 hover:underline" onClick={typeChargeIn}>
+                    {t('transactionForm.typeCharge')}
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <Field
+                    label={t(state.kind === 'expense' ? 'transactionForm.charged' : 'transactionForm.credited', {
+                      currency: account.currency,
+                    })}
+                    htmlFor={`${id}-amount`}
+                    error={errorMessage('amount', account.currency)}
+                    hint={
+                      estimate
+                        ? t('transactionForm.estimated', { amount: fmt.money(estimate.amountMinor, account.currency) })
+                        : chargeMode({ ...state, manualCharge: false }, account, rates) === 'manual'
+                          ? t('transactionForm.noRate', { from: state.originalCurrency, to: account.currency })
+                          : undefined
+                    }
+                  >
+                    <MoneyInput
+                      id={`${id}-amount`}
+                      currency={account.currency}
+                      value={state.amount}
+                      onChange={(amount) => update({ amount })}
+                      invalidProps={invalidProps('amount')}
+                    />
+                  </Field>
+                  {state.kind === 'expense' && (
+                    <Field
+                      label={t('transactionForm.cardFee')}
+                      htmlFor={`${id}-cardFee`}
+                      error={errorMessage('cardFee', account.currency)}
+                    >
+                      <MoneyInput
+                        id={`${id}-cardFee`}
+                        currency={account.currency}
+                        value={state.cardFee}
+                        onChange={(cardFee) => update({ cardFee })}
+                        invalidProps={invalidProps('cardFee')}
+                      />
+                    </Field>
+                  )}
+                  {state.manualCharge && chargeMode({ ...state, manualCharge: false }, account, rates) === 'estimate' && (
+                    <button
+                      type="button"
+                      className="col-span-2 justify-self-start text-sm font-medium text-indigo-700 hover:underline"
+                      onClick={() => update({ manualCharge: false, amount: '', cardFee: '' })}
+                    >
+                      {t('transactionForm.useEstimate')}
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          )
+        )}
 
         {crossCurrency && toAccount && (
           <Field
@@ -405,60 +535,6 @@ export function TransactionForm({
                   <p className="text-xs text-slate-500">{monthlyHint}</p>
                 </div>
               )}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <input
-                    type="checkbox"
-                    className="size-4 rounded border-slate-300 text-indigo-600"
-                    checked={state.foreign}
-                    onChange={(e) =>
-                      update({
-                        foreign: e.target.checked,
-                        ...(e.target.checked && state.originalCurrency === account?.currency
-                          ? { originalCurrency: defaultForeignCurrency(account?.currency) }
-                          : {}),
-                      })
-                    }
-                  />
-                  {t('transactionForm.foreign')}
-                </label>
-                <p className="text-xs text-slate-500">
-                  {t('transactionForm.foreignHint', { currency: account?.currency ?? baseCurrency })}
-                </p>
-                {state.foreign && (
-                  <div className="grid grid-cols-[6.5rem_1fr] gap-2">
-                    <select
-                      aria-label={t('transactionForm.originalCurrency')}
-                      className={inputClass}
-                      value={state.originalCurrency}
-                      onChange={(e) => update({ originalCurrency: e.target.value as CurrencyCode })}
-                    >
-                      {CURRENCY_CODES.filter((code) => code !== account?.currency).map((code) => (
-                        <option key={code} value={code}>
-                          {code}
-                        </option>
-                      ))}
-                    </select>
-                    <div>
-                      <input
-                        id={`${id}-originalAmount`}
-                        aria-label={t('transactionForm.originalAmount')}
-                        className={`${inputClass} tabular-nums`}
-                        inputMode="decimal"
-                        autoComplete="off"
-                        value={state.originalAmount}
-                        onChange={(e) => update({ originalAmount: e.target.value })}
-                        {...invalidProps('originalAmount')}
-                      />
-                      {errors.originalAmount && (
-                        <p id={`${id}-originalAmount-error`} className="mt-1 text-sm text-rose-600">
-                          {errorMessage('originalAmount', state.originalCurrency)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           </details>
         )}
@@ -496,6 +572,11 @@ export function TransactionForm({
       </ModalFooter>
     </form>
   );
+}
+
+/** Currencies an amount can be paid in: the account's own first. */
+function paymentCurrencies(accountCurrency: CurrencyCode): CurrencyCode[] {
+  return [accountCurrency, ...CURRENCY_CODES.filter((code) => code !== accountCurrency)];
 }
 
 /** Accounts as tappable chips: one tap to switch, and the currency is always in view. */

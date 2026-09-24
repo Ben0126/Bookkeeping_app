@@ -14,6 +14,7 @@ const CSV_COLUMNS = [
   'account',
   'currency',
   'amount',
+  'fee',
   'category',
   'payee',
   'note',

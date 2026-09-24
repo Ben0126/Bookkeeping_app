@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import type { Account, CurrencyCode, Transaction, TransactionInput } from '../../core';
+import { createRateResolver, type Account, type CurrencyCode, type Transaction, type TransactionInput } from '../../core';
 import {
   categoryKindOf,
+  chargeMode,
   checkAmount,
   emptyFormState,
+  estimateCharge,
   formStateFromInput,
   formStateToInput,
   isFormDirty,
+  paymentCurrencyForAccount,
   quoteRate,
   stateForNextEntry,
   suggestAccountId,
+  withPaymentCurrency,
   type FormState,
 } from './formState';
 
@@ -111,6 +115,7 @@ describe('refunds and fees', () => {
 describe('formStateFromInput', () => {
   it.each<TransactionInput>([
     { kind: 'expense', accountId: 'usd', amountMinor: 1250, date: '2026-09-01', categoryId: 'c', payee: 'P', note: 'N', original: { amountMinor: 1100, currency: 'EUR' } },
+    { kind: 'expense', accountId: 'twd', amountMinor: 1091, date: '2026-09-01', original: { amountMinor: 5000, currency: 'JPY' }, feeMinor: 16 },
     { kind: 'income', accountId: 'twd', amountMinor: 30000, date: '2026-09-01' },
     { kind: 'expense', refund: true, accountId: 'usd', amountMinor: 2000, date: '2026-09-01', categoryId: 'c' },
     { kind: 'transfer', fromAccountId: 'usd', toAccountId: 'twd', amountMinor: 10000, toAmountMinor: 3200, date: '2026-09-01', note: 'fx' },
@@ -118,18 +123,28 @@ describe('formStateFromInput', () => {
     expect(formStateToInput(formStateFromInput(input, accounts), accounts)).toEqual({ input });
   });
 
-  it('shows amounts with the currency precision and the remembered foreign currency', () => {
-    const state = formStateFromInput({ kind: 'expense', accountId: 'usd', amountMinor: 1200, date: '2026-09-01' }, accounts, 'JPY');
+  it('shows amounts with the currency precision', () => {
+    const state = formStateFromInput({ kind: 'expense', accountId: 'usd', amountMinor: 1200, date: '2026-09-01' }, accounts);
     expect(state.amount).toBe('12.00');
-    expect(state.originalCurrency).toBe('JPY');
+  });
+
+  it('keeps a saved charge as typed rather than re-estimating it', () => {
+    const state = formStateFromInput(
+      { kind: 'expense', accountId: 'twd', amountMinor: 1091, date: '2026-09-01', original: { amountMinor: 5000, currency: 'JPY' }, feeMinor: 16 },
+      accounts,
+    );
+    expect(state).toMatchObject({ foreign: true, manualCharge: true, amount: '1091', cardFee: '16', originalAmount: '5000' });
   });
 });
 
 describe('next entry and dirtiness', () => {
-  it('keeps kind, account, date and foreign currency; clears the rest', () => {
-    const filled = base({ kind: 'income', amount: '5', categoryId: 'c', payee: 'P', note: 'N', foreign: true, originalCurrency: 'JPY', originalAmount: '500' });
+  it('keeps kind, account, date and the currency paid in; clears the rest', () => {
+    const filled = base({
+      kind: 'income', amount: '5', categoryId: 'c', payee: 'P', note: 'N', foreign: true, originalCurrency: 'JPY', originalAmount: '500',
+      manualCharge: true, cardFee: '1',
+    });
     const next = stateForNextEntry(filled);
-    expect(next).toEqual({ ...base({ kind: 'income', originalCurrency: 'JPY' }) });
+    expect(next).toEqual({ ...base({ kind: 'income', foreign: true, originalCurrency: 'JPY' }) });
     expect(isFormDirty(next, next)).toBe(false);
     expect(isFormDirty(filled, next)).toBe(true);
   });
@@ -167,5 +182,67 @@ describe('quoteRate', () => {
   it('otherwise uses the direction above 1', () => {
     expect(quoteRate('EUR', 'USD', 1.1, 'TWD')).toEqual({ from: 'EUR', to: 'USD', rate: 1.1 });
     expect(quoteRate('USD', 'EUR', 1 / 1.1, 'TWD')).toMatchObject({ from: 'EUR', to: 'USD' });
+  });
+});
+
+describe('paying in another currency', () => {
+  // ¥1 = NT$0.215
+  const rates = createRateResolver([{ id: 'r', from: 'JPY', to: 'TWD', rate: 0.215, date: '2026-09-20', updatedAt: 0 }]);
+  const card = { ...account('card', 'TWD'), kind: 'credit_card' as const, foreignFeeBps: 150 };
+  const cards = [...accounts, card];
+  const yen = (patch: Partial<FormState> = {}) =>
+    base({ accountId: 'card', foreign: true, originalCurrency: 'JPY', originalAmount: '5,000', categoryId: 'c', ...patch });
+
+  it('estimates the charge with the card’s fee on spending only', () => {
+    expect(estimateCharge(yen(), card, rates)).toEqual({ amountMinor: 1091, feeMinor: 16 });
+    expect(estimateCharge(yen({ kind: 'refund' }), card, rates)).toEqual({ amountMinor: 1075, feeMinor: 0 });
+    expect(estimateCharge(yen(), { ...card, foreignFeeBps: undefined }, rates)).toEqual({ amountMinor: 1075, feeMinor: 0 });
+    // Before the first stored rate, the latest one still gives an estimate.
+    expect(estimateCharge(yen({ date: '2026-01-01' }), card, rates)?.amountMinor).toBe(1091);
+    expect(estimateCharge(yen({ originalAmount: '' }), card, rates)).toBeUndefined();
+  });
+
+  it('saves the estimate with its fee and the amount paid', () => {
+    expect(formStateToInput(yen(), cards, rates).input).toEqual({
+      kind: 'expense', accountId: 'card', amountMinor: 1091, feeMinor: 16, date: '2026-09-24', categoryId: 'c',
+      original: { amountMinor: 5000, currency: 'JPY' },
+    });
+    expect(formStateToInput(yen({ originalAmount: '' }), cards, rates).errors).toEqual({ originalAmount: 'amountRequired' });
+  });
+
+  it('asks for the charge when there is no rate, or once the user types it', () => {
+    expect(chargeMode(yen(), card, rates)).toBe('estimate');
+    expect(chargeMode(yen({ originalCurrency: 'EUR' }), card, rates)).toBe('manual');
+    expect(chargeMode(yen({ manualCharge: true }), card, rates)).toBe('manual');
+    expect(chargeMode(yen({ kind: 'transfer' }), card, rates)).toBe('none');
+    expect(formStateToInput(yen({ originalCurrency: 'EUR' }), cards, rates).errors).toEqual({ amount: 'amountRequired' });
+  });
+
+  it('takes a typed charge and fee, which must be smaller than the charge', () => {
+    const typed = yen({ manualCharge: true, amount: '1,100', cardFee: '17' });
+    expect(formStateToInput(typed, cards, rates).input).toMatchObject({ amountMinor: 1100, feeMinor: 17 });
+    expect(formStateToInput({ ...typed, cardFee: '' }, cards, rates).input).not.toHaveProperty('feeMinor');
+    expect(formStateToInput({ ...typed, cardFee: '1100' }, cards, rates).errors).toEqual({ cardFee: 'feeTooLarge' });
+    // Fees belong to spending.
+    expect(formStateToInput({ ...typed, kind: 'income' }, cards, rates).input).not.toHaveProperty('feeMinor');
+  });
+
+  it('moves the typed number when switching currency', () => {
+    const typedTwd = base({ accountId: 'card', amount: '500' });
+    expect(withPaymentCurrency(typedTwd, 'JPY', 'TWD')).toEqual({
+      foreign: true, originalCurrency: 'JPY', originalAmount: '500', amount: '', manualCharge: false, cardFee: '',
+    });
+    expect(withPaymentCurrency(yen(), 'TWD', 'TWD')).toEqual({
+      foreign: false, amount: '5,000', originalAmount: '', manualCharge: false, cardFee: '',
+    });
+    expect(withPaymentCurrency(yen(), 'EUR', 'TWD')).toEqual({ originalCurrency: 'EUR' });
+  });
+
+  it('starts another account in the currency it last paid in, until an amount is typed', () => {
+    const cash = account('cash', 'JPY');
+    expect(paymentCurrencyForAccount(base({}), card, 'JPY')).toBe('JPY');
+    expect(paymentCurrencyForAccount(base({}), card, undefined)).toBe('TWD');
+    expect(paymentCurrencyForAccount(yen(), cash, undefined)).toBe('JPY');
+    expect(paymentCurrencyForAccount(base({ amount: '5' }), cash, 'USD')).toBe('JPY');
   });
 });

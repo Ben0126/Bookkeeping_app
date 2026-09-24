@@ -1,6 +1,7 @@
 import {
   budgetProgress,
   createRateResolver,
+  findFeeCategory,
   monthOf,
   monthRange,
   summarize,
@@ -68,7 +69,8 @@ export function buildMonthOverview({
 }): MonthOverview {
   const period = monthRange(month);
   const resolver = createRateResolver(rates);
-  const summary = summarize(transactions, { accounts, baseCurrency, rates: resolver }, period);
+  const feeCategoryId = findFeeCategory(categories)?.id;
+  const summary = summarize(transactions, { accounts, baseCurrency, rates: resolver, feeCategoryId }, period);
 
   const expenseTotal = summary.expenseMinor;
   const categoryShares = summary.byCategory
@@ -83,7 +85,8 @@ export function buildMonthOverview({
   const overall = budgets.find((budget) => budget.categoryId === undefined);
   let budget: MonthOverview['budget'];
   if (overall) {
-    const [progress] = budgetProgress([overall], categories, transactions, { accounts, rates: resolver }, month);
+    const ctx = { accounts, rates: resolver, feeCategoryId };
+    const [progress] = budgetProgress([overall], categories, transactions, ctx, month);
     budget = progress;
     const isCurrentMonth = monthOf(today) === month;
     if (isCurrentMonth || month > monthOf(today)) {
