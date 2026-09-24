@@ -1,0 +1,107 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { addAccount, createTestDb } from '../test/ledgerDb';
+import { exportBackup, importBackup, parseBackup, type Backup } from './backup';
+import { setBudget } from './budgets';
+import { seedDefaultCategories } from './categories';
+import type { LedgerDB } from './db';
+import { setExchangeRate } from './rates';
+import { updateSettings } from './settings';
+import { createTransaction } from './transactions';
+
+let source: LedgerDB;
+let backup: Backup;
+
+beforeEach(async () => {
+  source = createTestDb();
+  await seedDefaultCategories(source);
+  const usd = await addAccount(source, { name: 'Chase', currency: 'USD', openingBalanceMinor: 5000 });
+  const twd = await addAccount(source, { name: '台銀', currency: 'TWD', color: '#123456' });
+  await createTransaction(source, {
+    kind: 'expense', accountId: usd.id, amountMinor: 1320, date: '2026-09-01', categoryId: 'default-dining',
+    payee: 'Pret', original: { amountMinor: 1200, currency: 'EUR' },
+  });
+  await createTransaction(source, {
+    kind: 'transfer', fromAccountId: twd.id, toAccountId: usd.id, amountMinor: 32000, toAmountMinor: 100000, date: '2026-09-02',
+  });
+  await setExchangeRate(source, { from: 'USD', to: 'TWD', rate: 32, date: '2026-09-01' });
+  await setBudget(source, { categoryId: 'default-dining', amountMinor: 5000, currency: 'TWD' });
+  await updateSettings(source, { baseCurrency: 'USD' });
+  backup = await exportBackup(source);
+});
+
+async function snapshot(db: LedgerDB) {
+  const { data } = await exportBackup(db);
+  return data;
+}
+
+describe('export and import', () => {
+  it('round-trips every table through JSON', async () => {
+    const target = createTestDb();
+    await importBackup(target, JSON.stringify(backup));
+    expect(await snapshot(target)).toEqual(backup.data);
+  });
+
+  it('replaces existing data', async () => {
+    const target = createTestDb();
+    await addAccount(target, { name: 'Will be replaced' });
+    await importBackup(target, backup);
+    expect((await target.accounts.toArray()).map((a) => a.name).sort()).toEqual(['Chase', '台銀']);
+  });
+
+  it('strips unknown fields and unknown settings', () => {
+    const tampered = structuredClone(backup) as unknown as { data: Record<string, Record<string, unknown>[]> };
+    tampered.data.accounts[0].injected = '<script>';
+    tampered.data.settings.push({ key: 'theme', value: 'dark' });
+    const parsed = parseBackup(tampered);
+    expect(parsed.data.accounts[0]).not.toHaveProperty('injected');
+    expect(parsed.data.settings).toEqual([{ key: 'baseCurrency', value: 'USD' }]);
+  });
+});
+
+describe('invalid backups', () => {
+  const corrupt = (mutate: (data: Backup['data'], root: Record<string, unknown>) => void) => {
+    const copy = structuredClone(backup);
+    mutate(copy.data, copy as unknown as Record<string, unknown>);
+    return copy;
+  };
+
+  it.each<[string, Parameters<typeof corrupt>[0]]>([
+    ['wrong format', (_, root) => { root.format = 'something-else'; }],
+    ['newer version', (_, root) => { root.version = 99; }],
+    ['unknown account', (data) => { data.transactions[0].accountId = 'ghost'; }],
+    ['float amount', (data) => { data.transactions[0].amountMinor = -13.2; }],
+    ['positive expense', (data) => {
+      const expense = data.transactions.find((t) => t.kind === 'expense')!;
+      expense.amountMinor = 100;
+    }],
+    ['string date', (data) => { data.transactions[0].date = 'Tue Sep 01 2026' as never; }],
+    ['one-legged transfer', (data) => {
+      data.transactions = data.transactions.filter((t) => !(t.kind === 'transfer' && t.amountMinor > 0));
+    }],
+    ['duplicate id', (data) => { data.accounts.push({ ...data.accounts[0] }); }],
+    ['category of the wrong kind', (data) => {
+      data.transactions.find((t) => t.kind === 'expense')!.categoryId = 'default-salary';
+    }],
+    ['budget on income category', (data) => { data.budgets[0].categoryId = 'default-salary'; data.budgets[0].id = 'category:default-salary'; }],
+    ['missing table', (data) => { delete (data as Partial<Backup['data']>).exchangeRates; }],
+  ])('rejects %s and keeps existing data', async (_, mutate) => {
+    const target = createTestDb();
+    await addAccount(target, { name: 'Precious' });
+    await expect(importBackup(target, corrupt(mutate))).rejects.toMatchObject({ code: 'INVALID_BACKUP' });
+    expect((await target.accounts.toArray()).map((a) => a.name)).toEqual(['Precious']);
+  });
+
+  it('rolls back when writing fails part-way', async () => {
+    const target = createTestDb();
+    await addAccount(target, { name: 'Precious' });
+    vi.spyOn(target.budgets, 'bulkAdd').mockRejectedValueOnce(new Error('disk full'));
+
+    await expect(importBackup(target, backup)).rejects.toThrow('disk full');
+    expect((await target.accounts.toArray()).map((a) => a.name)).toEqual(['Precious']);
+    expect(await target.transactions.count()).toBe(0);
+  });
+
+  it('rejects text that is not JSON', async () => {
+    await expect(importBackup(createTestDb(), '{oops')).rejects.toMatchObject({ code: 'INVALID_BACKUP' });
+  });
+});
