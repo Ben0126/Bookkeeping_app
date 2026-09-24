@@ -53,6 +53,7 @@ export type RateResolver = (from: CurrencyCode, to: CurrencyCode, date: string) 
  * Builds a lookup over stored rates. For a date it uses the latest rate on or
  * before that day, falling back to the earliest later rate. A stored USD→TWD
  * rate also answers TWD→USD; a direct rate wins over an inverse on the same day.
+ * Pairs without a rate of their own go through a shared third currency.
  */
 export function createRateResolver(rates: readonly ExchangeRate[]): RateResolver {
   const byPair = new Map<string, Map<string, { rate: number; direct: boolean }>>();
@@ -75,8 +76,7 @@ export function createRateResolver(rates: readonly ExchangeRate[]): RateResolver
     );
   }
 
-  return (from, to, date) => {
-    if (from === to) return 1;
+  const lookup = (from: CurrencyCode, to: CurrencyCode, date: string): number | undefined => {
     const series = sorted.get(`${from}:${to}`);
     if (!series) return undefined;
     // Last entry dated on or before `date`.
@@ -94,4 +94,30 @@ export function createRateResolver(rates: readonly ExchangeRate[]): RateResolver
     }
     return series[found === -1 ? 0 : found].rate;
   };
+
+  // Currencies that have any rate, for converting through a third one.
+  const pivots = [...new Set(rates.flatMap((r) => [r.from, r.to]))];
+
+  return (from, to, date) => {
+    if (from === to) return 1;
+    const direct = lookup(from, to, date);
+    if (direct !== undefined) return direct;
+    // Rates are usually stored against one base currency (TWD→USD, TWD→JPY),
+    // so USD→JPY goes through it.
+    for (const pivot of pivots) {
+      if (pivot === from || pivot === to) continue;
+      const first = lookup(from, pivot, date);
+      const second = first === undefined ? undefined : lookup(pivot, to, date);
+      if (first !== undefined && second !== undefined) return first * second;
+    }
+    return undefined;
+  };
+}
+
+/** Saves several rates at once (e.g. a daily download), each replacing the same pair and day. */
+export async function saveExchangeRates(db: LedgerDB, inputs: readonly NewExchangeRate[]): Promise<number> {
+  return db.transaction('rw', db.exchangeRates, async () => {
+    for (const input of inputs) await setExchangeRate(db, input);
+    return inputs.length;
+  });
 }

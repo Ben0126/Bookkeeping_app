@@ -10,19 +10,18 @@ import {
   listTransactions,
   monthOf,
   monthRange,
-  shiftMonth,
   toDateKey,
-  totalsByCurrency,
   type Account,
   type Category,
-  type CurrencyCode,
   type TransactionKind,
 } from '../../core';
 import { BackupReminder } from '../backup/BackupReminder';
-import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, SearchIcon, TransferIcon } from '../../ui/icons';
+import { CloseIcon, PlusIcon, SearchIcon, TransferIcon } from '../../ui/icons';
+import { MonthNav } from '../../ui/MonthNav';
 import { inputClass, primaryButtonClass } from '../../ui/styles';
 import { useFormat } from '../../ui/useFormat';
 import { groupByDate, toEntries, type Entry } from './entries';
+import { MonthSummary } from './MonthSummary';
 import { TransactionDialog } from './TransactionDialog';
 
 type DialogState = { mode: 'create' } | { mode: 'edit'; id: string } | null;
@@ -42,6 +41,7 @@ export function TransactionsPage() {
   const accountId = params.get('account') || undefined;
   const kind = KINDS.find((k) => k === params.get('kind'));
   const search = params.get('q') ?? '';
+  const categoryFilter = params.get('category') || undefined;
   const { from, to } = monthRange(month);
 
   const setParam = (key: string, value: string | undefined) =>
@@ -58,11 +58,15 @@ export function TransactionsPage() {
   const accounts = useLiveQuery(() => listAccounts(db, { includeArchived: true }), [db]);
   const categories = useLiveQuery(() => listCategories(db, { includeArchived: true }), [db]);
   const listed = useLiveQuery(async () => {
-    const rows = await listTransactions(db, { from, to, accountId, kind, search });
+    // A parent category also covers its subcategories.
+    const categoryIds = categoryFilter
+      ? [categoryFilter, ...(await db.categories.where('parentId').equals(categoryFilter).primaryKeys())]
+      : undefined;
+    const rows = await listTransactions(db, { from, to, accountId, kind, search, categoryIds });
     const transferIds = [...new Set(rows.flatMap((row) => (row.transferId ? [row.transferId] : [])))];
     const legs = transferIds.length > 0 ? await db.transactions.where('transferId').anyOf(transferIds).toArray() : [];
     return { rows, entries: toEntries(rows, legs, accountId) };
-  }, [db, from, to, accountId, kind, search]);
+  }, [db, from, to, accountId, kind, search, categoryFilter]);
 
   const accountsById = useMemo(() => new Map((accounts ?? []).map((a) => [a.id, a])), [accounts]);
   const categoriesById = useMemo(() => new Map((categories ?? []).map((c) => [c.id, c])), [categories]);
@@ -90,32 +94,11 @@ export function TransactionsPage() {
     if (date && monthOf(date) !== month) setParam('month', monthOf(date));
   };
 
-  const totals = listed ? totalsByCurrency(listed.rows, accounts) : {};
-  const currencies = Object.keys(totals).sort() as CurrencyCode[];
-
   return (
     <div className="space-y-4">
       <BackupReminder />
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setParam('month', shiftMonth(month, -1))}
-            aria-label={t('transactions.previousMonth')}
-            className="rounded-full p-2 text-slate-600 hover:bg-slate-200"
-          >
-            <ChevronLeftIcon />
-          </button>
-          <h1 className="min-w-32 text-center text-lg font-semibold">{fmt.month(month)}</h1>
-          <button
-            type="button"
-            onClick={() => setParam('month', shiftMonth(month, 1))}
-            aria-label={t('transactions.nextMonth')}
-            className="rounded-full p-2 text-slate-600 hover:bg-slate-200"
-          >
-            <ChevronRightIcon />
-          </button>
-        </div>
+        <MonthNav month={month} onChange={(next) => setParam('month', next)} />
         {/* Phones use the floating button instead. */}
         <div className="hidden md:block">
           <button type="button" className={primaryButtonClass} onClick={() => setDialog({ mode: 'create' })}>
@@ -125,27 +108,14 @@ export function TransactionsPage() {
         </div>
       </div>
 
-      {kind !== 'transfer' && (
-        <dl className="grid grid-cols-2 gap-3">
-          {(['expense', 'income'] as const).map((totalKind) => {
-            const field = totalKind === 'income' ? 'incomeMinor' : 'expenseMinor';
-            const amounts = currencies
-              .map((currency) => ({ currency, amountMinor: totals[currency]![field] }))
-              .filter(({ amountMinor }) => amountMinor !== 0);
-            return (
-              <div key={totalKind} className="rounded-xl bg-white p-3 ring-1 ring-slate-200">
-                <dt className="text-xs font-medium text-slate-500">{t(`transactions.total.${totalKind}`)}</dt>
-                <dd className={`mt-1 space-y-0.5 font-semibold tabular-nums ${totalKind === 'income' ? 'text-emerald-600' : 'text-slate-900'}`}>
-                  {amounts.length === 0 ? (
-                    <span className="text-slate-400">—</span>
-                  ) : (
-                    amounts.map(({ currency, amountMinor }) => <div key={currency}>{fmt.money(amountMinor, currency)}</div>)
-                  )}
-                </dd>
-              </div>
-            );
-          })}
-        </dl>
+      {kind !== 'transfer' && listed && (
+        <MonthSummary
+          month={month}
+          rows={listed.rows}
+          accounts={accounts}
+          categories={categories}
+          filtered={Boolean(search || accountId || kind || categoryFilter)}
+        />
       )}
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_10rem_8rem]">
@@ -190,9 +160,21 @@ export function TransactionsPage() {
         </select>
       </div>
 
+      {categoryFilter && (
+        <button
+          type="button"
+          onClick={() => setParam('category', undefined)}
+          className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 py-1 pr-2 pl-3 text-sm font-medium text-indigo-800 ring-1 ring-indigo-200 hover:bg-indigo-100"
+        >
+          {t('transactions.filterCategory', { name: fmt.categoryName(categoriesById.get(categoryFilter)) })}
+          <span className="sr-only">{t('transactions.clearFilter')}</span>
+          <CloseIcon className="size-4" />
+        </button>
+      )}
+
       {listed && listed.entries.length === 0 ? (
         <div className="rounded-xl bg-white px-4 py-10 text-center text-sm text-slate-500 ring-1 ring-slate-200">
-          {search || accountId || kind ? t('transactions.noMatches') : t('transactions.emptyMonth')}
+          {search || accountId || kind || categoryFilter ? t('transactions.noMatches') : t('transactions.emptyMonth')}
         </div>
       ) : (
         listed &&

@@ -1,10 +1,9 @@
-import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type Ref } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLedgerDb } from '../../app/ledgerContext';
 import {
   createTransaction,
   CURRENCY_CODES,
-  currencyDecimals,
   deleteTransaction,
   parseMoney,
   toMajor,
@@ -15,6 +14,7 @@ import {
 } from '../../core';
 import { ErrorBanner, Field, Segmented } from '../../ui/form';
 import { ModalFooter } from '../../ui/Modal';
+import { MoneyInput } from '../../ui/MoneyInput';
 import { writePreference } from '../../ui/preferences';
 import { dangerButtonClass, inputClass, primaryButtonClass, secondaryButtonClass } from '../../ui/styles';
 import { useFormat } from '../../ui/useFormat';
@@ -168,12 +168,7 @@ export function TransactionForm({
 
   const errorMessage = (field: FormField, currency?: CurrencyCode) => {
     const code = errors[field];
-    if (!code) return undefined;
-    return t(`transactionForm.errors.${code}`, {
-      currency,
-      decimals: currency ? currencyDecimals(currency) : 0,
-      context: code === 'amountTooPrecise' && currency && currencyDecimals(currency) === 0 ? 'none' : undefined,
-    });
+    return code ? fmt.formError(code, currency) : undefined;
   };
   const invalidProps = (field: FormField) =>
     errors[field] ? { 'aria-invalid': true, 'aria-describedby': `${id}-${field}-error` } : {};
@@ -511,61 +506,6 @@ function AccountPicker({
           {error}
         </p>
       )}
-    </div>
-  );
-}
-
-/** An amount field led by a bold currency badge, so the currency can't be missed. */
-function MoneyInput({
-  id,
-  currency,
-  value,
-  onChange,
-  invalidProps,
-  inputRef,
-  large = false,
-  autoFocus = false,
-}: {
-  id: string;
-  currency: CurrencyCode | undefined;
-  value: string;
-  onChange: (value: string) => void;
-  invalidProps: object;
-  inputRef?: Ref<HTMLInputElement>;
-  large?: boolean;
-  autoFocus?: boolean;
-}) {
-  const invalid = 'aria-invalid' in invalidProps;
-  return (
-    <div
-      className={
-        'flex overflow-hidden rounded-lg border bg-white shadow-xs focus-within:ring-2 ' +
-        (invalid ? 'border-rose-500 focus-within:ring-rose-500/30' : 'border-slate-300 focus-within:border-indigo-500 focus-within:ring-indigo-500/30')
-      }
-    >
-      <span
-        className={
-          'flex shrink-0 items-center bg-indigo-600 px-3 font-bold tracking-wide text-white ' +
-          (large ? 'text-base' : 'text-sm')
-        }
-      >
-        {currency ?? '—'}
-      </span>
-      <input
-        id={id}
-        ref={inputRef}
-        className={
-          'min-w-0 flex-1 px-3 tabular-nums outline-none placeholder:text-slate-300 ' +
-          (large ? 'py-2.5 text-2xl font-semibold' : 'py-2 text-base')
-        }
-        inputMode="decimal"
-        autoComplete="off"
-        autoFocus={autoFocus}
-        placeholder="0"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        {...invalidProps}
-      />
     </div>
   );
 }

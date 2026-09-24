@@ -6,6 +6,7 @@ import { readLastBackupAt } from '../backup/backupFile';
 import { BackupSection } from '../backup/BackupSection';
 import { RestoreSection } from '../backup/RestoreSection';
 import { StorageSection } from '../backup/StorageSection';
+import { BaseCurrencySection } from './BaseCurrencySection';
 import { CategorySection } from './CategorySection';
 
 const LANGUAGE_NAMES: Record<(typeof LANGUAGES)[number], string> = {
@@ -23,6 +24,7 @@ export function SettingsPage() {
       <h1 className="text-lg font-semibold">{t('settings.title')}</h1>
       <BackupSection lastBackupAt={lastBackupAt} onBackedUp={setLastBackupAt} />
       <RestoreSection lastBackupAt={lastBackupAt} onLastBackupChange={setLastBackupAt} />
+      <BaseCurrencySection />
       <CategorySection />
       <StorageSection />
       <section aria-labelledby="language-title" className="space-y-3 rounded-xl bg-white p-4 ring-1 ring-slate-200">

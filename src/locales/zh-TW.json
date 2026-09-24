@@ -9,7 +9,8 @@
     "label": "主選單",
     "transactions": "交易",
     "accounts": "帳戶",
-    "settings": "設定"
+    "settings": "設定",
+    "overview": "概況"
   },
   "kinds": {
     "expense": "支出",
@@ -69,7 +70,12 @@
     "emptyMonth": "這個月還沒有紀錄，點「+」開始記帳。",
     "noAccountsTitle": "先建立一個帳戶",
     "noAccountsBody": "交易要記在帳戶底下，例如現金、銀行帳戶或信用卡。",
-    "goToAccounts": "前往帳戶"
+    "goToAccounts": "前往帳戶",
+    "filterCategory": "分類：{{name}}",
+    "clearFilter": "（清除篩選）",
+    "budgetLeft": "預算還剩 {{amount}}",
+    "budgetLeftPerDay": "預算還剩 {{amount}}，每天約可花 {{perDay}}",
+    "budgetOver": "預算已超出 {{amount}}"
   },
   "transactionForm": {
     "kind": "交易類型",
@@ -124,7 +130,8 @@
     "currentBalanceHint": "帳戶裡現在有多少錢。之後和銀行對不上時，改這裡就能校正。",
     "amountOwed": "目前欠款",
     "amountOwedHint": "這張卡目前還沒繳的金額，填正數。",
-    "owed": "欠 {{amount}}"
+    "owed": "欠 {{amount}}",
+    "totalApprox": "換算後約 {{amount}}"
   },
   "errors": {
     "NOT_FOUND": "找不到資料，可能已被刪除。",
@@ -151,7 +158,9 @@
   },
   "settings": {
     "title": "設定",
-    "language": "語言"
+    "language": "語言",
+    "baseCurrency": "主要幣別",
+    "baseCurrencyHint": "概況和帳戶合計都會換算成這個幣別。匯率每天自動更新（來源：currency-api），只會下載匯率，不會上傳你的任何資料。"
   },
   "backup": {
     "title": "資料備份",
@@ -204,5 +213,37 @@
     "showNamed": "記帳時顯示「{{name}}」",
     "name": "名稱",
     "icon": "圖示"
+  },
+  "overview": {
+    "spent": "本月支出",
+    "received": "收入",
+    "net": "結餘",
+    "approx": "約 {{amount}}",
+    "includes": "包含 {{list}}",
+    "missingRates": "還沒有 {{currencies}} 的匯率，這部分沒有算進總額。連上網路後會自動更新。",
+    "budgetTitle": "每月預算",
+    "budgetEmpty": "設定預算後，就能看到這個月還能花多少、每天平均可以花多少。",
+    "setBudget": "設定預算",
+    "editBudget": "修改",
+    "budgetSpent": "已花 {{amount}}（{{percent}}）",
+    "budgetLeft": "還剩 {{amount}}",
+    "budgetOver": "超出 {{amount}}",
+    "perDay_other": "這個月還有 {{count}} 天，每天平均可以花 {{amount}}",
+    "categoriesTitle": "花在哪裡",
+    "noSpending": "這個月還沒有支出。",
+    "accountsTotal": "帳戶合計",
+    "viewAccounts": "查看帳戶",
+    "ratesUpdated": "匯率更新於 {{date}}",
+    "ratesNone": "還沒有匯率資料",
+    "refreshRates": "更新匯率",
+    "refreshing": "更新中…",
+    "refreshFailed": "無法取得匯率，請確認網路連線後再試一次。"
+  },
+  "budgetForm": {
+    "title": "每月預算",
+    "currency": "預算幣別",
+    "amount": "每個月可以花多少",
+    "hint": "所有支出都會換算成這個幣別來計算，包含房租、學費等每一筆支出。",
+    "remove": "移除預算"
   }
 }

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  currencyDecimals,
   formatMoney,
   fromDateKey,
   LedgerError,
@@ -58,6 +59,15 @@ export function useFormat() {
         return category.key ? t(`categories.${category.key}`, { defaultValue: category.name }) : category.name;
       },
       accountKind: (kind: AccountKind) => t(`accountKinds.${kind}`),
+      /** Message for a form error code under `transactionForm.errors`, worded for the currency. */
+      formError: (code: string, currency?: CurrencyCode) => {
+        const decimals = currency ? currencyDecimals(currency) : 0;
+        return t(`transactionForm.errors.${code}`, {
+          currency,
+          decimals,
+          context: code === 'amountTooPrecise' && decimals === 0 ? 'none' : undefined,
+        });
+      },
       error: (error: unknown) =>
         error instanceof LedgerError ? t(`errors.${error.code}`) : t('errors.UNKNOWN'),
     };

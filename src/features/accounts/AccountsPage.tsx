@@ -3,7 +3,18 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useLedgerDb } from '../../app/ledgerContext';
-import { getBalances, getSettings, listAccounts, type Account, type AccountKind, type CurrencyCode } from '../../core';
+import {
+  createRateResolver,
+  getBalances,
+  getSettings,
+  listAccounts,
+  listExchangeRates,
+  netWorth,
+  toDateKey,
+  type Account,
+  type AccountKind,
+  type CurrencyCode,
+} from '../../core';
 import { PlusIcon } from '../../ui/icons';
 import { Modal } from '../../ui/Modal';
 import { guessLocalCurrency } from '../../ui/localCurrency';
@@ -33,6 +44,7 @@ export function AccountsPage() {
   const accounts = useLiveQuery(() => listAccounts(db, { includeArchived: true }), [db]);
   const balances = useLiveQuery(() => getBalances(db), [db]);
   const settings = useLiveQuery(() => getSettings(db), [db]);
+  const rates = useLiveQuery(() => listExchangeRates(db), [db]);
   if (!accounts || !balances || !settings) return null;
 
   const active = accounts.filter((a) => !a.archived);
@@ -42,6 +54,15 @@ export function AccountsPage() {
   for (const account of active) {
     totals.set(account.currency, (totals.get(account.currency) ?? 0) + (balances[account.id] ?? 0));
   }
+  // One figure in the main currency, once more than one currency (or a foreign one) is involved.
+  const converted =
+    rates && [...totals.keys()].some((currency) => currency !== settings.baseCurrency)
+      ? netWorth(
+          balances,
+          { accounts: active, baseCurrency: settings.baseCurrency, rates: createRateResolver(rates) },
+          toDateKey(new Date()),
+        )
+      : undefined;
 
   const renderList = (list: readonly Account[]) => (
     <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
@@ -101,6 +122,11 @@ export function AccountsPage() {
               </li>
             ))}
           </ul>
+          {converted && converted.missingRates.length === 0 && (
+            <p className="mt-1 text-sm text-slate-600">
+              {t('accounts.totalApprox', { amount: fmt.money(converted.totalMinor, settings.baseCurrency) })}
+            </p>
+          )}
         </div>
       )}
 

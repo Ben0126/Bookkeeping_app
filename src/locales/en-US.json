@@ -9,7 +9,8 @@
     "label": "Main",
     "transactions": "Transactions",
     "accounts": "Accounts",
-    "settings": "Settings"
+    "settings": "Settings",
+    "overview": "Overview"
   },
   "kinds": {
     "expense": "Expense",
@@ -69,7 +70,12 @@
     "emptyMonth": "Nothing recorded this month yet. Tap “+” to add an entry.",
     "noAccountsTitle": "Create an account first",
     "noAccountsBody": "Transactions belong to an account, such as cash, a bank account or a credit card.",
-    "goToAccounts": "Go to accounts"
+    "goToAccounts": "Go to accounts",
+    "filterCategory": "Category: {{name}}",
+    "clearFilter": "(clear filter)",
+    "budgetLeft": "{{amount}} of the budget left",
+    "budgetLeftPerDay": "{{amount}} of the budget left, about {{perDay}} a day",
+    "budgetOver": "Budget exceeded by {{amount}}"
   },
   "transactionForm": {
     "kind": "Transaction type",
@@ -125,7 +131,8 @@
     "currentBalanceHint": "How much is in the account now. If it drifts from your bank's number later, correct it here.",
     "amountOwed": "Amount owed",
     "amountOwedHint": "What you currently owe on this card, as a positive number.",
-    "owed": "Owe {{amount}}"
+    "owed": "Owe {{amount}}",
+    "totalApprox": "≈ {{amount}} converted"
   },
   "errors": {
     "NOT_FOUND": "Not found. It may have been deleted.",
@@ -152,7 +159,9 @@
   },
   "settings": {
     "title": "Settings",
-    "language": "Language"
+    "language": "Language",
+    "baseCurrency": "Main currency",
+    "baseCurrencyHint": "The overview and account totals are converted into this currency. Rates update daily from currency-api; only rates are downloaded, nothing of yours is sent."
   },
   "backup": {
     "title": "Back up your data",
@@ -205,5 +214,38 @@
     "showNamed": "Show “{{name}}” when adding entries",
     "name": "Name",
     "icon": "Icon"
+  },
+  "overview": {
+    "spent": "Spent this month",
+    "received": "Income",
+    "net": "Net",
+    "approx": "≈ {{amount}}",
+    "includes": "Includes {{list}}",
+    "missingRates": "No exchange rate for {{currencies}} yet, so those amounts aren't in the total. Rates update automatically when you're online.",
+    "budgetTitle": "Monthly budget",
+    "budgetEmpty": "Set a budget to see how much you have left this month and how much you can spend per day.",
+    "setBudget": "Set a budget",
+    "editBudget": "Edit",
+    "budgetSpent": "Spent {{amount}} ({{percent}})",
+    "budgetLeft": "{{amount}} left",
+    "budgetOver": "{{amount}} over",
+    "perDay_one": "1 day left this month: {{amount}} for today",
+    "perDay_other": "{{count}} days left this month, about {{amount}} a day",
+    "categoriesTitle": "Where it went",
+    "noSpending": "No spending this month yet.",
+    "accountsTotal": "All accounts",
+    "viewAccounts": "View accounts",
+    "ratesUpdated": "Rates from {{date}}",
+    "ratesNone": "No exchange rates yet",
+    "refreshRates": "Update rates",
+    "refreshing": "Updating…",
+    "refreshFailed": "Couldn't get exchange rates. Check your connection and try again."
+  },
+  "budgetForm": {
+    "title": "Monthly budget",
+    "currency": "Budget currency",
+    "amount": "How much you can spend per month",
+    "hint": "All spending, rent and tuition included, is converted into this currency to compare.",
+    "remove": "Remove budget"
   }
 }

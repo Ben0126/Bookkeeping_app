@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createTestDb } from '../test/ledgerDb';
-import { createRateResolver, listExchangeRates, setExchangeRate } from './rates';
+import { createRateResolver, listExchangeRates, saveExchangeRates, setExchangeRate } from './rates';
 import type { ExchangeRate } from './types';
 
 const rate = (from: ExchangeRate['from'], to: ExchangeRate['to'], value: number, date: string): ExchangeRate => ({
@@ -36,8 +36,14 @@ describe('createRateResolver', () => {
     expect(resolve('TWD', 'USD', '2026-06-01')).toBe(0.04);
   });
 
-  it('knows nothing about pairs without rates', () => {
-    expect(resolve('GBP', 'TWD', '2026-04-01')).toBeUndefined();
+  it('converts through a shared currency when a pair has no rate', () => {
+    // GBP→USD 1.25, then USD→TWD 31 (the rate on 2026-04-01).
+    expect(resolve('GBP', 'TWD', '2026-04-01')).toBeCloseTo(38.75);
+    expect(resolve('TWD', 'GBP', '2026-04-01')).toBeCloseTo(1 / 38.75);
+  });
+
+  it('knows nothing about currencies without any rate', () => {
+    expect(resolve('JPY', 'TWD', '2026-04-01')).toBeUndefined();
     expect(resolve('JPY', 'JPY', '2026-04-01')).toBe(1);
   });
 });
@@ -66,5 +72,24 @@ describe('setExchangeRate', () => {
     const db = createTestDb();
     const input = { from: 'USD', to: 'TWD', rate: 32, date: '2026-09-01', ...overrides };
     await expect(setExchangeRate(db, input as never)).rejects.toMatchObject({ code });
+  });
+});
+
+describe('saveExchangeRates', () => {
+  it('saves a batch and rejects it whole when one rate is invalid', async () => {
+    const db = createTestDb();
+    await saveExchangeRates(db, [
+      { from: 'TWD', to: 'USD', rate: 0.031, date: '2026-09-24' },
+      { from: 'TWD', to: 'JPY', rate: 4.6, date: '2026-09-24' },
+    ]);
+    expect(await db.exchangeRates.count()).toBe(2);
+
+    await expect(
+      saveExchangeRates(db, [
+        { from: 'TWD', to: 'EUR', rate: 0.028, date: '2026-09-25' },
+        { from: 'TWD', to: 'GBP', rate: -1, date: '2026-09-25' },
+      ]),
+    ).rejects.toMatchObject({ code: 'INVALID_RATE' });
+    expect(await db.exchangeRates.count()).toBe(2);
   });
 });
