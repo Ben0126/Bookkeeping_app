@@ -1,125 +1,41 @@
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import { VitePWA } from 'vite-plugin-pwa'
+import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
+import { defineConfig } from 'vitest/config';
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
-      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
-      strategies: 'injectManifest',
-      srcDir: 'public',
-      filename: 'sw.js',
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'StudyBudget Pro - Student Finance Manager',
+        name: 'StudyBudget 留學生記帳',
         short_name: 'StudyBudget',
-        description: 'A comprehensive personal bookkeeping app designed for students studying abroad. Track expenses, manage multiple currencies, and build healthy financial habits.',
-        theme_color: '#3b82f6',
-        background_color: '#ffffff',
+        description: 'Offline, multi-currency bookkeeping for students abroad.',
+        lang: 'zh-TW',
+        theme_color: '#4f46e5',
+        background_color: '#f8fafc',
         display: 'standalone',
-        orientation: 'portrait-primary',
+        start_url: '/transactions',
         scope: '/',
-        start_url: '/',
-        categories: ['finance', 'productivity', 'education'],
-        lang: 'en',
+        categories: ['finance', 'productivity'],
         icons: [
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any maskable'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
+          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'pwa-maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
-        shortcuts: [
-          {
-            name: 'Add Transaction',
-            short_name: 'Add',
-            description: 'Quickly add a new transaction',
-            url: '/transactions',
-            icons: [
-              {
-                src: 'pwa-192x192.png',
-                sizes: '192x192',
-                type: 'image/png'
-              }
-            ]
-          },
-          {
-            name: 'View Statistics',
-            short_name: 'Stats',
-            description: 'Check your spending statistics',
-            url: '/statistics',
-            icons: [
-              {
-                src: 'pwa-192x192.png',
-                sizes: '192x192',
-                type: 'image/png'
-              }
-            ]
-          },
-          {
-            name: 'Manage Accounts',
-            short_name: 'Accounts',
-            description: 'Manage your bank accounts',
-            url: '/accounts',
-            icons: [
-              {
-                src: 'pwa-192x192.png',
-                sizes: '192x192',
-                type: 'image/png'
-              }
-            ]
-          }
-        ],
-        screenshots: [
-          {
-            src: 'pwa-512x512.png',
-            type: 'image/png',
-            sizes: '512x512',
-            form_factor: 'wide'
-          }
-        ]
+        shortcuts: [{ name: 'Transactions', short_name: 'Transactions', url: '/transactions' }],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              },
-            }
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'gstatic-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              }
-            }
-          }
-        ]
-      }
-    })
+        globPatterns: ['**/*.{js,css,html,png,svg,json}'],
+        navigateFallback: '/index.html',
+      },
+    }),
   ],
   test: {
     environment: 'happy-dom',
     globals: true,
     setupFiles: './src/test/setup.ts',
   },
-})
+});

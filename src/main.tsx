@@ -1,18 +1,21 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import './index.css'
-import './i18n' // 初始化 i18n
-import App from './App.tsx'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import { registerSW } from 'virtual:pwa-register';
+import App from './App';
+import { LedgerProvider } from './app/LedgerProvider';
+import { ledgerDb } from './core';
+import './i18n';
+import './index.css';
 
-import { ErrorBoundary } from './components/ErrorBoundary'
+registerSW({ immediate: true });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ErrorBoundary>
+    <LedgerProvider db={ledgerDb}>
       <BrowserRouter>
         <App />
       </BrowserRouter>
-    </ErrorBoundary>
+    </LedgerProvider>
   </StrictMode>,
-)
+);
