@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createTransaction, toDateKey, type LedgerDB } from '../../core';
+import { createTransaction, getAccountBalance, toDateKey, type LedgerDB } from '../../core';
 import { addAccount, createTestDb } from '../../test/ledgerDb';
 import { renderApp } from '../../test/renderApp';
 
@@ -20,7 +20,7 @@ describe('AccountsPage', () => {
 
     change(within(dialog).getByLabelText('Name'), 'Chase');
     change(within(dialog).getByLabelText('Currency'), 'USD');
-    change(within(dialog).getByLabelText('Opening balance'), '1,234.5');
+    change(within(dialog).getByLabelText('Current balance'), '1,234.5');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -33,11 +33,11 @@ describe('AccountsPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Add account' }));
     const dialog = await screen.findByRole('dialog', { name: 'Add account' });
 
-    change(within(dialog).getByLabelText('Opening balance'), 'abc');
+    change(within(dialog).getByLabelText('Current balance'), 'abc');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
-    expect(await within(dialog).findByText(/Enter an amount/)).toBeInTheDocument();
+    expect(await within(dialog).findByText('Enter a number above 0')).toBeInTheDocument();
 
-    change(within(dialog).getByLabelText('Opening balance'), '0');
+    change(within(dialog).getByLabelText('Current balance'), '0');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Enter a name of 1–100 characters.');
     expect(await db.accounts.count()).toBe(0);
@@ -48,7 +48,7 @@ describe('AccountsPage', () => {
     await createTransaction(db, { kind: 'expense', accountId: card.id, amountMinor: 2500, date: toDateKey(new Date()) });
     renderApp(db, '/accounts');
 
-    fireEvent.click(await screen.findByRole('button', { name: /Visa.*-\$25\.00/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Visa.*Owe \$25\.00/ }));
     let dialog = await screen.findByRole('dialog', { name: 'Edit account' });
     await waitFor(() => expect(within(dialog).getByLabelText('Currency')).toBeDisabled());
 
@@ -77,5 +77,45 @@ describe('AccountsPage', () => {
     fireEvent.click(accountLink!);
     await screen.findByLabelText('Filter by account');
     expect(screen.getByLabelText('Filter by account')).toHaveValue(account.id);
+  });
+});
+
+describe('credit cards and balances', () => {
+  it('takes a credit card balance as the amount owed', async () => {
+    renderApp(db, '/accounts');
+    fireEvent.click(await screen.findByRole('button', { name: 'Add account' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Add account' });
+    change(within(dialog).getByLabelText('Name'), 'Visa');
+    change(within(dialog).getByLabelText('Type'), 'credit_card');
+    change(within(dialog).getByLabelText('Currency'), 'USD');
+    change(within(dialog).getByLabelText('Amount owed'), '245.30');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByRole('button', { name: /Visa.*Owe \$245\.30/ })).toBeInTheDocument();
+    expect((await db.accounts.toArray())[0].openingBalanceMinor).toBe(-24530);
+  });
+
+  it('shows the balance now and corrects it without touching transactions', async () => {
+    const chase = await addAccount(db, { name: 'Chase', currency: 'USD', openingBalanceMinor: 100000 });
+    await createTransaction(db, { kind: 'expense', accountId: chase.id, amountMinor: 2500, date: toDateKey(new Date()) });
+    renderApp(db, '/accounts');
+
+    fireEvent.click(await screen.findByRole('button', { name: /Chase.*\$975\.00/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Edit account' });
+    expect(within(dialog).getByLabelText('Current balance')).toHaveValue('975.00');
+    change(within(dialog).getByLabelText('Current balance'), '950');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await waitFor(async () => expect(await getAccountBalance(db, chase.id)).toBe(95000));
+    expect(await db.transactions.count()).toBe(1);
+  });
+
+  it('flips the number when a bank account becomes a credit card', async () => {
+    renderApp(db, '/accounts');
+    fireEvent.click(await screen.findByRole('button', { name: 'Add account' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Add account' });
+    change(within(dialog).getByLabelText('Current balance'), '-50');
+    change(within(dialog).getByLabelText('Type'), 'credit_card');
+    expect(within(dialog).getByLabelText('Amount owed')).toHaveValue('50');
   });
 });

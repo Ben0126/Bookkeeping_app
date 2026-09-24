@@ -10,8 +10,7 @@ const NAV_ITEMS = [
 ] as const;
 
 export function Layout() {
-  const { t, i18n } = useTranslation();
-  const nextLanguage = i18n.resolvedLanguage === 'zh-TW' ? 'en-US' : 'zh-TW';
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-dvh bg-slate-50 text-slate-900">
@@ -36,18 +35,10 @@ export function Layout() {
               </NavLink>
             ))}
           </nav>
-          <button
-            type="button"
-            onClick={() => void i18n.changeLanguage(nextLanguage)}
-            className="ml-auto rounded-md px-2 py-1 text-sm text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
-            lang={nextLanguage}
-          >
-            {t('nav.switchLanguage')}
-          </button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 pt-4 pb-28 md:pb-12">
+      <main className="mx-auto max-w-3xl px-4 pt-4 pb-40 md:pb-12">
         <Outlet />
       </main>
 

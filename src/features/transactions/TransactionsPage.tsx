@@ -1,10 +1,9 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useLedgerDb } from '../../app/ledgerContext';
 import {
-  getTransactionInput,
   isMonthKey,
   listAccounts,
   listCategories,
@@ -17,18 +16,14 @@ import {
   type Account,
   type Category,
   type CurrencyCode,
-  type TransactionInput,
   type TransactionKind,
 } from '../../core';
 import { BackupReminder } from '../backup/BackupReminder';
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, SearchIcon, TransferIcon } from '../../ui/icons';
-import { Modal } from '../../ui/Modal';
-import { readPreference } from '../../ui/preferences';
 import { inputClass, primaryButtonClass } from '../../ui/styles';
 import { useFormat } from '../../ui/useFormat';
 import { groupByDate, toEntries, type Entry } from './entries';
-import { emptyFormState, formStateFromInput, LAST_ACCOUNT_PREFERENCE } from './formState';
-import { TransactionForm } from './TransactionForm';
+import { TransactionDialog } from './TransactionDialog';
 
 type DialogState = { mode: 'create' } | { mode: 'edit'; id: string } | null;
 
@@ -89,13 +84,6 @@ export function TransactionsPage() {
       </div>
     );
   }
-
-  const createDefaults = () => {
-    const remembered = readPreference(LAST_ACCOUNT_PREFERENCE);
-    const preferred =
-      [accountId, remembered].find((id) => activeAccounts.some((a) => a.id === id)) ?? activeAccounts[0].id;
-    return emptyFormState({ date: today, accountId: preferred });
-  };
 
   const closeAndShow = (date?: string) => {
     setDialog(null);
@@ -236,72 +224,16 @@ export function TransactionsPage() {
         <PlusIcon className="size-7" />
       </button>
 
-      {dialog?.mode === 'create' && (
-        <Modal title={t('transactions.add')} onClose={() => setDialog(null)}>
-          <TransactionForm
-            accounts={accounts}
-            categories={categories}
-            initial={createDefaults()}
-            onSaved={closeAndShow}
-            onDeleted={() => setDialog(null)}
-            onCancel={() => setDialog(null)}
-          />
-        </Modal>
-      )}
-      {dialog?.mode === 'edit' && (
-        <EditTransactionDialog
-          id={dialog.id}
+      {dialog && (
+        <TransactionDialog
+          editingId={dialog.mode === 'edit' ? dialog.id : undefined}
           accounts={accounts}
           categories={categories}
+          filterAccountId={accountId}
           onClose={closeAndShow}
         />
       )}
     </div>
-  );
-}
-
-function EditTransactionDialog({
-  id,
-  accounts,
-  categories,
-  onClose,
-}: {
-  id: string;
-  accounts: readonly Account[];
-  categories: readonly Category[];
-  onClose: (date?: string) => void;
-}) {
-  const { t } = useTranslation();
-  const db = useLedgerDb();
-  // Read once: the form owns its state after that.
-  const [input, setInput] = useState<TransactionInput | null | undefined>(undefined);
-  useEffect(() => {
-    let active = true;
-    getTransactionInput(db, id).then(
-      (value) => active && setInput(value),
-      () => active && setInput(null),
-    );
-    return () => {
-      active = false;
-    };
-  }, [db, id]);
-
-  return (
-    <Modal title={t('transactions.edit')} onClose={() => onClose()}>
-      {input === null ? (
-        <p className="text-sm text-slate-600">{t('transactions.notFound')}</p>
-      ) : input === undefined ? null : (
-        <TransactionForm
-          accounts={accounts}
-          categories={categories}
-          initial={formStateFromInput(input, accounts)}
-          editingId={id}
-          onSaved={onClose}
-          onDeleted={() => onClose()}
-          onCancel={() => onClose()}
-        />
-      )}
-    </Modal>
   );
 }
 

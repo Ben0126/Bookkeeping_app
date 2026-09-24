@@ -9,7 +9,10 @@ interface ModalProps {
   children: ReactNode;
 }
 
-/** A bottom sheet on phones and a centered dialog on larger screens. */
+/**
+ * A bottom sheet on phones and a centered dialog on larger screens. Content
+ * should end with a ModalFooter (or its own bottom padding).
+ */
 export function Modal({ title, onClose, children }: ModalProps) {
   const { t } = useTranslation();
   const titleId = useId();
@@ -44,9 +47,9 @@ export function Modal({ title, onClose, children }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-white px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl sm:max-w-lg sm:rounded-2xl"
+        className="flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:max-w-lg sm:rounded-2xl"
       >
-        <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="flex shrink-0 items-center justify-between gap-4 px-5 pt-4 pb-3">
           <h2 id={titleId} className="text-lg font-semibold text-slate-900">
             {title}
           </h2>
@@ -59,9 +62,19 @@ export function Modal({ title, onClose, children }: ModalProps) {
             <CloseIcon />
           </button>
         </div>
-        {children}
+        {/* Content scrolls; a form can pin its actions with `sticky bottom-0` (see ModalFooter). */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5">{children}</div>
       </div>
     </div>,
     document.body,
+  );
+}
+
+/** Actions pinned to the bottom of a Modal so they stay reachable in long forms. */
+export function ModalFooter({ children }: { children: ReactNode }) {
+  return (
+    <div className="sticky bottom-0 -mx-5 space-y-2 border-t border-slate-200 bg-white px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      {children}
+    </div>
   );
 }

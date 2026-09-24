@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLedgerDb } from '../../app/ledgerContext';
 import {
@@ -8,6 +8,7 @@ import {
   CURRENCY_CODES,
   deleteAccount,
   parseMoney,
+  setAccountBalance,
   toMoneyInput,
   updateAccount,
   type Account,
@@ -15,35 +16,67 @@ import {
   type CurrencyCode,
 } from '../../core';
 import { ErrorBanner, Field } from '../../ui/form';
+import { ModalFooter } from '../../ui/Modal';
 import { dangerButtonClass, inputClass, primaryButtonClass, secondaryButtonClass } from '../../ui/styles';
 import { useFormat } from '../../ui/useFormat';
+
+/** Credit cards are entered as the amount owed; everything else as money held. */
+const isDebt = (kind: AccountKind) => kind === 'credit_card';
 
 interface AccountFormProps {
   /** Omitted when creating a new account. */
   account?: Account;
+  /** The account's balance now, when editing. */
+  currentBalanceMinor?: number;
   defaultCurrency: CurrencyCode;
   onDone: () => void;
+  onDirtyChange: (dirty: boolean) => void;
 }
 
-export function AccountForm({ account, defaultCurrency, onDone }: AccountFormProps) {
+export function AccountForm({ account, currentBalanceMinor = 0, defaultCurrency, onDone, onDirtyChange }: AccountFormProps) {
   const { t } = useTranslation();
   const fmt = useFormat();
   const db = useLedgerDb();
   const id = useId();
-  const [name, setName] = useState(account?.name ?? '');
-  const [kind, setKind] = useState<AccountKind>(account?.kind ?? 'bank');
-  const [currency, setCurrency] = useState<CurrencyCode>(account?.currency ?? defaultCurrency);
-  const [opening, setOpening] = useState(account ? toMoneyInput(account.openingBalanceMinor, account.currency) : '');
-  const [openingError, setOpeningError] = useState<string>();
+  const [initial] = useState(() => {
+    const kind = account?.kind ?? 'bank';
+    return {
+      name: account?.name ?? '',
+      kind,
+      currency: account?.currency ?? defaultCurrency,
+      // What the user sees: "balance now", or "amount owed" for a card.
+      balance: account ? toMoneyInput(isDebt(kind) ? -currentBalanceMinor : currentBalanceMinor, account.currency) : '',
+    };
+  });
+  const [name, setName] = useState(initial.name);
+  const [kind, setKind] = useState<AccountKind>(initial.kind);
+  const [currency, setCurrency] = useState<CurrencyCode>(initial.currency);
+  const [balance, setBalance] = useState(initial.balance);
+  const [balanceError, setBalanceError] = useState<string>();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  useEffect(() => {
+    onDirtyChange(
+      name !== initial.name || kind !== initial.kind || currency !== initial.currency || balance !== initial.balance,
+    );
+  }, [name, kind, currency, balance, initial, onDirtyChange]);
 
   const transactionCount = useLiveQuery(
     () => (account ? db.transactions.where('accountId').equals(account.id).count() : 0),
     [db, account?.id],
   );
   const currencyLocked = (transactionCount ?? 0) > 0;
+
+  const changeKind = (next: AccountKind) => {
+    // "Owed 120" on a card is "-120" in a bank account, so flip the number when crossing over.
+    if (isDebt(next) !== isDebt(kind)) {
+      const minor = parseMoney(balance, currency);
+      if (minor !== null && minor !== 0) setBalance(toMoneyInput(-minor, currency));
+    }
+    setKind(next);
+  };
 
   const run = async (action: () => Promise<unknown>) => {
     setSubmitError(null);
@@ -59,122 +92,135 @@ export function AccountForm({ account, defaultCurrency, onDone }: AccountFormPro
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const openingBalanceMinor = opening.trim() === '' ? 0 : parseMoney(opening, currency);
-    if (openingBalanceMinor === null) {
-      setOpeningError(t('transactionForm.errors.invalidAmount'));
+    const entered = balance.trim() === '' ? 0 : parseMoney(balance, currency);
+    if (entered === null) {
+      setBalanceError(t('transactionForm.errors.amountInvalid'));
+      document.getElementById(`${id}-balance`)?.focus();
       return;
     }
-    void run(() =>
-      account
-        ? updateAccount(db, account.id, { name, kind, currency, openingBalanceMinor })
-        : createAccount(db, { name, kind, currency, openingBalanceMinor }),
-    );
+    const balanceMinor = isDebt(kind) ? -entered : entered;
+    void run(async () => {
+      if (!account) {
+        await createAccount(db, { name, kind, currency, openingBalanceMinor: balanceMinor });
+        return;
+      }
+      await db.transaction('rw', [db.accounts, db.transactions], async () => {
+        await updateAccount(db, account.id, { name, kind, currency });
+        if (balance !== initial.balance) await setAccountBalance(db, account.id, balanceMinor);
+      });
+    });
   };
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-4">
-      <Field label={t('accounts.name')} htmlFor={`${id}-name`}>
-        <input
-          id={`${id}-name`}
-          className={inputClass}
-          autoFocus={!account}
-          autoComplete="off"
-          placeholder={t('accounts.namePlaceholder')}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-      </Field>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={t('accounts.kind')} htmlFor={`${id}-kind`}>
-          <select id={`${id}-kind`} className={inputClass} value={kind} onChange={(e) => setKind(e.target.value as AccountKind)}>
-            {ACCOUNT_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {fmt.accountKind(k)}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field
-          label={t('accounts.currency')}
-          htmlFor={`${id}-currency`}
-          hint={currencyLocked ? t('accounts.currencyLocked') : undefined}
-        >
-          <select
-            id={`${id}-currency`}
+    <form onSubmit={submit} noValidate>
+      <div className="space-y-4 pb-4">
+        <Field label={t('accounts.name')} htmlFor={`${id}-name`}>
+          <input
+            id={`${id}-name`}
             className={inputClass}
-            value={currency}
-            disabled={currencyLocked}
-            onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
+            autoFocus={!account}
+            autoComplete="off"
+            placeholder={t('accounts.namePlaceholder')}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </Field>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label={t('accounts.kind')} htmlFor={`${id}-kind`}>
+            <select
+              id={`${id}-kind`}
+              className={inputClass}
+              value={kind}
+              onChange={(e) => changeKind(e.target.value as AccountKind)}
+            >
+              {ACCOUNT_KINDS.map((k) => (
+                <option key={k} value={k}>
+                  {fmt.accountKind(k)}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field
+            label={t('accounts.currency')}
+            htmlFor={`${id}-currency`}
+            hint={currencyLocked ? t('accounts.currencyLocked') : undefined}
           >
-            {CURRENCY_CODES.map((code) => (
-              <option key={code} value={code}>
-                {code} · {fmt.currencyName(code)}
-              </option>
-            ))}
-          </select>
+            <select
+              id={`${id}-currency`}
+              className={inputClass}
+              value={currency}
+              disabled={currencyLocked}
+              onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
+            >
+              {CURRENCY_CODES.map((code) => (
+                <option key={code} value={code}>
+                  {code} · {fmt.currencyName(code)}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+
+        <Field
+          label={isDebt(kind) ? t('accounts.amountOwed') : t('accounts.currentBalance')}
+          htmlFor={`${id}-balance`}
+          error={balanceError}
+          hint={isDebt(kind) ? t('accounts.amountOwedHint') : t('accounts.currentBalanceHint')}
+        >
+          <div className="flex overflow-hidden rounded-lg border border-slate-300 bg-white shadow-xs focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/30">
+            <span className="flex shrink-0 items-center bg-slate-100 px-3 text-sm font-bold text-slate-600">{currency}</span>
+            <input
+              id={`${id}-balance`}
+              className="min-w-0 flex-1 px-3 py-2 text-base tabular-nums outline-none placeholder:text-slate-300"
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder="0"
+              value={balance}
+              aria-invalid={balanceError ? true : undefined}
+              onChange={(e) => {
+                setBalance(e.target.value);
+                setBalanceError(undefined);
+              }}
+            />
+          </div>
         </Field>
       </div>
 
-      <Field
-        label={t('accounts.openingBalance')}
-        htmlFor={`${id}-opening`}
-        error={openingError}
-        hint={t('accounts.openingBalanceHint')}
-      >
-        <input
-          id={`${id}-opening`}
-          className={`${inputClass} tabular-nums`}
-          inputMode="decimal"
-          autoComplete="off"
-          placeholder="0"
-          value={opening}
-          aria-invalid={openingError ? true : undefined}
-          onChange={(e) => {
-            setOpening(e.target.value);
-            setOpeningError(undefined);
-          }}
-        />
-      </Field>
-
-      <ErrorBanner message={submitError} />
-
-      <div className="flex flex-wrap items-center gap-2 pt-2">
-        {account && (
-          <>
-            <button
-              type="button"
-              className={secondaryButtonClass}
-              disabled={saving}
-              onClick={() => void run(() => updateAccount(db, account.id, { archived: !account.archived }))}
-            >
-              {account.archived ? t('accounts.unarchive') : t('accounts.archive')}
-            </button>
-            {confirmingDelete ? (
+      <ModalFooter>
+        <ErrorBanner message={submitError} />
+        <div className="flex flex-wrap items-center gap-2">
+          {account && (
+            <>
               <button
                 type="button"
-                className={dangerButtonClass}
+                className={secondaryButtonClass}
                 disabled={saving}
-                onClick={() => void run(() => deleteAccount(db, account.id))}
+                onClick={() => void run(() => updateAccount(db, account.id, { archived: !account.archived }))}
               >
-                {t('accounts.confirmDelete')}
+                {account.archived ? t('accounts.unarchive') : t('accounts.archive')}
               </button>
-            ) : (
-              <button type="button" className={dangerButtonClass} onClick={() => setConfirmingDelete(true)}>
-                {t('common.delete')}
-              </button>
-            )}
-          </>
-        )}
-        <div className="ml-auto flex gap-2">
-          <button type="button" className={secondaryButtonClass} onClick={onDone}>
-            {t('common.cancel')}
-          </button>
-          <button type="submit" className={primaryButtonClass} disabled={saving}>
+              {confirmingDelete ? (
+                <button
+                  type="button"
+                  className={dangerButtonClass}
+                  disabled={saving}
+                  onClick={() => void run(() => deleteAccount(db, account.id))}
+                >
+                  {t('accounts.confirmDelete')}
+                </button>
+              ) : (
+                <button type="button" className={dangerButtonClass} onClick={() => setConfirmingDelete(true)}>
+                  {t('common.delete')}
+                </button>
+              )}
+            </>
+          )}
+          <button type="submit" className={`${primaryButtonClass} ml-auto min-w-24`} disabled={saving}>
             {t('common.save')}
           </button>
         </div>
-      </div>
+      </ModalFooter>
     </form>
   );
 }

@@ -9,7 +9,6 @@
     "label": "主選單",
     "transactions": "交易",
     "accounts": "帳戶",
-    "switchLanguage": "English",
     "settings": "設定"
   },
   "kinds": {
@@ -27,7 +26,7 @@
     "tuition": "學費",
     "rent": "房租",
     "utilities": "水電瓦斯",
-    "groceries": "日用採買",
+    "groceries": "超市與日用品",
     "dining": "外食",
     "transport": "交通",
     "travel": "機票與旅行",
@@ -38,7 +37,8 @@
     "visa": "簽證與文件",
     "shopping": "購物",
     "entertainment": "娛樂",
-    "other_expense": "其他支出"
+    "other_expense": "其他支出",
+    "fees": "手續費"
   },
   "accountKinds": {
     "cash": "現金",
@@ -66,7 +66,7 @@
     "allAccounts": "所有帳戶",
     "allKinds": "所有類型",
     "noMatches": "沒有符合條件的交易。",
-    "emptyMonth": "這個月還沒有紀錄，按「新增交易」開始記帳。",
+    "emptyMonth": "這個月還沒有紀錄，點「+」開始記帳。",
     "noAccountsTitle": "先建立一個帳戶",
     "noAccountsBody": "交易要記在帳戶底下，例如現金、銀行帳戶或信用卡。",
     "goToAccounts": "前往帳戶"
@@ -80,21 +80,28 @@
     "toAccount": "轉入帳戶",
     "chooseAccount": "選擇帳戶",
     "date": "日期",
-    "amountReceived": "到帳金額（{{currency}}）",
+    "amountReceived": "轉入金額（{{currency}}）",
     "impliedRate": "約 1 {{from}} = {{rate}} {{to}}",
     "category": "分類",
     "payee": "商家／對象",
     "note": "備註",
-    "foreign": "外幣消費",
-    "foreignHint": "卡片以其他幣別計價時（例如用美元卡付歐元），可另外記下原幣金額。",
+    "foreign": "以其他幣別付款",
+    "foreignHint": "卡片扣款的幣別（{{currency}}）和實際付款的幣別不同時使用。例如用台幣卡在日本刷 ¥5,000：上方金額填帳單的台幣金額，這裡填 ¥5,000。",
     "originalCurrency": "原幣別",
     "originalAmount": "原幣金額",
     "confirmDelete": "確定刪除？",
     "errors": {
       "chooseAccount": "請選擇帳戶",
       "chooseOtherAccount": "請選擇另一個帳戶",
-      "invalidAmount": "請輸入大於 0 的金額，小數位數不能超過該幣別的單位"
-    }
+      "amountRequired": "請輸入金額",
+      "amountInvalid": "請輸入大於 0 的數字",
+      "amountTooPrecise": "{{currency}} 最多到小數點後 {{decimals}} 位",
+      "amountTooPrecise_none": "{{currency}} 金額不能有小數"
+    },
+    "more": "更多：備註、以其他幣別付款",
+    "saveAndNext": "再記一筆",
+    "savedNotice": "已儲存：{{entry}}。可以接著記下一筆。",
+    "discardConfirm": "要放棄還沒儲存的內容嗎？"
   },
   "accounts": {
     "title": "帳戶",
@@ -105,16 +112,19 @@
     "kind": "類型",
     "currency": "幣別",
     "currencyLocked": "已有交易的帳戶不能更改幣別。",
-    "openingBalance": "期初餘額",
-    "openingBalanceHint": "開始記帳前的餘額；信用卡欠款請輸入負數。",
     "archive": "封存",
     "unarchive": "取消封存",
     "confirmDelete": "確定刪除？",
     "viewTransactions": "交易",
-    "totals": "各幣別總額",
+    "totals": "合計",
     "empty": "還沒有帳戶。",
     "archivedCount_other": "已封存（{{count}}）",
-    "archivedName": "{{name}}（已封存）"
+    "archivedName": "{{name}}（已封存）",
+    "currentBalance": "目前餘額",
+    "currentBalanceHint": "帳戶裡現在有多少錢。之後和銀行對不上時，改這裡就能校正。",
+    "amountOwed": "目前欠款",
+    "amountOwedHint": "這張卡目前還沒繳的金額，填正數。",
+    "owed": "欠 {{amount}}"
   },
   "errors": {
     "NOT_FOUND": "找不到資料，可能已被刪除。",
@@ -140,7 +150,8 @@
     "UNKNOWN": "發生錯誤，請再試一次。"
   },
   "settings": {
-    "title": "設定"
+    "title": "設定",
+    "language": "語言"
   },
   "backup": {
     "title": "資料備份",
@@ -174,7 +185,7 @@
     "persisted": "已啟用永久儲存，瀏覽器不會因為空間不足而自動清除資料。",
     "notPersisted": "瀏覽器在儲存空間不足時，可能會自動清除這個 App 的資料。",
     "request": "要求永久儲存",
-    "denied": "瀏覽器沒有同意。把 App 安裝到主畫面後通常就能啟用；也請記得定期備份。",
+    "denied": "瀏覽器沒有同意。把 App 安裝到主畫面後通常就能啟用（iPhone：Safari「分享 → 加入主畫面」；Android：Chrome 選單的「安裝應用程式」）。不論如何，定期備份最可靠。",
     "iosTip": "iPhone／iPad：請用 Safari 的「分享 → 加入主畫面」安裝 App。只在瀏覽器分頁中使用時，Safari 可能會清除長時間沒開啟的網站資料。"
   },
   "backupReminder": {
@@ -182,5 +193,16 @@
     "stale": "上次備份是{{when}}，之後新增或修改的資料還沒有備份。",
     "later": "稍後提醒",
     "backUp": "立即備份"
+  },
+  "categorySettings": {
+    "title": "分類",
+    "intro": "隱藏用不到的分類，記帳時就不會出現；已經記過的資料不受影響。",
+    "kind": "分類類型",
+    "add": "新增分類",
+    "edit": "編輯分類",
+    "editNamed": "編輯「{{name}}」",
+    "showNamed": "記帳時顯示「{{name}}」",
+    "name": "名稱",
+    "icon": "圖示"
   }
 }

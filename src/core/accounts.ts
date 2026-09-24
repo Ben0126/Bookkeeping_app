@@ -104,6 +104,20 @@ export async function getAccountBalance(db: LedgerDB, id: string): Promise<numbe
   });
 }
 
+/**
+ * Makes the account's current balance equal `balanceMinor` (e.g. what the
+ * bank app shows) by moving the opening balance. Past transactions are kept.
+ */
+export async function setAccountBalance(db: LedgerDB, id: string, balanceMinor: number): Promise<Account> {
+  const target = requireMinor(balanceMinor);
+  return db.transaction('rw', [db.accounts, db.transactions], async () => {
+    const current = await getAccountBalance(db, id);
+    const account = await getAccount(db, id);
+    if (current === target) return account;
+    return updateAccount(db, id, { openingBalanceMinor: account.openingBalanceMinor + target - current });
+  });
+}
+
 /** Current balance of every account (archived included), keyed by account id. */
 export async function getBalances(db: LedgerDB): Promise<Record<string, number>> {
   return db.transaction('r', [db.accounts, db.transactions], async () => {

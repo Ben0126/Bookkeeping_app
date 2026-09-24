@@ -6,6 +6,7 @@ import {
   getAccountBalance,
   getBalances,
   listAccounts,
+  setAccountBalance,
   updateAccount,
 } from './accounts';
 import type { LedgerDB } from './db';
@@ -57,6 +58,23 @@ describe('balances', () => {
     const b = await addAccount(db, { currency: 'TWD', openingBalanceMinor: 0 });
     await createTransaction(db, { kind: 'expense', accountId: a.id, amountMinor: 30, date: '2026-09-01' });
     expect(await getBalances(db)).toEqual({ [a.id]: 70, [b.id]: 0 });
+  });
+});
+
+describe('setAccountBalance', () => {
+  it('moves the opening balance so the current balance matches', async () => {
+    const account = await addAccount(db, { openingBalanceMinor: 10000 });
+    await createTransaction(db, { kind: 'expense', accountId: account.id, amountMinor: 2500, date: '2026-09-01' });
+
+    const updated = await setAccountBalance(db, account.id, 7000);
+    expect(await getAccountBalance(db, account.id)).toBe(7000);
+    expect(updated.openingBalanceMinor).toBe(9500);
+    expect(await db.transactions.count()).toBe(1);
+  });
+
+  it('rejects amounts that are not whole minor units', async () => {
+    const account = await addAccount(db);
+    await expect(setAccountBalance(db, account.id, 1.5)).rejects.toMatchObject({ code: 'INVALID_AMOUNT' });
   });
 });
 

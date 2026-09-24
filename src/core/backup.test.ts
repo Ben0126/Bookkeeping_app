@@ -117,7 +117,7 @@ describe('countBackup', () => {
   it('counts a transfer once', () => {
     expect(countBackup(backup.data)).toEqual({
       accounts: 2,
-      categories: 21,
+      categories: 22,
       transactions: 2,
       exchangeRates: 1,
       budgets: 1,

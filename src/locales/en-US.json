@@ -9,7 +9,6 @@
     "label": "Main",
     "transactions": "Transactions",
     "accounts": "Accounts",
-    "switchLanguage": "中文",
     "settings": "Settings"
   },
   "kinds": {
@@ -27,7 +26,7 @@
     "tuition": "Tuition",
     "rent": "Rent",
     "utilities": "Utilities",
-    "groceries": "Groceries",
+    "groceries": "Groceries & household",
     "dining": "Dining out",
     "transport": "Transport",
     "travel": "Flights & travel",
@@ -38,7 +37,8 @@
     "visa": "Visa & documents",
     "shopping": "Shopping",
     "entertainment": "Entertainment",
-    "other_expense": "Other expense"
+    "other_expense": "Other expense",
+    "fees": "Fees"
   },
   "accountKinds": {
     "cash": "Cash",
@@ -66,7 +66,7 @@
     "allAccounts": "All accounts",
     "allKinds": "All types",
     "noMatches": "No transactions match these filters.",
-    "emptyMonth": "Nothing recorded this month yet. Add a transaction to get started.",
+    "emptyMonth": "Nothing recorded this month yet. Tap “+” to add an entry.",
     "noAccountsTitle": "Create an account first",
     "noAccountsBody": "Transactions belong to an account, such as cash, a bank account or a credit card.",
     "goToAccounts": "Go to accounts"
@@ -85,16 +85,23 @@
     "category": "Category",
     "payee": "Payee",
     "note": "Note",
-    "foreign": "Paid in a foreign currency",
-    "foreignHint": "When a card is charged in another currency, record the original amount too.",
+    "foreign": "Paid in another currency",
+    "foreignHint": "Use this when the card is billed in {{currency}} but you paid in another currency. For example, a ¥5,000 purchase on a TWD card: enter the TWD amount from the statement above, and ¥5,000 here.",
     "originalCurrency": "Original currency",
     "originalAmount": "Original amount",
     "confirmDelete": "Really delete?",
     "errors": {
       "chooseAccount": "Choose an account",
       "chooseOtherAccount": "Choose a different account",
-      "invalidAmount": "Enter an amount above 0 with no more decimals than the currency allows"
-    }
+      "amountRequired": "Enter an amount",
+      "amountInvalid": "Enter a number above 0",
+      "amountTooPrecise": "{{currency}} allows at most {{decimals}} decimal places",
+      "amountTooPrecise_none": "{{currency}} amounts have no decimals"
+    },
+    "more": "More: note, paid in another currency",
+    "saveAndNext": "Save & add another",
+    "savedNotice": "Saved: {{entry}}. Go ahead with the next one.",
+    "discardConfirm": "Discard what you entered?"
   },
   "accounts": {
     "title": "Accounts",
@@ -105,17 +112,20 @@
     "kind": "Type",
     "currency": "Currency",
     "currencyLocked": "The currency can't change once the account has transactions.",
-    "openingBalance": "Opening balance",
-    "openingBalanceHint": "The balance before you started tracking. Enter credit card debt as a negative number.",
     "archive": "Archive",
     "unarchive": "Unarchive",
     "confirmDelete": "Really delete?",
     "viewTransactions": "Transactions",
-    "totals": "Totals by currency",
+    "totals": "Totals",
     "empty": "No accounts yet.",
     "archivedCount_one": "Archived ({{count}})",
     "archivedCount_other": "Archived ({{count}})",
-    "archivedName": "{{name}} (archived)"
+    "archivedName": "{{name}} (archived)",
+    "currentBalance": "Current balance",
+    "currentBalanceHint": "How much is in the account now. If it drifts from your bank's number later, correct it here.",
+    "amountOwed": "Amount owed",
+    "amountOwedHint": "What you currently owe on this card, as a positive number.",
+    "owed": "Owe {{amount}}"
   },
   "errors": {
     "NOT_FOUND": "Not found. It may have been deleted.",
@@ -141,7 +151,8 @@
     "UNKNOWN": "Something went wrong. Please try again."
   },
   "settings": {
-    "title": "Settings"
+    "title": "Settings",
+    "language": "Language"
   },
   "backup": {
     "title": "Back up your data",
@@ -175,7 +186,7 @@
     "persisted": "Persistent storage is on: the browser won't clear this data to free up space.",
     "notPersisted": "When space runs low, the browser may clear this app's data.",
     "request": "Request persistent storage",
-    "denied": "The browser declined. Installing the app to your home screen usually helps; keep making backups too.",
+    "denied": "The browser declined. Installing the app usually helps (iPhone: Safari's Share → Add to Home Screen; Android: Chrome menu → Install app). Either way, regular backups are the safest bet.",
     "iosTip": "iPhone/iPad: install the app with Safari's Share → Add to Home Screen. Used only in a browser tab, Safari may clear data for sites you haven't opened in a while."
   },
   "backupReminder": {
@@ -183,5 +194,16 @@
     "stale": "Your last backup was {{when}}; changes since then aren't backed up.",
     "later": "Later",
     "backUp": "Back up now"
+  },
+  "categorySettings": {
+    "title": "Categories",
+    "intro": "Hide categories you don't use so they stay out of the way when adding entries. Past entries are not affected.",
+    "kind": "Category type",
+    "add": "Add category",
+    "edit": "Edit category",
+    "editNamed": "Edit “{{name}}”",
+    "showNamed": "Show “{{name}}” when adding entries",
+    "name": "Name",
+    "icon": "Icon"
   }
 }

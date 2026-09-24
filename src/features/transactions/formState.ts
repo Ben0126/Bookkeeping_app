@@ -1,15 +1,17 @@
 import {
+  currencyDecimals,
   parseMoney,
   toMoneyInput,
   type Account,
   type CurrencyCode,
+  type Transaction,
   type TransactionInput,
 } from '../../core';
 
 export type FormKind = TransactionInput['kind'];
 
-/** Remembers the account last used, to preselect it next time. */
-export const LAST_ACCOUNT_PREFERENCE = 'lastAccountId';
+/** Remembers the foreign currency last used, e.g. JPY for someone in Japan. */
+export const LAST_FOREIGN_CURRENCY_PREFERENCE = 'lastForeignCurrency';
 
 /** Everything the form edits, as the raw strings the inputs hold. */
 export interface FormState {
@@ -27,21 +29,33 @@ export interface FormState {
   originalAmount: string;
 }
 
-export type FormField = 'amount' | 'accountId' | 'toAccountId' | 'toAmount' | 'originalAmount';
-export type FormErrors = Partial<Record<FormField, string>>;
+export type FormField = 'accountId' | 'amount' | 'toAccountId' | 'toAmount' | 'originalAmount';
 
-/** Translation keys for client-side validation messages. */
-export const FORM_ERRORS = {
-  chooseAccount: 'transactionForm.errors.chooseAccount',
-  chooseOtherAccount: 'transactionForm.errors.chooseOtherAccount',
-  invalidAmount: 'transactionForm.errors.invalidAmount',
-} as const;
+/** Order in which invalid fields get focus. */
+export const FORM_FIELDS: readonly FormField[] = ['accountId', 'amount', 'toAccountId', 'toAmount', 'originalAmount'];
 
-export function defaultForeignCurrency(accountCurrency: CurrencyCode | undefined): CurrencyCode {
+/** Codes under `transactionForm.errors` in the translations. */
+export type FormErrorCode = 'chooseAccount' | 'chooseOtherAccount' | 'amountRequired' | 'amountInvalid' | 'amountTooPrecise';
+
+export type FormErrors = Partial<Record<FormField, FormErrorCode>>;
+
+export function defaultForeignCurrency(
+  accountCurrency: CurrencyCode | undefined,
+  remembered?: CurrencyCode,
+): CurrencyCode {
+  if (remembered && remembered !== accountCurrency) return remembered;
   return accountCurrency === 'USD' ? 'EUR' : 'USD';
 }
 
-export function emptyFormState({ date, accountId }: { date: string; accountId: string }): FormState {
+export function emptyFormState({
+  date,
+  accountId,
+  originalCurrency = 'USD',
+}: {
+  date: string;
+  accountId: string;
+  originalCurrency?: CurrencyCode;
+}): FormState {
   return {
     kind: 'expense',
     amount: '',
@@ -53,13 +67,79 @@ export function emptyFormState({ date, accountId }: { date: string; accountId: s
     payee: '',
     note: '',
     foreign: false,
-    originalCurrency: 'USD',
+    originalCurrency,
     originalAmount: '',
   };
 }
 
+/** After "save and add another": keep where and when, clear what. */
+export function stateForNextEntry(state: FormState): FormState {
+  return {
+    ...emptyFormState({ date: state.date, accountId: state.accountId, originalCurrency: state.originalCurrency }),
+    kind: state.kind,
+    toAccountId: state.toAccountId,
+  };
+}
+
+export function isFormDirty(state: FormState, baseline: FormState): boolean {
+  return (Object.keys(state) as (keyof FormState)[]).some((key) => state[key] !== baseline[key]);
+}
+
+/**
+ * Which account a new entry should start on: the one the list is filtered
+ * to, else the account used most for this kind of entry recently (so one
+ * rent payment from the home bank doesn't make the next coffee default to
+ * it), else the first account.
+ */
+export function suggestAccountId({
+  kind,
+  accounts,
+  recent,
+  filterAccountId,
+}: {
+  kind: FormKind;
+  accounts: readonly Account[];
+  recent: readonly Transaction[];
+  filterAccountId?: string;
+}): string {
+  const active = accounts.filter((a) => !a.archived);
+  if (filterAccountId && active.some((a) => a.id === filterAccountId)) return filterAccountId;
+
+  const counts = new Map<string, number>();
+  for (const t of recent) {
+    if (t.kind !== kind || (kind === 'transfer' && t.amountMinor > 0)) continue;
+    counts.set(t.accountId, (counts.get(t.accountId) ?? 0) + 1);
+  }
+  let best: Account | undefined;
+  for (const account of active) {
+    if ((counts.get(account.id) ?? 0) > (best ? (counts.get(best.id) ?? 0) : 0)) best = account;
+  }
+  return (best ?? active[0])?.id ?? '';
+}
+
+/**
+ * States a transfer's rate the way people quote it: in the base currency
+ * when one side is it (1 JPY ≈ 0.21 TWD, 1 USD ≈ 32 TWD), otherwise as a
+ * number above 1. `rate` is units of `to` per unit of `from`.
+ */
+export function quoteRate(
+  from: CurrencyCode,
+  to: CurrencyCode,
+  rate: number,
+  base: CurrencyCode,
+): { from: CurrencyCode; to: CurrencyCode; rate: number } {
+  const inverted = { from: to, to: from, rate: 1 / rate };
+  if (to === base) return { from, to, rate };
+  if (from === base) return inverted;
+  return rate >= 1 ? { from, to, rate } : inverted;
+}
+
 /** Prefills the form from a stored transaction. */
-export function formStateFromInput(input: TransactionInput, accounts: readonly Account[]): FormState {
+export function formStateFromInput(
+  input: TransactionInput,
+  accounts: readonly Account[],
+  rememberedForeign?: CurrencyCode,
+): FormState {
   const currencyOf = (id: string) => accounts.find((account) => account.id === id)?.currency ?? 'USD';
 
   if (input.kind === 'transfer') {
@@ -81,15 +161,15 @@ export function formStateFromInput(input: TransactionInput, accounts: readonly A
     payee: input.payee ?? '',
     note: input.note ?? '',
     foreign: input.original !== undefined,
-    originalCurrency: input.original?.currency ?? defaultForeignCurrency(accountCurrency),
+    originalCurrency: input.original?.currency ?? defaultForeignCurrency(accountCurrency, rememberedForeign),
     originalAmount: input.original ? toMoneyInput(input.original.amountMinor, input.original.currency) : '',
   };
 }
 
 /**
- * Validates what the user typed and builds the input for the ledger. Field
- * errors are translation keys; rules that need the database (archived
- * accounts, category kinds, …) are left to the ledger.
+ * Validates what the user typed and builds the input for the ledger. Rules
+ * that need the database (archived accounts, category kinds, …) are left to
+ * the ledger.
  */
 export function formStateToInput(
   state: FormState,
@@ -97,18 +177,20 @@ export function formStateToInput(
 ): { input: TransactionInput; errors?: undefined } | { input?: undefined; errors: FormErrors } {
   const errors: FormErrors = {};
   const account = accounts.find((a) => a.id === state.accountId);
-  if (!account) errors.accountId = FORM_ERRORS.chooseAccount;
+  if (!account) errors.accountId = 'chooseAccount';
 
-  const amountMinor = account ? positiveAmount(state.amount, account.currency) : null;
-  if (account && amountMinor === null) errors.amount = FORM_ERRORS.invalidAmount;
+  const amount = account ? checkAmount(state.amount, account.currency) : null;
+  if (amount && 'error' in amount) errors.amount = amount.error;
+  const amountMinor = amount && 'minor' in amount ? amount.minor : null;
 
   if (state.kind === 'transfer') {
     const to = accounts.find((a) => a.id === state.toAccountId);
-    if (!to || to.id === state.accountId) errors.toAccountId = FORM_ERRORS.chooseOtherAccount;
-    let toAmountMinor: number | null = amountMinor;
+    if (!to || to.id === state.accountId) errors.toAccountId = 'chooseOtherAccount';
+    let toAmountMinor = amountMinor;
     if (account && to && to.currency !== account.currency) {
-      toAmountMinor = positiveAmount(state.toAmount, to.currency);
-      if (toAmountMinor === null) errors.toAmount = FORM_ERRORS.invalidAmount;
+      const toAmount = checkAmount(state.toAmount, to.currency);
+      if ('error' in toAmount) errors.toAmount = toAmount.error;
+      toAmountMinor = 'minor' in toAmount ? toAmount.minor : null;
     }
     if (Object.keys(errors).length > 0 || amountMinor === null || toAmountMinor === null) return { errors };
     return {
@@ -126,9 +208,9 @@ export function formStateToInput(
 
   let original: { amountMinor: number; currency: CurrencyCode } | undefined;
   if (state.foreign) {
-    const originalMinor = positiveAmount(state.originalAmount, state.originalCurrency);
-    if (originalMinor === null) errors.originalAmount = FORM_ERRORS.invalidAmount;
-    else original = { amountMinor: originalMinor, currency: state.originalCurrency };
+    const originalAmount = checkAmount(state.originalAmount, state.originalCurrency);
+    if ('error' in originalAmount) errors.originalAmount = originalAmount.error;
+    else original = { amountMinor: originalAmount.minor, currency: state.originalCurrency };
   }
   if (Object.keys(errors).length > 0 || amountMinor === null) return { errors };
   return {
@@ -145,7 +227,15 @@ export function formStateToInput(
   };
 }
 
-function positiveAmount(text: string, currency: CurrencyCode): number | null {
-  const minor = parseMoney(text, currency);
-  return minor !== null && minor > 0 ? minor : null;
+/** A positive amount in minor units, or why the text isn't one. */
+export function checkAmount(text: string, currency: CurrencyCode): { minor: number } | { error: FormErrorCode } {
+  const trimmed = text.trim();
+  if (trimmed === '') return { error: 'amountRequired' };
+  const minor = parseMoney(trimmed, currency);
+  if (minor !== null) return minor > 0 ? { minor } : { error: 'amountInvalid' };
+  const fraction = /^[\d,\s]*\.(\d+)$/.exec(trimmed)?.[1];
+  if (fraction && fraction.replace(/0+$/, '').length > currencyDecimals(currency)) {
+    return { error: 'amountTooPrecise' };
+  }
+  return { error: 'amountInvalid' };
 }

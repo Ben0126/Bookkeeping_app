@@ -6,7 +6,9 @@ import { useLedgerDb } from '../../app/ledgerContext';
 import { getBalances, getSettings, listAccounts, type Account, type AccountKind, type CurrencyCode } from '../../core';
 import { PlusIcon } from '../../ui/icons';
 import { Modal } from '../../ui/Modal';
+import { guessLocalCurrency } from '../../ui/localCurrency';
 import { primaryButtonClass } from '../../ui/styles';
+import { useDiscardGuard } from '../../ui/useDiscardGuard';
 import { useFormat } from '../../ui/useFormat';
 import { AccountForm } from './AccountForm';
 
@@ -26,6 +28,7 @@ export function AccountsPage() {
   const fmt = useFormat();
   const db = useLedgerDb();
   const [dialog, setDialog] = useState<DialogState>(null);
+  const { setDirty, confirmDiscard } = useDiscardGuard(t('transactionForm.discardConfirm'));
 
   const accounts = useLiveQuery(() => listAccounts(db, { includeArchived: true }), [db]);
   const balances = useLiveQuery(() => getBalances(db), [db]);
@@ -61,7 +64,9 @@ export function AccountsPage() {
                 </span>
               </span>
               <span className={`shrink-0 font-semibold tabular-nums ${balance < 0 ? 'text-rose-600' : 'text-slate-900'}`}>
-                {fmt.money(balance, account.currency)}
+                {account.kind === 'credit_card' && balance < 0
+                  ? t('accounts.owed', { amount: fmt.money(-balance, account.currency) })
+                  : fmt.money(balance, account.currency)}
               </span>
             </button>
             <Link
@@ -119,12 +124,15 @@ export function AccountsPage() {
       {dialog && (
         <Modal
           title={dialog.mode === 'create' ? t('accounts.add') : t('accounts.edit')}
-          onClose={() => setDialog(null)}
+          onClose={() => confirmDiscard() && setDialog(null)}
         >
           <AccountForm
             account={dialog.mode === 'edit' ? dialog.account : undefined}
-            defaultCurrency={settings.baseCurrency}
+            currentBalanceMinor={dialog.mode === 'edit' ? balances[dialog.account.id] : undefined}
+            // New accounts abroad are usually in the local currency, not the home one.
+            defaultCurrency={guessLocalCurrency() ?? settings.baseCurrency}
             onDone={() => setDialog(null)}
+            onDirtyChange={setDirty}
           />
         </Modal>
       )}
