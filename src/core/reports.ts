@@ -33,7 +33,7 @@ export interface CategoryTotal {
 export interface Summary {
   currency: CurrencyCode;
   incomeMinor: number;
-  /** Positive. */
+  /** Spending net of refunds; positive when money went out. */
   expenseMinor: number;
   netMinor: number;
   /** Largest first. */
@@ -70,9 +70,10 @@ export function summarize(
 
   summary.missingRates = forEachConverted(transactions, ctx, period, (t, baseMinor) => {
     const kind = t.kind as 'income' | 'expense';
-    const magnitude = Math.abs(baseMinor);
-    if (kind === 'income') summary.incomeMinor += magnitude;
-    else summary.expenseMinor += magnitude;
+    // Spending counts up; a refund (a positive expense) counts it back down.
+    const amount = kind === 'income' ? baseMinor : -baseMinor;
+    if (kind === 'income') summary.incomeMinor += amount;
+    else summary.expenseMinor += amount;
 
     const key = `${kind}:${t.categoryId ?? ''}`;
     let total = byCategory.get(key);
@@ -80,7 +81,7 @@ export function summarize(
       total = { categoryId: t.categoryId ?? null, kind, totalMinor: 0, count: 0 };
       byCategory.set(key, total);
     }
-    total.totalMinor += magnitude;
+    total.totalMinor += amount;
     total.count += 1;
   });
 
@@ -106,8 +107,8 @@ export function totalsByCurrency(
     const currency = currencyOf.get(t.accountId);
     if (t.kind === 'transfer' || currency === undefined || !inPeriod(t, period)) continue;
     const native = (totals[currency] ??= { incomeMinor: 0, expenseMinor: 0 });
-    if (t.kind === 'income') native.incomeMinor += Math.abs(t.amountMinor);
-    else native.expenseMinor += Math.abs(t.amountMinor);
+    if (t.kind === 'income') native.incomeMinor += t.amountMinor;
+    else native.expenseMinor -= t.amountMinor;
   }
   return totals;
 }
@@ -126,8 +127,8 @@ export function monthlyTotals(
       total = { month, incomeMinor: 0, expenseMinor: 0, netMinor: 0 };
       months.set(month, total);
     }
-    if (t.kind === 'income') total.incomeMinor += Math.abs(baseMinor);
-    else total.expenseMinor += Math.abs(baseMinor);
+    if (t.kind === 'income') total.incomeMinor += baseMinor;
+    else total.expenseMinor -= baseMinor;
     total.netMinor = total.incomeMinor - total.expenseMinor;
   });
   return {

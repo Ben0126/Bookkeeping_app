@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'rea
 import { useTranslation } from 'react-i18next';
 import { useLedgerDb } from '../../app/ledgerContext';
 import {
+  createMonthlyTransaction,
   createTransaction,
   CURRENCY_CODES,
   deleteTransaction,
@@ -19,6 +20,7 @@ import { writePreference } from '../../ui/preferences';
 import { dangerButtonClass, inputClass, primaryButtonClass, secondaryButtonClass } from '../../ui/styles';
 import { useFormat } from '../../ui/useFormat';
 import {
+  categoryKindOf,
   defaultForeignCurrency,
   FORM_FIELDS,
   formStateToInput,
@@ -80,13 +82,16 @@ export function TransactionForm({
   const account = accounts.find((a) => a.id === state.accountId);
   const toAccount = accounts.find((a) => a.id === state.toAccountId);
   const crossCurrency = state.kind === 'transfer' && account && toAccount && account.currency !== toAccount.currency;
+  // Only new income and expenses can start repeating.
+  const offerMonthly = !editingId && (state.kind === 'expense' || state.kind === 'income');
 
+  const categoryKind = categoryKindOf(state.kind);
   const categoryOptions = useMemo(() => {
-    if (state.kind === 'transfer') return [];
-    const usable = categories.filter((c) => c.kind === state.kind && (!c.archived || c.id === initial.categoryId));
+    if (!categoryKind) return [];
+    const usable = categories.filter((c) => c.kind === categoryKind && (!c.archived || c.id === initial.categoryId));
     const parents = usable.filter((c) => c.parentId === undefined);
     return parents.flatMap((parent) => [parent, ...usable.filter((c) => c.parentId === parent.id)]);
-  }, [categories, state.kind, initial.categoryId]);
+  }, [categories, categoryKind, initial.categoryId]);
 
   const update = (patch: Partial<FormState>) => {
     setState((previous) => ({ ...previous, ...patch }));
@@ -101,7 +106,7 @@ export function TransactionForm({
   const changeKind = (kind: FormKind) => {
     const patch: Partial<FormState> = { kind };
     const category = categories.find((c) => c.id === state.categoryId);
-    if (category && category.kind !== kind) patch.categoryId = '';
+    if (category && category.kind !== categoryKindOf(kind)) patch.categoryId = '';
     if (kind === 'transfer' && !state.toAccountId) {
       patch.toAccountId = selectableAccounts.find((a) => !a.archived && a.id !== state.accountId)?.id ?? '';
     }
@@ -117,10 +122,13 @@ export function TransactionForm({
   };
 
   const summarize = (entry: FormState) => {
+    const category = fmt.categoryName(categories.find((c) => c.id === entry.categoryId));
     const title =
       entry.kind === 'transfer'
         ? t('kinds.transfer')
-        : fmt.categoryName(categories.find((c) => c.id === entry.categoryId));
+        : entry.kind === 'refund'
+          ? `${t('kinds.refund')} · ${category}`
+          : category;
     const minor = account ? parseMoney(entry.amount, account.currency) : null;
     return minor && account ? `${title} ${fmt.money(minor, account.currency)}` : title;
   };
@@ -136,8 +144,10 @@ export function TransactionForm({
     }
     setSaving(true);
     try {
-      if (editingId) await updateTransaction(db, editingId, result.input);
-      else await createTransaction(db, result.input);
+      const { input } = result;
+      if (editingId) await updateTransaction(db, editingId, input);
+      else if (offerMonthly && state.monthly && input.kind !== 'transfer') await createMonthlyTransaction(db, input);
+      else await createTransaction(db, input);
       if (state.foreign) writePreference(LAST_FOREIGN_CURRENCY_PREFERENCE, state.originalCurrency);
       if (keepOpen) {
         const next = stateForNextEntry(state);
@@ -183,6 +193,17 @@ export function TransactionForm({
     return t('transactionForm.impliedRate', { ...quote, rate: fmt.rate(quote.rate) });
   })();
 
+  const repeatDay = Number(state.date.slice(8, 10)) || 1;
+  const monthlyHint = t('transactionForm.monthlyHint', { day: repeatDay, context: repeatDay > 28 ? 'late' : undefined });
+
+  const feeHint = (() => {
+    if (!account) return undefined;
+    const fee = parseMoney(state.fee, account.currency);
+    const amount = parseMoney(state.amount, account.currency);
+    if (!fee || fee <= 0 || !amount || amount <= 0) return t('transactionForm.feeHint');
+    return t('transactionForm.feeTotal', { account: account.name, total: fmt.money(amount + fee, account.currency) });
+  })();
+
   const dateField = (
     <Field label={t('transactionForm.date')} htmlFor={`${id}-date`}>
       <input
@@ -223,9 +244,11 @@ export function TransactionForm({
           options={[
             { value: 'expense', label: t('kinds.expense') },
             { value: 'income', label: t('kinds.income') },
+            { value: 'refund', label: t('kinds.refund') },
             { value: 'transfer', label: t('kinds.transfer') },
           ]}
         />
+        {state.kind === 'refund' && <p className="-mt-2 text-xs text-slate-500">{t('transactionForm.refundHint')}</p>}
 
         {state.kind === 'transfer' ? (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -293,6 +316,23 @@ export function TransactionForm({
           </Field>
         )}
 
+        {state.kind === 'transfer' && !editingId && (
+          <Field
+            label={t('transactionForm.fee')}
+            htmlFor={`${id}-fee`}
+            error={errorMessage('fee', account?.currency)}
+            hint={feeHint}
+          >
+            <MoneyInput
+              id={`${id}-fee`}
+              currency={account?.currency}
+              value={state.fee}
+              onChange={(fee) => update({ fee })}
+              invalidProps={invalidProps('fee')}
+            />
+          </Field>
+        )}
+
         {state.kind !== 'transfer' && (
           <fieldset>
             <legend className="mb-1 text-sm font-medium text-slate-700">{t('transactionForm.category')}</legend>
@@ -347,10 +387,24 @@ export function TransactionForm({
             className="rounded-lg ring-1 ring-slate-200"
           >
             <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-slate-600">
-              {t('transactionForm.more')}
+              {offerMonthly ? t('transactionForm.moreWithMonthly') : t('transactionForm.more')}
             </summary>
             <div className="space-y-4 border-t border-slate-200 p-3">
               {noteField}
+              {offerMonthly && (
+                <div className="space-y-1">
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      className="size-4 rounded border-slate-300 text-indigo-600"
+                      checked={state.monthly}
+                      onChange={(e) => update({ monthly: e.target.checked })}
+                    />
+                    {t('transactionForm.monthly')}
+                  </label>
+                  <p className="text-xs text-slate-500">{monthlyHint}</p>
+                </div>
+              )}
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
                   <input

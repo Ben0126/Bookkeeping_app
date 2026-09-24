@@ -3,12 +3,21 @@ import {
   parseMoney,
   toMoneyInput,
   type Account,
+  type CategoryKind,
   type CurrencyCode,
   type Transaction,
   type TransactionInput,
+  type TransactionKind,
 } from '../../core';
 
-export type FormKind = TransactionInput['kind'];
+/** A refund is an expense with a positive amount; the form offers it as its own choice. */
+export type FormKind = 'expense' | 'income' | 'refund' | 'transfer';
+
+/** The kind of category an entry of this kind takes; transfers have none. */
+export function categoryKindOf(kind: FormKind): CategoryKind | undefined {
+  if (kind === 'transfer') return undefined;
+  return kind === 'income' ? 'income' : 'expense';
+}
 
 /** Remembers the foreign currency last used, e.g. JPY for someone in Japan. */
 export const LAST_FOREIGN_CURRENCY_PREFERENCE = 'lastForeignCurrency';
@@ -21,18 +30,22 @@ export interface FormState {
   accountId: string;
   toAccountId: string;
   toAmount: string;
+  /** Transfers, when creating: a fee charged on top, saved as its own expense. */
+  fee: string;
   categoryId: string;
   payee: string;
   note: string;
   foreign: boolean;
   originalCurrency: CurrencyCode;
   originalAmount: string;
+  /** Income and expenses, when creating: repeat on this day every month. */
+  monthly: boolean;
 }
 
-export type FormField = 'accountId' | 'amount' | 'toAccountId' | 'toAmount' | 'originalAmount';
+export type FormField = 'accountId' | 'amount' | 'toAccountId' | 'toAmount' | 'fee' | 'originalAmount';
 
 /** Order in which invalid fields get focus. */
-export const FORM_FIELDS: readonly FormField[] = ['accountId', 'amount', 'toAccountId', 'toAmount', 'originalAmount'];
+export const FORM_FIELDS: readonly FormField[] = ['accountId', 'amount', 'toAccountId', 'toAmount', 'fee', 'originalAmount'];
 
 /** Codes under `transactionForm.errors` in the translations. */
 export type FormErrorCode = 'chooseAccount' | 'chooseOtherAccount' | 'amountRequired' | 'amountInvalid' | 'amountTooPrecise';
@@ -63,12 +76,14 @@ export function emptyFormState({
     accountId,
     toAccountId: '',
     toAmount: '',
+    fee: '',
     categoryId: '',
     payee: '',
     note: '',
     foreign: false,
     originalCurrency,
     originalAmount: '',
+    monthly: false,
   };
 }
 
@@ -97,7 +112,7 @@ export function suggestAccountId({
   recent,
   filterAccountId,
 }: {
-  kind: FormKind;
+  kind: TransactionKind;
   accounts: readonly Account[];
   recent: readonly Transaction[];
   filterAccountId?: string;
@@ -155,7 +170,7 @@ export function formStateFromInput(
   const accountCurrency = currencyOf(input.accountId);
   return {
     ...emptyFormState({ date: input.date, accountId: input.accountId }),
-    kind: input.kind,
+    kind: input.refund ? 'refund' : input.kind,
     amount: toMoneyInput(input.amountMinor, accountCurrency),
     categoryId: input.categoryId ?? '',
     payee: input.payee ?? '',
@@ -169,7 +184,7 @@ export function formStateFromInput(
 /**
  * Validates what the user typed and builds the input for the ledger. Rules
  * that need the database (archived accounts, category kinds, …) are left to
- * the ledger.
+ * the ledger. `monthly` is left to the caller.
  */
 export function formStateToInput(
   state: FormState,
@@ -192,6 +207,8 @@ export function formStateToInput(
       if ('error' in toAmount) errors.toAmount = toAmount.error;
       toAmountMinor = 'minor' in toAmount ? toAmount.minor : null;
     }
+    const fee = account && state.fee.trim() ? checkAmount(state.fee, account.currency) : undefined;
+    if (fee && 'error' in fee) errors.fee = fee.error;
     if (Object.keys(errors).length > 0 || amountMinor === null || toAmountMinor === null) return { errors };
     return {
       input: {
@@ -202,6 +219,7 @@ export function formStateToInput(
         toAmountMinor,
         date: state.date,
         ...(state.note.trim() ? { note: state.note } : {}),
+        ...(fee && 'minor' in fee && { fee: { amountMinor: fee.minor } }),
       },
     };
   }
@@ -215,7 +233,8 @@ export function formStateToInput(
   if (Object.keys(errors).length > 0 || amountMinor === null) return { errors };
   return {
     input: {
-      kind: state.kind,
+      kind: state.kind === 'income' ? 'income' : 'expense',
+      ...(state.kind === 'refund' && { refund: true }),
       accountId: state.accountId,
       amountMinor,
       date: state.date,

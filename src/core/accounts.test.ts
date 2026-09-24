@@ -10,6 +10,7 @@ import {
   updateAccount,
 } from './accounts';
 import type { LedgerDB } from './db';
+import { createRecurringRule } from './recurring';
 import { createTransaction } from './transactions';
 
 let db: LedgerDB;
@@ -88,6 +89,13 @@ describe('updateAccount', () => {
     expect((await db.accounts.get(account.id))?.currency).toBe('GBP');
   });
 
+  it('keeps the currency while a recurring rule posts to the account', async () => {
+    const account = await addAccount(db);
+    await createRecurringRule(db, { template: { kind: 'expense', accountId: account.id, amountMinor: 100 }, dayOfMonth: 1, startMonth: '2026-09' });
+    await expect(updateAccount(db, account.id, { currency: 'JPY' })).rejects.toMatchObject({ code: 'CURRENCY_LOCKED' });
+    expect((await setAccountBalance(db, account.id, 500)).openingBalanceMinor).toBe(500);
+  });
+
   it('archives accounts and hides them from the default list', async () => {
     const kept = await addAccount(db, { name: 'Kept' });
     const old = await addAccount(db, { name: 'Old' });
@@ -117,6 +125,17 @@ describe('deleteAccount', () => {
     const account = await addAccount(db);
     await deleteAccount(db, account.id);
     expect(await db.accounts.count()).toBe(0);
+  });
+
+  it('deletes the recurring rules that post to it', async () => {
+    const account = await addAccount(db);
+    const other = await addAccount(db);
+    const rule = (accountId: string) =>
+      createRecurringRule(db, { template: { kind: 'expense', accountId, amountMinor: 100 }, dayOfMonth: 1, startMonth: '2026-09' });
+    await rule(account.id);
+    const kept = await rule(other.id);
+    await deleteAccount(db, account.id);
+    expect(await db.recurring.toArray()).toEqual([kept]);
   });
 
   it('refuses to delete an account with transactions', async () => {

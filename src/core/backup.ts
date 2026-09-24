@@ -1,6 +1,7 @@
 import { budgetId } from './budgets';
 import type { LedgerDB } from './db';
 import { LedgerError } from './errors';
+import { isMonthKey } from './dates';
 import { exchangeRateId } from './rates';
 import {
   ACCOUNT_KINDS,
@@ -8,6 +9,8 @@ import {
   type Budget,
   type Category,
   type ExchangeRate,
+  type RecurringRule,
+  type RecurringTemplate,
   type SettingRow,
   type Transaction,
 } from './types';
@@ -31,6 +34,7 @@ export interface BackupData {
   exchangeRates: ExchangeRate[];
   budgets: Budget[];
   settings: SettingRow[];
+  recurring: RecurringRule[];
 }
 
 export interface Backup {
@@ -52,6 +56,7 @@ export async function exportBackup(db: LedgerDB): Promise<Backup> {
       exchangeRates: await db.exchangeRates.toArray(),
       budgets: await db.budgets.toArray(),
       settings: await db.settings.toArray(),
+      recurring: await db.recurring.toArray(),
     },
   }));
 }
@@ -71,6 +76,7 @@ export async function importBackup(db: LedgerDB, raw: unknown): Promise<BackupDa
     await db.exchangeRates.bulkAdd(data.exchangeRates);
     await db.budgets.bulkAdd(data.budgets);
     await db.settings.bulkAdd(data.settings);
+    await db.recurring.bulkAdd(data.recurring);
   });
   return data;
 }
@@ -139,6 +145,8 @@ export function parseBackup(value: unknown): Backup {
   const transactions = list(data.transactions, 'transactions', parseTransaction);
   const exchangeRates = list(data.exchangeRates, 'exchangeRates', parseExchangeRate);
   const budgets = list(data.budgets, 'budgets', parseBudget);
+  // Added after the first release; older backups have none.
+  const recurring = data.recurring === undefined ? [] : list(data.recurring, 'recurring', parseRecurring);
   const settingsByKey = new Map<string, SettingRow>();
   for (const row of list(data.settings, 'settings', parseSetting)) {
     if (row) settingsByKey.set(row.key, row);
@@ -150,6 +158,7 @@ export function parseBackup(value: unknown): Backup {
   uniqueIds(transactions, 'transactions');
   uniqueIds(exchangeRates, 'exchangeRates');
   uniqueIds(budgets, 'budgets');
+  uniqueIds(recurring, 'recurring');
 
   categories.forEach((category, i) => {
     if (category.parentId === undefined) return;
@@ -193,11 +202,19 @@ export function parseBackup(value: unknown): Backup {
     }
   });
 
+  recurring.forEach((rule, i) => {
+    const { template } = rule;
+    if (!accountById.has(template.accountId)) invalid(`recurring[${i}].template.accountId`, 'unknown account');
+    if (template.categoryId !== undefined && categoryById.get(template.categoryId)?.kind !== template.kind) {
+      invalid(`recurring[${i}].template.categoryId`, 'unknown or mismatched category');
+    }
+  });
+
   return {
     format: BACKUP_FORMAT,
     version: root.version as number,
     exportedAt: typeof root.exportedAt === 'string' ? root.exportedAt : '',
-    data: { accounts, categories, transactions, exchangeRates, budgets, settings },
+    data: { accounts, categories, transactions, exchangeRates, budgets, settings, recurring },
   };
 }
 
@@ -295,7 +312,6 @@ function parseTransaction(fields: Fields, path: string): Transaction {
   const amountMinor = field(`${path}.amountMinor`, () => requireMinor(fields.amountMinor));
   if (amountMinor === 0) invalid(`${path}.amountMinor`, 'must not be zero');
   if (kind === 'income' && amountMinor < 0) invalid(`${path}.amountMinor`, 'income must be positive');
-  if (kind === 'expense' && amountMinor > 0) invalid(`${path}.amountMinor`, 'expense must be negative');
 
   const transaction: Transaction = {
     id: id(fields, path),
@@ -354,6 +370,45 @@ function parseBudget(fields: Fields, path: string): Budget {
   };
   if (categoryId !== undefined) budget.categoryId = categoryId;
   return budget;
+}
+
+function parseRecurring(fields: Fields, path: string): RecurringRule {
+  const t = object(fields.template, `${path}.template`);
+  const tp = `${path}.template`;
+  const kind = field(`${tp}.kind`, () => requireOneOf(t.kind, ['income', 'expense'] as const));
+  const template: RecurringTemplate = {
+    kind,
+    accountId: optionalId(t, 'accountId', tp) ?? invalid(`${tp}.accountId`, 'missing'),
+    amountMinor: field(`${tp}.amountMinor`, () => requirePositiveMinor(t.amountMinor)),
+  };
+  const categoryId = optionalId(t, 'categoryId', tp);
+  if (categoryId !== undefined) template.categoryId = categoryId;
+  assignOptionalText(template, t, ['payee', 'note'], tp);
+  if (t.refund !== undefined) {
+    if (t.refund !== true || kind !== 'expense') invalid(`${tp}.refund`, 'only expenses can be refunds');
+    template.refund = true;
+  }
+  if (t.original !== undefined) {
+    const original = object(t.original, `${tp}.original`);
+    template.original = {
+      amountMinor: field(`${tp}.original.amountMinor`, () => requirePositiveMinor(original.amountMinor)),
+      currency: field(`${tp}.original.currency`, () => requireCurrency(original.currency)),
+    };
+  }
+
+  const day = fields.dayOfMonth;
+  if (!Number.isInteger(day) || (day as number) < 1 || (day as number) > 31) invalid(`${path}.dayOfMonth`, 'expected 1–31');
+  if (!isMonthKey(fields.startMonth)) invalid(`${path}.startMonth`, 'expected YYYY-MM');
+  if (fields.lastMonth !== undefined && !isMonthKey(fields.lastMonth)) invalid(`${path}.lastMonth`, 'expected YYYY-MM');
+  return {
+    id: id(fields, path),
+    template,
+    dayOfMonth: day as number,
+    startMonth: fields.startMonth,
+    ...(fields.lastMonth !== undefined && { lastMonth: fields.lastMonth as string }),
+    createdAt: timestamp(fields, 'createdAt', path),
+    updatedAt: timestamp(fields, 'updatedAt', path),
+  };
 }
 
 /** Known settings are validated; unknown keys are dropped. */

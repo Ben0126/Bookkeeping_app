@@ -11,13 +11,18 @@ export const SNOOZE_MS = 3 * DAY;
 /** Backups larger than this are refused before reading, to keep the page responsive. */
 export const MAX_BACKUP_BYTES = 50 * 1024 * 1024;
 
-/** "studybudget-2026-09-24-1530.json": sorts by time and rarely collides. */
-export function backupFileName(date: Date): string {
+/** "2026-09-24-1530" in local time: sorts by time and rarely collides. */
+export function fileTimestamp(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return (
-    `studybudget-${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-    `-${pad(date.getHours())}${pad(date.getMinutes())}.json`
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `-${pad(date.getHours())}${pad(date.getMinutes())}`
   );
+}
+
+/** "studybudget-2026-09-24-1530.json" */
+export function backupFileName(date: Date): string {
+  return `studybudget-${fileTimestamp(date)}.json`;
 }
 
 /** The backup as a file, stamped with the time it was saved. */

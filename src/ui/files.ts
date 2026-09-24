@@ -11,11 +11,14 @@ export function downloadFile(file: File): void {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-/** Whether the system share sheet can take a JSON file (mostly phones). */
-export function canShareFiles(): boolean {
+/**
+ * Whether the system share sheet can take a file like this (mostly phones).
+ * Chrome judges by the file extension, so pass a real one.
+ */
+export function canShareFiles(name = 'test.json', type = 'application/json'): boolean {
   if (typeof navigator.canShare !== 'function') return false;
   try {
-    return navigator.canShare({ files: [new File(['{}'], 'test.json', { type: 'application/json' })] });
+    return navigator.canShare({ files: [new File([''], name, { type })] });
   } catch {
     return false;
   }

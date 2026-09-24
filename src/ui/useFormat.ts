@@ -37,6 +37,12 @@ export function useFormat() {
     const currencyNames = new Intl.DisplayNames([locale], { type: 'currency' });
     const monthFormat = new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' });
     const dayFormat = new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', weekday: 'short' });
+    const dayWithYearFormat = new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      weekday: 'short',
+    });
     const rateFormat = new Intl.NumberFormat(locale, { maximumFractionDigits: 4 });
     const dateTimeFormat = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' });
     const relativeFormat = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
@@ -50,6 +56,7 @@ export function useFormat() {
       currencyName: (currency: CurrencyCode) => currencyNames.of(currency) ?? currency,
       month: (month: string) => monthFormat.format(fromDateKey(`${month}-01`)),
       day: (dateKey: string) => dayFormat.format(fromDateKey(dateKey)),
+      dayWithYear: (dateKey: string) => dayWithYearFormat.format(fromDateKey(dateKey)),
       dateTime: (time: number) => dateTimeFormat.format(time),
       /** "today", "yesterday", "3 days ago" */
       daysAgo: (time: number, now: number = Date.now()) =>

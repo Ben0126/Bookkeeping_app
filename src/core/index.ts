@@ -7,6 +7,7 @@ export * from './db';
 export * from './errors';
 export * from './money';
 export * from './rates';
+export * from './recurring';
 export * from './reports';
 export * from './settings';
 export * from './transactions';

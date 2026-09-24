@@ -16,6 +16,7 @@ import {
   type TransactionKind,
 } from '../../core';
 import { BackupReminder } from '../backup/BackupReminder';
+import { RecurringDue } from '../recurring/RecurringDue';
 import { CloseIcon, PlusIcon, SearchIcon, TransferIcon } from '../../ui/icons';
 import { MonthNav } from '../../ui/MonthNav';
 import { inputClass, primaryButtonClass } from '../../ui/styles';
@@ -41,8 +42,10 @@ export function TransactionsPage() {
   const accountId = params.get('account') || undefined;
   const kind = KINDS.find((k) => k === params.get('kind'));
   const search = params.get('q') ?? '';
+  const searching = search.trim() !== '';
   const categoryFilter = params.get('category') || undefined;
-  const { from, to } = monthRange(month);
+  // A search looks through every month: "when did I last pay the dentist?"
+  const { from, to } = searching ? { from: undefined, to: undefined } : monthRange(month);
 
   const setParam = (key: string, value: string | undefined) =>
     setParams(
@@ -57,16 +60,26 @@ export function TransactionsPage() {
 
   const accounts = useLiveQuery(() => listAccounts(db, { includeArchived: true }), [db]);
   const categories = useLiveQuery(() => listCategories(db, { includeArchived: true }), [db]);
+  // Searching "rent" or "房租" also finds entries in that category; names are matched as displayed.
+  const searchCategoryKey = useMemo(() => {
+    const needle = search.trim().toLocaleLowerCase();
+    if (!needle || !categories) return '';
+    return categories
+      .filter((c) => fmt.categoryName(c).toLocaleLowerCase().includes(needle))
+      .map((c) => c.id)
+      .join(',');
+  }, [categories, search, fmt]);
   const listed = useLiveQuery(async () => {
     // A parent category also covers its subcategories.
     const categoryIds = categoryFilter
       ? [categoryFilter, ...(await db.categories.where('parentId').equals(categoryFilter).primaryKeys())]
       : undefined;
-    const rows = await listTransactions(db, { from, to, accountId, kind, search, categoryIds });
+    const searchCategoryIds = searchCategoryKey ? searchCategoryKey.split(',') : [];
+    const rows = await listTransactions(db, { from, to, accountId, kind, search, categoryIds, searchCategoryIds });
     const transferIds = [...new Set(rows.flatMap((row) => (row.transferId ? [row.transferId] : [])))];
     const legs = transferIds.length > 0 ? await db.transactions.where('transferId').anyOf(transferIds).toArray() : [];
     return { rows, entries: toEntries(rows, legs, accountId) };
-  }, [db, from, to, accountId, kind, search, categoryFilter]);
+  }, [db, from, to, accountId, kind, search, searchCategoryKey, categoryFilter]);
 
   const accountsById = useMemo(() => new Map((accounts ?? []).map((a) => [a.id, a])), [accounts]);
   const categoriesById = useMemo(() => new Map((categories ?? []).map((c) => [c.id, c])), [categories]);
@@ -91,14 +104,23 @@ export function TransactionsPage() {
 
   const closeAndShow = (date?: string) => {
     setDialog(null);
-    if (date && monthOf(date) !== month) setParam('month', monthOf(date));
+    if (date && !searching && monthOf(date) !== month) setParam('month', monthOf(date));
   };
+  // Search results span years.
+  const dayLabel = searching ? fmt.dayWithYear : fmt.day;
 
   return (
     <div className="space-y-4">
       <BackupReminder />
+      <RecurringDue accountsById={accountsById} categoriesById={categoriesById} />
       <div className="flex items-center justify-between gap-2">
-        <MonthNav month={month} onChange={(next) => setParam('month', next)} />
+        {searching ? (
+          <h1 className="py-1.5 text-lg font-semibold">
+            {listed ? t('transactions.searchResults', { count: listed.entries.length }) : t('transactions.search')}
+          </h1>
+        ) : (
+          <MonthNav month={month} onChange={(next) => setParam('month', next)} />
+        )}
         {/* Phones use the floating button instead. */}
         <div className="hidden md:block">
           <button type="button" className={primaryButtonClass} onClick={() => setDialog({ mode: 'create' })}>
@@ -110,7 +132,7 @@ export function TransactionsPage() {
 
       {kind !== 'transfer' && listed && (
         <MonthSummary
-          month={month}
+          month={searching ? undefined : month}
           rows={listed.rows}
           accounts={accounts}
           categories={categories}
@@ -174,13 +196,13 @@ export function TransactionsPage() {
 
       {listed && listed.entries.length === 0 ? (
         <div className="rounded-xl bg-white px-4 py-10 text-center text-sm text-slate-500 ring-1 ring-slate-200">
-          {search || accountId || kind || categoryFilter ? t('transactions.noMatches') : t('transactions.emptyMonth')}
+          {searching || accountId || kind || categoryFilter ? t('transactions.noMatches') : t('transactions.emptyMonth')}
         </div>
       ) : (
         listed &&
         groupByDate(listed.entries).map((group) => (
-          <section key={group.date} aria-label={fmt.day(group.date)}>
-            <h2 className="px-1 pb-1 text-xs font-medium text-slate-500">{fmt.day(group.date)}</h2>
+          <section key={group.date} aria-label={dayLabel(group.date)}>
+            <h2 className="px-1 pb-1 text-xs font-medium text-slate-500">{dayLabel(group.date)}</h2>
             <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
               {group.entries.map((entry) => (
                 <li key={entry.id}>
@@ -239,6 +261,7 @@ function EntryRow({
   let amount: string;
   let amountClass: string;
   let extra: string | undefined;
+  let badge: string | undefined;
 
   if (entry.type === 'single') {
     const record = entry.record;
@@ -246,6 +269,7 @@ function EntryRow({
     const category = record.categoryId ? categoriesById.get(record.categoryId) : undefined;
     icon = <span className="text-xl">{category?.icon ?? (record.kind === 'income' ? '💰' : '🏷️')}</span>;
     title = record.kind === 'transfer' ? t('kinds.transfer') : fmt.categoryName(category);
+    if (record.kind === 'expense' && record.amountMinor > 0) badge = t('kinds.refund');
     details = [record.payee, account?.name, record.note].filter(Boolean).join(' · ');
     amount = account ? fmt.signedMoney(record.amountMinor, account.currency) : '';
     amountClass = record.amountMinor > 0 ? 'text-emerald-600' : 'text-slate-900';
@@ -280,7 +304,12 @@ function EntryRow({
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium text-slate-900">{title}</span>
+        <span className="flex items-center gap-1.5">
+          <span className="truncate font-medium text-slate-900">{title}</span>
+          {badge && (
+            <span className="shrink-0 rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-700">{badge}</span>
+          )}
+        </span>
         {details && <span className="block truncate text-sm text-slate-500">{details}</span>}
       </span>
       <span className="shrink-0 text-right tabular-nums">

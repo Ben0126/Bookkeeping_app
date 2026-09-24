@@ -10,6 +10,7 @@ import {
   updateCategory,
 } from './categories';
 import type { LedgerDB } from './db';
+import { createRecurringRule } from './recurring';
 import { createTransaction } from './transactions';
 
 let db: LedgerDB;
@@ -105,6 +106,23 @@ describe('deleteCategory', () => {
     await deleteCategory(db, 'default-dining', { reassignTo: 'default-groceries' });
     expect(await db.categories.get('default-dining')).toBeUndefined();
     expect((await db.transactions.get(expense.id))?.categoryId).toBe('default-groceries');
+  });
+
+  it('moves recurring rules along, or leaves them uncategorized', async () => {
+    await seedDefaultCategories(db);
+    const account = await addAccount(db);
+    const rule = (categoryId: string) =>
+      createRecurringRule(db, { template: { kind: 'expense', accountId: account.id, amountMinor: 100, categoryId }, dayOfMonth: 1, startMonth: '2026-09' });
+    const rent = await rule('default-rent');
+    const gym = await rule('default-health');
+
+    await expect(deleteCategory(db, 'default-rent', { reassignTo: 'default-salary' }))
+      .rejects.toMatchObject({ code: 'CATEGORY_KIND_MISMATCH' });
+    await deleteCategory(db, 'default-rent', { reassignTo: 'default-utilities' });
+    await deleteCategory(db, 'default-health');
+
+    expect((await db.recurring.get(rent.id))?.template.categoryId).toBe('default-utilities');
+    expect((await db.recurring.get(gym.id))?.template).not.toHaveProperty('categoryId');
   });
 
   it('removes the category budget with it', async () => {

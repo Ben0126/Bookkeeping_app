@@ -51,7 +51,7 @@ export async function listAccounts(
 }
 
 export async function updateAccount(db: LedgerDB, id: string, patch: AccountPatch): Promise<Account> {
-  return db.transaction('rw', [db.accounts, db.transactions], async () => {
+  return db.transaction('rw', [db.accounts, db.transactions, db.recurring], async () => {
     const current = await getAccount(db, id);
     const next: Account = { ...current, updatedAt: Date.now() };
 
@@ -68,8 +68,11 @@ export async function updateAccount(db: LedgerDB, id: string, patch: AccountPatc
     }
     if (patch.currency !== undefined && patch.currency !== current.currency) {
       next.currency = requireCurrency(patch.currency);
-      // Existing postings are in the old currency's minor units.
-      if ((await db.transactions.where('accountId').equals(id).count()) > 0) {
+      // Existing postings and recurring amounts are in the old currency's minor units.
+      if (
+        (await db.transactions.where('accountId').equals(id).count()) > 0 ||
+        (await db.recurring.filter((rule) => rule.template.accountId === id).count()) > 0
+      ) {
         throw new LedgerError('CURRENCY_LOCKED', 'Cannot change the currency of an account with transactions');
       }
     }
@@ -79,13 +82,17 @@ export async function updateAccount(db: LedgerDB, id: string, patch: AccountPatc
   });
 }
 
-/** Only accounts without transactions can be deleted; archive the others. */
+/**
+ * Only accounts without transactions can be deleted; archive the others.
+ * Recurring rules that post to the account are deleted with it.
+ */
 export async function deleteAccount(db: LedgerDB, id: string): Promise<void> {
-  await db.transaction('rw', [db.accounts, db.transactions], async () => {
+  await db.transaction('rw', [db.accounts, db.transactions, db.recurring], async () => {
     await getAccount(db, id);
     if ((await db.transactions.where('accountId').equals(id).count()) > 0) {
       throw new LedgerError('ACCOUNT_IN_USE', 'Account has transactions; archive it instead');
     }
+    await db.recurring.filter((rule) => rule.template.accountId === id).delete();
     await db.accounts.delete(id);
   });
 }
@@ -110,7 +117,7 @@ export async function getAccountBalance(db: LedgerDB, id: string): Promise<numbe
  */
 export async function setAccountBalance(db: LedgerDB, id: string, balanceMinor: number): Promise<Account> {
   const target = requireMinor(balanceMinor);
-  return db.transaction('rw', [db.accounts, db.transactions], async () => {
+  return db.transaction('rw', [db.accounts, db.transactions, db.recurring], async () => {
     const current = await getAccountBalance(db, id);
     const account = await getAccount(db, id);
     if (current === target) return account;

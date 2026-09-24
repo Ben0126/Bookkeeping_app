@@ -15,7 +15,8 @@
   "kinds": {
     "expense": "支出",
     "income": "收入",
-    "transfer": "轉帳"
+    "transfer": "轉帳",
+    "refund": "退款"
   },
   "categories": {
     "allowance": "家人支援",
@@ -58,10 +59,12 @@
     "nextMonth": "下個月",
     "total": {
       "expense": "本月支出",
-      "income": "本月收入"
+      "income": "本月收入",
+      "expense_found": "搜尋結果的支出",
+      "income_found": "搜尋結果的收入"
     },
     "search": "搜尋",
-    "searchPlaceholder": "搜尋商家或備註",
+    "searchPlaceholder": "搜尋商家、備註或分類",
     "filterAccount": "篩選帳戶",
     "filterKind": "篩選類型",
     "allAccounts": "所有帳戶",
@@ -75,7 +78,8 @@
     "clearFilter": "（清除篩選）",
     "budgetLeft": "預算還剩 {{amount}}",
     "budgetLeftPerDay": "預算還剩 {{amount}}，每天約可花 {{perDay}}",
-    "budgetOver": "預算已超出 {{amount}}"
+    "budgetOver": "預算已超出 {{amount}}",
+    "searchResults_other": "所有月份共找到 {{count}} 筆"
   },
   "transactionForm": {
     "kind": "交易類型",
@@ -107,7 +111,15 @@
     "more": "更多：備註、以其他幣別付款",
     "saveAndNext": "再記一筆",
     "savedNotice": "已儲存：{{entry}}。可以接著記下一筆。",
-    "discardConfirm": "要放棄還沒儲存的內容嗎？"
+    "discardConfirm": "要放棄還沒儲存的內容嗎？",
+    "refundHint": "退貨退款，或朋友還你代墊的錢。會從該分類的支出扣掉，不算收入。",
+    "fee": "手續費（選填）",
+    "feeHint": "另外被扣的手續費，會記成一筆「手續費」支出。",
+    "feeTotal": "{{account}} 共扣 {{total}}，手續費另記一筆支出。",
+    "monthly": "每月固定（房租、訂閱等）",
+    "monthlyHint": "之後每月 {{day}} 日會提醒你記一筆，按「記上」才會記錄。",
+    "monthlyHint_late": "之後每月 {{day}} 日（沒有這天的月份就在月底）會提醒你記一筆，按「記上」才會記錄。",
+    "moreWithMonthly": "更多：備註、外幣付款、每月固定"
   },
   "accounts": {
     "title": "帳戶",
@@ -203,6 +215,27 @@
     "later": "稍後提醒",
     "backUp": "立即備份"
   },
+  "csvExport": {
+    "title": "匯出成試算表（CSV）",
+    "intro": "把所有交易匯出成 CSV，可以用 Excel、Numbers 或 Google 試算表開啟、自己分析。CSV 不能用來還原資料，備份請用上方的「資料備份」。",
+    "download": "下載 CSV",
+    "share": "分享 CSV",
+    "empty": "還沒有交易可以匯出。",
+    "saveFailed": "無法匯出 CSV，請再試一次。",
+    "columns": {
+      "date": "日期",
+      "type": "類型",
+      "account": "帳戶",
+      "currency": "幣別",
+      "amount": "金額",
+      "category": "分類",
+      "payee": "商家／對象",
+      "note": "備註",
+      "otherAccount": "對方帳戶",
+      "originalCurrency": "原幣別",
+      "originalAmount": "原幣金額"
+    }
+  },
   "categorySettings": {
     "title": "分類",
     "intro": "隱藏用不到的分類，記帳時就不會出現；已經記過的資料不受影響。",
@@ -245,5 +278,21 @@
     "amount": "每個月可以花多少",
     "hint": "所有支出都會換算成這個幣別來計算，包含房租、學費等每一筆支出。",
     "remove": "移除預算"
+  },
+  "recurring": {
+    "title": "固定收支",
+    "intro": "房租、訂閱、家人每月的生活費等固定收支。到期時會在交易頁提醒你，按「記上」才會記錄。",
+    "empty": "還沒有固定收支。記帳時打開「更多」，勾選「每月固定」就能建立。",
+    "schedule": "每月 {{day}} 日",
+    "next": "下一筆：{{date}}",
+    "stop": "停止",
+    "stopLabel": "停止「{{name}}」",
+    "confirmStop": "確定停止",
+    "dueTitle_other": "有 {{count}} 筆固定收支待確認",
+    "laterMonths_other": "之後還有 {{count}} 個月待處理",
+    "post": "記上",
+    "skip": "略過",
+    "postLabel": "記上{{name}}（{{date}}）",
+    "skipLabel": "略過{{name}}（{{date}}）"
   }
 }

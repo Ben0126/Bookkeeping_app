@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  createMonthlyTransaction,
   createTransaction,
   exportBackup,
   readBackup,
@@ -104,6 +105,66 @@ describe('backing up', () => {
     renderApp(db, '/settings');
     await screen.findByRole('button', { name: 'Download backup' });
     expect(screen.queryByRole('button', { name: 'Share backup' })).not.toBeInTheDocument();
+  });
+});
+
+describe('exporting to CSV', () => {
+  it('downloads every transaction as a spreadsheet file Excel reads as UTF-8', async () => {
+    const wallet = await addAccount(db, { name: 'Wallet', currency: 'GBP' });
+    await createTransaction(db, {
+      kind: 'expense', accountId: wallet.id, amountMinor: 450, date: '2026-09-02', categoryId: 'default-dining', payee: 'Pret, Soho',
+    });
+    await createTransaction(db, { kind: 'expense', refund: true, accountId: wallet.id, amountMinor: 200, date: '2026-09-03', categoryId: 'default-dining' });
+    let saved: Blob | undefined;
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
+      saved = blob as Blob;
+      return 'blob:csv';
+    });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    renderApp(db, '/settings');
+    const download = await screen.findByRole('button', { name: 'Download CSV' });
+    await waitFor(() => expect(download).toBeEnabled());
+    fireEvent.click(download);
+
+    await waitFor(() => expect(click).toHaveBeenCalled());
+    expect((click.mock.contexts[0] as HTMLAnchorElement).download).toMatch(/^studybudget-transactions-\d{4}-\d{2}-\d{2}-\d{4}\.csv$/);
+    const bytes = new Uint8Array(await saved!.arrayBuffer());
+    expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+    expect((await saved!.text()).replace(/^\uFEFF/, '').split('\r\n')).toEqual([
+      'Date,Type,Account,Currency,Amount,Category,Payee,Note,Other account,Original currency,Original amount',
+      '2026-09-02,Expense,Wallet,GBP,-4.50,Dining out,"Pret, Soho",,,,',
+      '2026-09-03,Refund,Wallet,GBP,2.00,Dining out,,,,,',
+      '',
+    ]);
+    // A CSV is not a backup.
+    expect(readLastBackupAt()).toBeUndefined();
+  });
+
+  it('has nothing to export without transactions', async () => {
+    renderApp(db, '/settings');
+    expect(await screen.findByText('No transactions to export yet.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Download CSV' })).toBeDisabled();
+  });
+});
+
+describe('monthly entries', () => {
+  it('lists them and stops one without touching what it recorded', async () => {
+    const wallet = await addAccount(db, { name: 'Wallet', currency: 'GBP' });
+    await createMonthlyTransaction(db, {
+      kind: 'expense', accountId: wallet.id, amountMinor: 1099, date: '2026-09-15', categoryId: 'default-phone_internet', payee: 'Spotify',
+    });
+    renderApp(db, '/settings');
+    const section = await screen.findByRole('region', { name: 'Monthly entries' });
+    expect(await within(section).findByText('Monthly on day 15 · Spotify · Wallet')).toBeInTheDocument();
+    expect(within(section).getByText('-£10.99')).toBeInTheDocument();
+    expect(within(section).getByText(/^Next: /)).toHaveTextContent(/Oct 15/);
+
+    fireEvent.click(within(section).getByRole('button', { name: 'Stop Phone & internet' }));
+    fireEvent.click(within(section).getByRole('button', { name: 'Stop repeating' }));
+    expect(await within(section).findByText(/None yet/)).toBeInTheDocument();
+    expect(await db.recurring.count()).toBe(0);
+    expect(await db.transactions.count()).toBe(1);
   });
 });
 

@@ -110,6 +110,23 @@ describe('income and expenses', () => {
   });
 });
 
+describe('refunds', () => {
+  it('stores a refund as money back into the account under an expense category', async () => {
+    const [refund] = await createTransaction(db, {
+      kind: 'expense', accountId: usd.id, amountMinor: 2000, date: '2026-09-03', categoryId: 'default-dining', refund: true,
+    });
+    expect(refund).toMatchObject({ kind: 'expense', amountMinor: 2000, categoryId: 'default-dining' });
+    expect(await balance(usd)).toBe(102000);
+    expect(await getTransactionInput(db, refund.id)).toMatchObject({ kind: 'expense', refund: true, amountMinor: 2000 });
+  });
+
+  it('only allows refunds on expenses', async () => {
+    await expect(
+      createTransaction(db, { kind: 'income', accountId: usd.id, amountMinor: 100, date: '2026-09-03', refund: true }),
+    ).rejects.toMatchObject({ code: 'INVALID_KIND' });
+  });
+});
+
 describe('transfers', () => {
   it('moves money between same-currency accounts without changing the total', async () => {
     const legs = await createTransaction(db, {
@@ -154,6 +171,30 @@ describe('transfers', () => {
     ).rejects.toMatchObject({ code: 'NOT_FOUND' });
     expect(await db.transactions.count()).toBe(0);
     expect(await balance(usd)).toBe(100000);
+  });
+
+  it('records a fee as its own expense in the fees category', async () => {
+    const records = await createTransaction(db, {
+      kind: 'transfer', fromAccountId: twd.id, toAccountId: usd.id, amountMinor: 32000, toAmountMinor: 100000,
+      date: '2026-09-05', note: 'wire', fee: { amountMinor: 450 },
+    });
+    expect(records).toHaveLength(3);
+    expect(records[2]).toMatchObject({
+      kind: 'expense', accountId: twd.id, amountMinor: -450, categoryId: 'default-fees', date: '2026-09-05', note: 'wire',
+    });
+    expect(await balance(twd)).toBe(50000 - 32000 - 450);
+    // The transfer itself stays two legs; editing it leaves the fee alone.
+    expect(await getTransactionGroup(db, records[0].id)).toHaveLength(2);
+    expect(await getTransactionInput(db, records[0].id)).not.toHaveProperty('fee');
+  });
+
+  it('writes nothing when the fee is invalid', async () => {
+    await expect(
+      createTransaction(db, {
+        kind: 'transfer', fromAccountId: usd.id, toAccountId: usd2.id, amountMinor: 500, date: '2026-09-05', fee: { amountMinor: 0 },
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_AMOUNT' });
+    expect(await db.transactions.count()).toBe(0);
   });
 
   it('deletes both legs when either is deleted', async () => {
@@ -261,6 +302,7 @@ describe('listTransactions', () => {
     expect(await dates({ categoryIds: ['default-groceries', 'default-dining'] })).toEqual(['2026-09-03:-50', '2026-08-30:-100']);
     expect(await dates({ search: 'costco' })).toEqual(['2026-08-30:-100']);
     expect(await dates({ search: 'SCHOLAR' })).toEqual(['2026-09-01:900']);
+    expect(await dates({ search: 'dining', searchCategoryIds: ['default-dining'] })).toEqual(['2026-09-03:-50']);
   });
 
   it('paginates', async () => {

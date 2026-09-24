@@ -1,4 +1,5 @@
 import type { CurrencyCode } from './money';
+import type { IncomeExpenseInput } from './transactions';
 
 export const ACCOUNT_KINDS = [
   'cash',
@@ -54,7 +55,11 @@ export interface Transaction {
   id: string;
   kind: TransactionKind;
   accountId: string;
-  /** Signed change to the account balance, in the account currency's minor units. */
+  /**
+   * Signed change to the account balance, in the account currency's minor
+   * units. Income is positive and expenses negative; a positive expense is a
+   * refund, which reduces spending in its category.
+   */
   amountMinor: number;
   /** Calendar day, "YYYY-MM-DD". */
   date: string;
@@ -100,4 +105,21 @@ export interface Budget {
 export interface SettingRow {
   key: string;
   value: unknown;
+}
+
+/** What a recurring rule records each month; the date is filled in when posted. */
+export type RecurringTemplate = Omit<IncomeExpenseInput, 'date'>;
+
+/** A monthly income or expense such as rent or a subscription, posted after confirmation. */
+export interface RecurringRule {
+  id: string;
+  template: RecurringTemplate;
+  /** 1–31; in shorter months the entry falls on the last day. */
+  dayOfMonth: number;
+  /** First month ("YYYY-MM") the rule applies to. */
+  startMonth: string;
+  /** Latest month already recorded or skipped. */
+  lastMonth?: string;
+  createdAt: number;
+  updatedAt: number;
 }

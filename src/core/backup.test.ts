@@ -5,6 +5,7 @@ import { setBudget } from './budgets';
 import { seedDefaultCategories } from './categories';
 import type { LedgerDB } from './db';
 import { setExchangeRate } from './rates';
+import { createRecurringRule } from './recurring';
 import { updateSettings } from './settings';
 import { createTransaction, updateTransaction } from './transactions';
 
@@ -26,6 +27,11 @@ beforeEach(async () => {
   await setExchangeRate(source, { from: 'USD', to: 'TWD', rate: 32, date: '2026-09-01' });
   await setBudget(source, { categoryId: 'default-dining', amountMinor: 5000, currency: 'TWD' });
   await updateSettings(source, { baseCurrency: 'USD' });
+  await createRecurringRule(source, {
+    template: { kind: 'expense', accountId: usd.id, amountMinor: 120000, categoryId: 'default-rent' },
+    dayOfMonth: 1,
+    startMonth: '2026-10',
+  });
   backup = await exportBackup(source);
 });
 
@@ -70,9 +76,8 @@ describe('invalid backups', () => {
     ['newer version', (_, root) => { root.version = 99; }],
     ['unknown account', (data) => { data.transactions[0].accountId = 'ghost'; }],
     ['float amount', (data) => { data.transactions[0].amountMinor = -13.2; }],
-    ['positive expense', (data) => {
-      const expense = data.transactions.find((t) => t.kind === 'expense')!;
-      expense.amountMinor = 100;
+    ['negative income', (data) => {
+      data.transactions.push({ ...data.transactions.find((t) => t.kind === 'expense')!, id: 'x', kind: 'income', categoryId: undefined });
     }],
     ['string date', (data) => { data.transactions[0].date = 'Tue Sep 01 2026' as never; }],
     ['one-legged transfer', (data) => {
@@ -84,6 +89,8 @@ describe('invalid backups', () => {
     }],
     ['budget on income category', (data) => { data.budgets[0].categoryId = 'default-salary'; data.budgets[0].id = 'category:default-salary'; }],
     ['missing table', (data) => { delete (data as Partial<Backup['data']>).exchangeRates; }],
+    ['recurring rule on an unknown account', (data) => { data.recurring[0].template.accountId = 'ghost'; }],
+    ['recurring rule on day 40', (data) => { data.recurring[0].dayOfMonth = 40; }],
   ])('rejects %s and keeps existing data', async (_, mutate) => {
     const target = createTestDb();
     await addAccount(target, { name: 'Precious' });
@@ -99,6 +106,15 @@ describe('invalid backups', () => {
     await expect(importBackup(target, backup)).rejects.toThrow('disk full');
     expect((await target.accounts.toArray()).map((a) => a.name)).toEqual(['Precious']);
     expect(await target.transactions.count()).toBe(0);
+  });
+
+  it('accepts backups made before recurring rules existed', async () => {
+    const older = structuredClone(backup) as unknown as { data: Record<string, unknown> };
+    delete older.data.recurring;
+    const target = createTestDb();
+    await importBackup(target, older);
+    expect(await target.recurring.count()).toBe(0);
+    expect(await target.accounts.count()).toBe(2);
   });
 
   it('rejects text that is not JSON', async () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Account, CurrencyCode, Transaction, TransactionInput } from '../../core';
 import {
+  categoryKindOf,
   checkAmount,
   emptyFormState,
   formStateFromInput,
@@ -87,10 +88,31 @@ describe('formStateToInput', () => {
   });
 });
 
+describe('refunds and fees', () => {
+  it('turns a refund into an expense that adds money back', () => {
+    expect(formStateToInput(base({ kind: 'refund', amount: '20', categoryId: 'c' }), accounts).input).toEqual({
+      kind: 'expense', refund: true, accountId: 'usd', amountMinor: 2000, date: '2026-09-24', categoryId: 'c',
+    });
+    expect(categoryKindOf('refund')).toBe('expense');
+    expect(categoryKindOf('income')).toBe('income');
+    expect(categoryKindOf('transfer')).toBeUndefined();
+  });
+
+  it('adds a transfer fee in the sending account’s currency', () => {
+    const transfer = base({ kind: 'transfer', amount: '100', toAccountId: 'twd', toAmount: '3,200' });
+    expect(formStateToInput({ ...transfer, fee: '1.50' }, accounts).input).toMatchObject({ fee: { amountMinor: 150 } });
+    expect(formStateToInput({ ...transfer, fee: ' ' }, accounts).input).not.toHaveProperty('fee');
+    expect(formStateToInput({ ...transfer, fee: '0' }, accounts).errors).toEqual({ fee: 'amountInvalid' });
+    // Fees belong to transfers only.
+    expect(formStateToInput(base({ amount: '1', fee: '5' }), accounts).input).not.toHaveProperty('fee');
+  });
+});
+
 describe('formStateFromInput', () => {
   it.each<TransactionInput>([
     { kind: 'expense', accountId: 'usd', amountMinor: 1250, date: '2026-09-01', categoryId: 'c', payee: 'P', note: 'N', original: { amountMinor: 1100, currency: 'EUR' } },
     { kind: 'income', accountId: 'twd', amountMinor: 30000, date: '2026-09-01' },
+    { kind: 'expense', refund: true, accountId: 'usd', amountMinor: 2000, date: '2026-09-01', categoryId: 'c' },
     { kind: 'transfer', fromAccountId: 'usd', toAccountId: 'twd', amountMinor: 10000, toAmountMinor: 3200, date: '2026-09-01', note: 'fx' },
   ])('round-trips %j', (input) => {
     expect(formStateToInput(formStateFromInput(input, accounts), accounts)).toEqual({ input });

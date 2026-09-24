@@ -20,7 +20,7 @@ export function BackupSection({ lastBackupAt, onBackedUp }: BackupSectionProps) 
   const db = useLedgerDb();
   // Kept ready ahead of time: sharing must start straight from the click, with no await before it.
   const backup = useLiveQuery(() => exportBackup(db), [db]);
-  const [shareSupported] = useState(canShareFiles);
+  const [shareSupported] = useState(() => canShareFiles());
   const [error, setError] = useState<string | null>(null);
   const counts = backup ? countBackup(backup.data) : undefined;
 

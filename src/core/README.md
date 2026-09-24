@@ -9,7 +9,9 @@
 | 金額 | 一律存整數最小單位（`amountMinor`）。USD 以「分」存，TWD／JPY 以「元」存（見 `money.ts` 的 `CURRENCIES`）。不存浮點數。 |
 | 餘額 | 不存在帳戶上。餘額 = `openingBalanceMinor` + 該帳戶所有 posting 的 `amountMinor` 總和（`getAccountBalance`／`getBalances`）。 |
 | 交易 | 每筆紀錄是一個帳戶的一筆 posting，`amountMinor` 帶正負號：收入為正、支出為負。 |
-| 轉帳 | 兩筆紀錄共用 `transferId`：轉出帳戶為負、轉入帳戶為正。同幣別時兩邊金額必須相等（手續費請另記支出）；跨幣別時兩邊各記實際金額。 |
+| 退款 | 金額為正的支出（`refund: true` 建立）：錢回到帳戶，並從該分類的支出扣掉，不算收入。朋友還代墊的錢也這樣記。 |
+| 轉帳 | 兩筆紀錄共用 `transferId`：轉出帳戶為負、轉入帳戶為正。同幣別時兩邊金額必須相等；跨幣別時兩邊各記實際金額。建立時可帶 `fee`，會另存成一筆「手續費」支出。 |
+| 固定收支 | `recurring` 表存每月規則（範本 + 每月幾號）。`dueRecurring` 算出到期的月份，使用者確認後 `postRecurring` 才記帳，或用 `skipRecurring` 略過；月份依序處理。刪除帳戶會一併刪除它的規則，刪除分類會把規則移到新分類。 |
 | 外幣刷卡 | `originalAmountMinor` + `originalCurrency` 記錄原幣金額；`amountMinor` 是帳戶實際被扣的金額。 |
 | 日期 | `"YYYY-MM-DD"` 字串，沒有時區問題，JSON 還原後不會變型別。 |
 | ID | UUID 字串，方便日後匯入合併或雲端同步。 |

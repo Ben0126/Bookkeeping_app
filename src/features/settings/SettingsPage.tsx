@@ -4,8 +4,10 @@ import { LANGUAGES } from '../../i18n';
 import { Segmented } from '../../ui/form';
 import { readLastBackupAt } from '../backup/backupFile';
 import { BackupSection } from '../backup/BackupSection';
+import { ExportSection } from '../backup/ExportSection';
 import { RestoreSection } from '../backup/RestoreSection';
 import { StorageSection } from '../backup/StorageSection';
+import { RecurringSection } from '../recurring/RecurringSection';
 import { BaseCurrencySection } from './BaseCurrencySection';
 import { CategorySection } from './CategorySection';
 
@@ -25,7 +27,9 @@ export function SettingsPage() {
       <BackupSection lastBackupAt={lastBackupAt} onBackedUp={setLastBackupAt} />
       <RestoreSection lastBackupAt={lastBackupAt} onLastBackupChange={setLastBackupAt} />
       <BaseCurrencySection />
+      <RecurringSection />
       <CategorySection />
+      <ExportSection />
       <StorageSection />
       <section aria-labelledby="language-title" className="space-y-3 rounded-xl bg-white p-4 ring-1 ring-slate-200">
         <h2 id="language-title" className="font-semibold">

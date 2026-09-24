@@ -179,24 +179,34 @@ export async function deleteCategory(
   id: string,
   { reassignTo }: { reassignTo?: string } = {},
 ): Promise<void> {
-  await db.transaction('rw', [db.categories, db.transactions, db.budgets], async () => {
+  await db.transaction('rw', [db.categories, db.transactions, db.budgets, db.recurring], async () => {
     const category = await getCategory(db, id);
     if ((await db.categories.where('parentId').equals(id).count()) > 0) {
       throw new LedgerError('CATEGORY_IN_USE', 'Category has subcategories');
     }
 
     const used = db.transactions.where('categoryId').equals(id);
-    if ((await used.count()) > 0) {
-      if (reassignTo === undefined) {
-        throw new LedgerError('CATEGORY_IN_USE', 'Category has transactions; reassign them or archive it');
-      }
+    const rules = () => db.recurring.filter((rule) => rule.template.categoryId === id);
+    const usedCount = await used.count();
+    if (usedCount > 0 && reassignTo === undefined) {
+      throw new LedgerError('CATEGORY_IN_USE', 'Category has transactions; reassign them or archive it');
+    }
+    if (reassignTo !== undefined && (usedCount > 0 || (await rules().count()) > 0)) {
       const target = await getCategory(db, reassignTo);
       if (target.id === id) throw new LedgerError('CATEGORY_IN_USE', 'Cannot reassign to the category being deleted');
       if (target.kind !== category.kind) throw new LedgerError('CATEGORY_KIND_MISMATCH');
-      const now = Date.now();
-      await used.modify({ categoryId: target.id, updatedAt: now });
     }
 
+    const now = Date.now();
+    if (usedCount > 0) await used.modify({ categoryId: reassignTo, updatedAt: now });
+    // Recurring rules follow their entries to the new category, or become uncategorized.
+    await rules().modify((rule) => {
+      const template = { ...rule.template };
+      if (reassignTo === undefined) delete template.categoryId;
+      else template.categoryId = reassignTo;
+      rule.template = template;
+      rule.updatedAt = now;
+    });
     await db.budgets.where('categoryId').equals(id).delete();
     await db.categories.delete(id);
   });

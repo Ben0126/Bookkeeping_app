@@ -99,3 +99,18 @@ describe('netWorth', () => {
     expect(netWorth({ twd: 100, gbp: 0 }, ctx, '2026-09-30')).toEqual({ totalMinor: 100, missingRates: [] });
   });
 });
+
+describe('refunds', () => {
+  it('reduce spending and the category instead of counting as income', () => {
+    const withRefund = [
+      ...transactions,
+      // Friends pay back NT$200 of a dinner.
+      posting({ kind: 'expense', accountId: 'twd', amountMinor: 200, date: '2026-09-06', categoryId: 'dining' }),
+    ];
+    const summary = summarize(withRefund, ctx);
+    expect(summary).toMatchObject({ incomeMinor: 30000, expenseMinor: 5500 });
+    expect(summary.byCategory.find((c) => c.categoryId === 'dining')).toMatchObject({ totalMinor: 500, count: 3 });
+    expect(summary.byCurrency.TWD).toEqual({ incomeMinor: 0, expenseMinor: 5100 });
+    expect(monthlyTotals(withRefund, ctx).months.at(-1)).toMatchObject({ expenseMinor: 5500 });
+  });
+});

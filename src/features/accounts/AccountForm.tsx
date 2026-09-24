@@ -104,7 +104,7 @@ export function AccountForm({ account, currentBalanceMinor = 0, defaultCurrency,
         await createAccount(db, { name, kind, currency, openingBalanceMinor: balanceMinor });
         return;
       }
-      await db.transaction('rw', [db.accounts, db.transactions], async () => {
+      await db.transaction('rw', [db.accounts, db.transactions, db.recurring], async () => {
         await updateAccount(db, account.id, { name, kind, currency });
         if (balance !== initial.balance) await setAccountBalance(db, account.id, balanceMinor);
       });

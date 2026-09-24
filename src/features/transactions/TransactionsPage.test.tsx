@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  createRecurringRule,
   createTransaction,
   getAccountBalance,
   monthOf,
@@ -140,11 +141,11 @@ describe('TransactionsPage', () => {
     renderApp(db, '/transactions');
     await screen.findByRole('button', { name: /Costco/ });
 
-    change(screen.getByPlaceholderText('Search payee or note'), 'cost');
+    change(screen.getByPlaceholderText('Search payee, note or category'), 'cost');
     await waitFor(() => expect(screen.queryByRole('button', { name: /Refund/ })).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: /Costco/ })).toBeInTheDocument();
 
-    change(screen.getByPlaceholderText('Search payee or note'), '');
+    change(screen.getByPlaceholderText('Search payee, note or category'), '');
     change(screen.getByLabelText('Filter by type'), 'income');
     await waitFor(() => expect(screen.queryByRole('button', { name: /Costco/ })).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: /Refund/ })).toBeInTheDocument();
@@ -273,5 +274,160 @@ describe('quick entry', () => {
     change(within(dialog).getByLabelText('Amount sent'), '21500');
     change(within(dialog).getByLabelText('Amount received (JPY)'), '100000');
     expect(within(dialog).getByText('≈ 1 JPY = 0.215 TWD')).toBeInTheDocument();
+  });
+});
+
+describe('refunds and fees', () => {
+  it('records money back as a refund that lowers spending in its category', async () => {
+    await createTransaction(db, {
+      kind: 'expense', accountId: chase.id, amountMinor: 6000, date: `${thisMonth}-01`, categoryId: 'default-dining', payee: 'Dishoom',
+    });
+    renderApp(db, '/transactions');
+    const dialog = await openAddDialog();
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Refund' }));
+    expect(within(dialog).getByText(/reduces spending in the category/)).toBeInTheDocument();
+    // Refunds go back to expense categories.
+    expect(within(dialog).queryByRole('button', { name: 'Salary' })).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('radio', { name: /Chase/ }));
+    change(within(dialog).getByLabelText('Amount'), '40');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Dining out' }));
+    change(within(dialog).getByLabelText('Payee'), 'Amy & Joe');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitForDialogToClose();
+
+    const row = await screen.findByRole('button', { name: /Dining out\s*Refund.*Amy & Joe · Chase.*\+\$40\.00/ });
+    const spent = (await screen.findByText('Spent this month')).parentElement!;
+    await waitFor(() => expect(within(spent).getByText('$20.00')).toBeInTheDocument());
+    expect(within((await screen.findByText('Received this month')).parentElement!).getByText('—')).toBeInTheDocument();
+    expect(await getAccountBalance(db, chase.id)).toBe(98000);
+
+    // It opens as a refund again.
+    fireEvent.click(row);
+    const editDialog = await screen.findByRole('dialog', { name: 'Edit transaction' });
+    expect(await within(editDialog).findByRole('radio', { name: 'Refund' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('saves a transfer fee as its own expense', async () => {
+    renderApp(db, '/transactions');
+    const dialog = await openAddDialog();
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Transfer' }));
+    change(within(dialog).getByLabelText('From account'), chase.id);
+    change(within(dialog).getByLabelText('Amount sent'), '100');
+    change(within(dialog).getByLabelText('To account'), taiwan.id);
+    change(within(dialog).getByLabelText('Amount received (TWD)'), '3,200');
+    change(within(dialog).getByLabelText('Fee (optional)'), '5');
+    expect(within(dialog).getByText('Chase is charged $105.00 in all; the fee is saved as its own expense.')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitForDialogToClose();
+
+    expect(await screen.findByRole('button', { name: /Fees.*Chase.*-\$5\.00/ })).toBeInTheDocument();
+    expect(await getAccountBalance(db, chase.id)).toBe(89500);
+    expect(await getAccountBalance(db, taiwan.id)).toBe(3200);
+  });
+
+  it('checks the fee like any amount', async () => {
+    renderApp(db, '/transactions');
+    const dialog = await openAddDialog();
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Transfer' }));
+    change(within(dialog).getByLabelText('From account'), taiwan.id);
+    change(within(dialog).getByLabelText('To account'), chase.id);
+    change(within(dialog).getByLabelText('Amount sent'), '32000');
+    change(within(dialog).getByLabelText('Amount received (USD)'), '1000');
+    change(within(dialog).getByLabelText('Fee (optional)'), '0.5');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(await within(dialog).findByText('TWD amounts have no decimals')).toBeInTheDocument();
+    await waitFor(() => expect(within(dialog).getByLabelText('Fee (optional)')).toHaveFocus());
+    expect(await db.transactions.count()).toBe(0);
+  });
+});
+
+describe('searching', () => {
+  it('searches every month and matches category names', async () => {
+    const lastYear = shiftMonth(thisMonth, -12);
+    await createTransaction(db, { kind: 'expense', accountId: chase.id, amountMinor: 8000, date: `${lastYear}-03`, payee: 'Dentist' });
+    await createTransaction(db, { kind: 'expense', accountId: chase.id, amountMinor: 120000, date: `${thisMonth}-01`, categoryId: 'default-rent' });
+    await createTransaction(db, { kind: 'expense', accountId: chase.id, amountMinor: 300, date: `${thisMonth}-01`, payee: 'Pret' });
+    renderApp(db, '/transactions');
+    await screen.findByRole('button', { name: /Pret/ });
+
+    change(screen.getByPlaceholderText('Search payee, note or category'), 'dentist');
+    expect(await screen.findByRole('heading', { name: '1 match in all months' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Dentist/ })).toBeInTheDocument();
+    // Dates carry the year, since results span years.
+    expect(screen.getByRole('region', { name: new RegExp(lastYear.slice(0, 4)) })).toBeInTheDocument();
+    const spent = screen.getByText('Spent (results)').parentElement!;
+    expect(within(spent).getByText('$80.00')).toBeInTheDocument();
+
+    change(screen.getByPlaceholderText('Search payee, note or category'), 'RENT');
+    expect(await screen.findByRole('button', { name: /Rent.*-\$1,200\.00/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Pret|Dentist/ })).not.toBeInTheDocument();
+
+    change(screen.getByPlaceholderText('Search payee, note or category'), '');
+    expect(await screen.findByRole('button', { name: 'Previous month' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Pret/ })).toBeInTheDocument();
+  });
+});
+
+describe('monthly entries', () => {
+  it('repeats an entry and records next month’s only when confirmed', async () => {
+    const lastMonth = shiftMonth(thisMonth, -1);
+    renderApp(db, '/transactions');
+    const dialog = await openAddDialog();
+    fireEvent.click(within(dialog).getByRole('radio', { name: /Chase/ }));
+    change(within(dialog).getByLabelText('Amount'), '1200');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Rent' }));
+    change(within(dialog).getByLabelText('Date'), `${lastMonth}-01`);
+    fireEvent.click(within(dialog).getByText('More: note, other currency, repeat monthly'));
+    fireEvent.click(within(dialog).getByLabelText('Repeats monthly (rent, subscriptions…)'));
+    expect(within(dialog).getByText(/Each month on day 1 you’ll be asked/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitForDialogToClose();
+
+    // This month's rent is due (the 1st has passed) but not recorded yet.
+    const due = await screen.findByRole('region', { name: '1 monthly entry is due' });
+    expect(await db.transactions.count()).toBe(1);
+    fireEvent.click(within(due).getByRole('button', { name: /^Record Rent/ }));
+    await waitFor(() => expect(screen.queryByRole('region', { name: /monthly entr/ })).not.toBeInTheDocument());
+    const entries = await db.transactions.orderBy('date').toArray();
+    expect(entries.map((e) => [e.date, e.amountMinor, e.categoryId])).toEqual([
+      [`${lastMonth}-01`, -120000, 'default-rent'],
+      [`${thisMonth}-01`, -120000, 'default-rent'],
+    ]);
+  });
+
+  it('skips a month and works through missed months in order', async () => {
+    await createRecurringRule(db, {
+      template: { kind: 'income', accountId: taiwan.id, amountMinor: 20000, categoryId: 'default-allowance' },
+      dayOfMonth: 1,
+      startMonth: shiftMonth(thisMonth, -2),
+    });
+    renderApp(db, '/transactions');
+    const due = await screen.findByRole('region', { name: '1 monthly entry is due' });
+    expect(within(due).getByText('2 more months waiting')).toBeInTheDocument();
+    expect(within(due).getByText('+NT$20,000')).toBeInTheDocument();
+
+    fireEvent.click(within(due).getByRole('button', { name: /^Skip Family support/ }));
+    expect(await within(due).findByText('1 more month waiting')).toBeInTheDocument();
+    fireEvent.click(within(due).getByRole('button', { name: /^Record Family support/ }));
+    await waitFor(() => expect(within(due).queryByText(/more month/)).not.toBeInTheDocument());
+    expect(await db.transactions.count()).toBe(1);
+    expect((await db.transactions.toArray())[0].date).toBe(`${shiftMonth(thisMonth, -1)}-01`);
+  });
+
+  it('offers repeating only for new income and expenses', async () => {
+    renderApp(db, '/transactions');
+    const dialog = await openAddDialog();
+    fireEvent.click(within(dialog).getByLabelText('Repeats monthly (rent, subscriptions…)'));
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Refund' }));
+    expect(within(dialog).queryByLabelText('Repeats monthly (rent, subscriptions…)')).not.toBeInTheDocument();
+    expect(within(dialog).getByText('More: note, paid in another currency')).toBeInTheDocument();
+
+    // A choice made before switching to a refund doesn't carry over.
+    fireEvent.click(within(dialog).getByRole('radio', { name: /Chase/ }));
+    change(within(dialog).getByLabelText('Amount'), '5');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitForDialogToClose();
+    expect(await db.transactions.count()).toBe(1);
+    expect(await db.recurring.count()).toBe(0);
   });
 });

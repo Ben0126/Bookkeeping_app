@@ -15,6 +15,12 @@ export interface IncomeExpenseInput {
   note?: string;
   /** Foreign-currency amount charged before the bank converted it (positive). */
   original?: { amountMinor: number; currency: CurrencyCode };
+  /**
+   * Expenses only: money coming back, such as a refund or a friend paying
+   * back their share. It is stored as an inflow that reduces spending in the
+   * category instead of counting as income.
+   */
+  refund?: boolean;
 }
 
 export interface TransferInput {
@@ -27,26 +33,63 @@ export interface TransferInput {
   toAmountMinor?: number;
   date: string;
   note?: string;
+  /**
+   * When creating: a fee charged to `fromAccountId` (ATM, wire), in its minor
+   * units. It is saved as its own expense, in the "fees" category unless
+   * another is given, and is edited or deleted like any other expense.
+   */
+  fee?: { amountMinor: number; categoryId?: string };
 }
 
 export type TransactionInput = IncomeExpenseInput | TransferInput;
 
 /**
  * Records an income, expense or transfer. Returns the stored postings: one
- * record, or two (outflow first) for a transfer.
+ * record, or two (outflow first) for a transfer, followed by its fee expense
+ * if one was given.
  */
 export async function createTransaction(db: LedgerDB, input: TransactionInput): Promise<Transaction[]> {
   return db.transaction('rw', [db.accounts, db.categories, db.transactions], async () => {
     const now = Date.now();
-    const records = await buildRecords(db, input, { ids: [], createdAt: now, updatedAt: now, existing: [] });
+    const ctx: BuildContext = { ids: [], createdAt: now, updatedAt: now, existing: [] };
+    const records = await buildRecords(db, input, ctx);
+    if (input.kind === 'transfer' && input.fee !== undefined) {
+      const categoryId = input.fee.categoryId ?? (await findFeeCategoryId(db));
+      const fee: IncomeExpenseInput = {
+        kind: 'expense',
+        accountId: input.fromAccountId,
+        amountMinor: input.fee.amountMinor,
+        date: input.date,
+        ...(categoryId !== undefined && { categoryId }),
+        ...(input.note !== undefined && { note: input.note }),
+      };
+      records.push(...(await buildRecords(db, fee, ctx)));
+    }
     await db.transactions.bulkAdd(records);
     return records;
   });
 }
 
 /**
+ * Checks that `input` could be recorded (accounts, categories, amounts)
+ * without writing anything; throws the same LedgerError a save would.
+ */
+export async function checkTransactionInput(db: LedgerDB, input: TransactionInput): Promise<void> {
+  await db.transaction('r', [db.accounts, db.categories], () =>
+    buildRecords(db, input, { ids: [], createdAt: 0, updatedAt: 0, existing: [] }),
+  );
+}
+
+/** The built-in "fees" category, unless it has been hidden. */
+async function findFeeCategoryId(db: LedgerDB): Promise<string | undefined> {
+  const category = await db.categories.filter((c) => c.key === 'fees' && c.kind === 'expense' && !c.archived).first();
+  return category?.id;
+}
+
+/**
  * Replaces the transaction that `id` belongs to (either leg of a transfer, or
  * its `transferId`). The kind may change, e.g. an expense into a transfer.
+ * A transfer `fee` is ignored here: once saved, the fee is its own expense.
  */
 export async function updateTransaction(
   db: LedgerDB,
@@ -116,6 +159,7 @@ export function toTransactionInput(group: readonly Transaction[]): TransactionIn
     amountMinor: Math.abs(first.amountMinor),
     date: first.date,
   };
+  if (first.kind === 'expense' && first.amountMinor > 0) input.refund = true;
   if (first.categoryId !== undefined) input.categoryId = first.categoryId;
   if (first.payee !== undefined) input.payee = first.payee;
   if (first.note !== undefined) input.note = first.note;
@@ -135,13 +179,19 @@ export interface TransactionFilter {
   to?: string;
   /** Case-insensitive match on payee and note. */
   search?: string;
+  /**
+   * Categories whose (displayed) name matches `search`, so searching "Dining"
+   * also finds uncommented dining entries. The caller resolves names, since
+   * built-in names are translated.
+   */
+  searchCategoryIds?: readonly string[];
   offset?: number;
   limit?: number;
 }
 
 /** Postings matching `filter`, newest first. Each transfer leg is its own row. */
 export async function listTransactions(db: LedgerDB, filter: TransactionFilter = {}): Promise<Transaction[]> {
-  const { accountId, categoryIds, kind, from, to, offset = 0, limit } = filter;
+  const { accountId, categoryIds, searchCategoryIds, kind, from, to, offset = 0, limit } = filter;
   const search = filter.search?.trim().toLocaleLowerCase();
 
   const collection = accountId !== undefined
@@ -158,7 +208,8 @@ export async function listTransactions(db: LedgerDB, filter: TransactionFilter =
       (categoryIds === undefined || (t.categoryId !== undefined && categoryIds.includes(t.categoryId))) &&
       (!search ||
         (t.payee?.toLocaleLowerCase().includes(search) ?? false) ||
-        (t.note?.toLocaleLowerCase().includes(search) ?? false)),
+        (t.note?.toLocaleLowerCase().includes(search) ?? false) ||
+        (t.categoryId !== undefined && (searchCategoryIds?.includes(t.categoryId) ?? false))),
   );
   rows.sort(compareNewestFirst);
   return rows.slice(offset, limit === undefined ? undefined : offset + limit);
@@ -214,7 +265,10 @@ async function buildRecords(db: LedgerDB, input: TransactionInput, ctx: BuildCon
   if (input.kind !== 'income' && input.kind !== 'expense') {
     throw new LedgerError('INVALID_KIND', `Unknown transaction kind ${String((input as { kind: unknown }).kind)}`);
   }
-  const sign = input.kind === 'income' ? 1 : -1;
+  if (input.refund && input.kind !== 'expense') {
+    throw new LedgerError('INVALID_KIND', 'Only expenses can be refunds');
+  }
+  const sign = input.kind === 'income' || input.refund ? 1 : -1;
   const account = await requireUsableAccount(db, input.accountId, ctx);
   const record: Transaction = {
     id: ctx.ids[0] ?? newId(),

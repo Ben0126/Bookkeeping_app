@@ -13,7 +13,7 @@ const empty: Backup = {
   format: BACKUP_FORMAT,
   version: BACKUP_VERSION,
   exportedAt: '2000-01-01T00:00:00.000Z',
-  data: { accounts: [], categories: [], transactions: [], exchangeRates: [], budgets: [], settings: [] },
+  data: { accounts: [], categories: [], transactions: [], exchangeRates: [], budgets: [], settings: [], recurring: [] },
 };
 
 describe('backup files', () => {

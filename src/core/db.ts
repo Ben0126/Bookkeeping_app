@@ -1,5 +1,5 @@
 import Dexie, { type DexieOptions, type Table } from 'dexie';
-import type { Account, Budget, Category, ExchangeRate, SettingRow, Transaction } from './types';
+import type { Account, Budget, Category, ExchangeRate, RecurringRule, SettingRow, Transaction } from './types';
 
 export const LEDGER_DB_NAME = 'studybudget-v2';
 
@@ -10,6 +10,7 @@ export class LedgerDB extends Dexie {
   declare exchangeRates: Table<ExchangeRate, string>;
   declare budgets: Table<Budget, string>;
   declare settings: Table<SettingRow, string>;
+  declare recurring: Table<RecurringRule, string>;
 
   constructor(name: string = LEDGER_DB_NAME, options?: DexieOptions) {
     super(name, options);
@@ -26,6 +27,7 @@ export class LedgerDB extends Dexie {
       accounts: 'id, updatedAt',
       transactions: 'id, accountId, date, categoryId, transferId, updatedAt',
     });
+    this.version(3).stores({ recurring: 'id' });
   }
 }
 

@@ -15,7 +15,8 @@
   "kinds": {
     "expense": "Expense",
     "income": "Income",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "refund": "Refund"
   },
   "categories": {
     "allowance": "Family support",
@@ -58,10 +59,12 @@
     "nextMonth": "Next month",
     "total": {
       "expense": "Spent this month",
-      "income": "Received this month"
+      "income": "Received this month",
+      "expense_found": "Spent (results)",
+      "income_found": "Received (results)"
     },
     "search": "Search",
-    "searchPlaceholder": "Search payee or note",
+    "searchPlaceholder": "Search payee, note or category",
     "filterAccount": "Filter by account",
     "filterKind": "Filter by type",
     "allAccounts": "All accounts",
@@ -75,7 +78,9 @@
     "clearFilter": "(clear filter)",
     "budgetLeft": "{{amount}} of the budget left",
     "budgetLeftPerDay": "{{amount}} of the budget left, about {{perDay}} a day",
-    "budgetOver": "Budget exceeded by {{amount}}"
+    "budgetOver": "Budget exceeded by {{amount}}",
+    "searchResults_one": "{{count}} match in all months",
+    "searchResults_other": "{{count}} matches in all months"
   },
   "transactionForm": {
     "kind": "Transaction type",
@@ -107,7 +112,15 @@
     "more": "More: note, paid in another currency",
     "saveAndNext": "Save & add another",
     "savedNotice": "Saved: {{entry}}. Go ahead with the next one.",
-    "discardConfirm": "Discard what you entered?"
+    "discardConfirm": "Discard what you entered?",
+    "refundHint": "Money back from a store, or a friend paying you back for something you covered. It reduces spending in the category instead of counting as income.",
+    "fee": "Fee (optional)",
+    "feeHint": "Charged on top of the transfer; saved as a separate “Fees” expense.",
+    "feeTotal": "{{account}} is charged {{total}} in all; the fee is saved as its own expense.",
+    "monthly": "Repeats monthly (rent, subscriptions…)",
+    "monthlyHint": "Each month on day {{day}} you’ll be asked to record it. Nothing is recorded until you tap “Record”.",
+    "monthlyHint_late": "Each month on day {{day}} (or the last day of shorter months) you’ll be asked to record it. Nothing is recorded until you tap “Record”.",
+    "moreWithMonthly": "More: note, other currency, repeat monthly"
   },
   "accounts": {
     "title": "Accounts",
@@ -204,6 +217,27 @@
     "later": "Later",
     "backUp": "Back up now"
   },
+  "csvExport": {
+    "title": "Export to a spreadsheet (CSV)",
+    "intro": "Every transaction as a CSV file for Excel, Numbers or Google Sheets. A CSV can’t be restored; use “Backup” above to keep your data safe.",
+    "download": "Download CSV",
+    "share": "Share CSV",
+    "empty": "No transactions to export yet.",
+    "saveFailed": "Couldn’t export the CSV. Please try again.",
+    "columns": {
+      "date": "Date",
+      "type": "Type",
+      "account": "Account",
+      "currency": "Currency",
+      "amount": "Amount",
+      "category": "Category",
+      "payee": "Payee",
+      "note": "Note",
+      "otherAccount": "Other account",
+      "originalCurrency": "Original currency",
+      "originalAmount": "Original amount"
+    }
+  },
   "categorySettings": {
     "title": "Categories",
     "intro": "Hide categories you don't use so they stay out of the way when adding entries. Past entries are not affected.",
@@ -247,5 +281,23 @@
     "amount": "How much you can spend per month",
     "hint": "All spending, rent and tuition included, is converted into this currency to compare.",
     "remove": "Remove budget"
+  },
+  "recurring": {
+    "title": "Monthly entries",
+    "intro": "Rent, subscriptions, a monthly allowance and other regular entries. When one is due, the Transactions page asks you to record or skip it.",
+    "empty": "None yet. When adding an entry, open “More” and tick “Repeats monthly”.",
+    "schedule": "Monthly on day {{day}}",
+    "next": "Next: {{date}}",
+    "stop": "Stop",
+    "stopLabel": "Stop {{name}}",
+    "confirmStop": "Stop repeating",
+    "dueTitle_one": "{{count}} monthly entry is due",
+    "dueTitle_other": "{{count}} monthly entries are due",
+    "laterMonths_one": "{{count}} more month waiting",
+    "laterMonths_other": "{{count}} more months waiting",
+    "post": "Record",
+    "skip": "Skip",
+    "postLabel": "Record {{name}} for {{date}}",
+    "skipLabel": "Skip {{name}} for {{date}}"
   }
 }
