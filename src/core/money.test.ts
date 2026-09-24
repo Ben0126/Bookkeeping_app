@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { convertMinor, formatMoney, parseMoney, roundHalfAwayFromZero, toMajor } from './money';
+import { convertMinor, formatMoney, parseMoney, roundHalfAwayFromZero, toMajor, toMoneyInput } from './money';
 
 describe('parseMoney', () => {
   it.each([
@@ -81,5 +81,18 @@ describe('formatMoney', () => {
     expect(formatMoney(1500, 'TWD', 'en-US')).toBe('NT$1,500');
     expect(formatMoney(1500, 'JPY', 'en-US')).toBe('¥1,500');
     expect(formatMoney(-500, 'USD', 'en-US')).toBe('-$5.00');
+  });
+});
+
+describe('toMoneyInput', () => {
+  it.each([
+    [1250, 'USD', '12.50'],
+    [5, 'USD', '0.05'],
+    [-250000, 'USD', '-2500.00'],
+    [1500, 'TWD', '1500'],
+    [0, 'EUR', '0.00'],
+  ] as const)('renders %d %s as %j and parses back', (minor, currency, text) => {
+    expect(toMoneyInput(minor, currency)).toBe(text);
+    expect(parseMoney(text, currency)).toBe(minor);
   });
 });

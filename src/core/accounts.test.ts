@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { addAccount, createTestDb } from '../test/ledgerDb';
 import {
   createAccount,
@@ -77,6 +77,14 @@ describe('updateAccount', () => {
 
     expect((await listAccounts(db)).map((a) => a.id)).toEqual([kept.id]);
     expect(await listAccounts(db, { includeArchived: true })).toHaveLength(2);
+  });
+
+  it('lists accounts created in the same millisecond in a stable order', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000);
+    await addAccount(db, { name: 'Beta' });
+    await addAccount(db, { name: 'Alpha' });
+    now.mockRestore();
+    expect((await listAccounts(db)).map((a) => a.name)).toEqual(['Alpha', 'Beta']);
   });
 
   it('clears the color when given an empty string', async () => {

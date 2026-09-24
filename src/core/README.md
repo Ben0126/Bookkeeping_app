@@ -1,6 +1,6 @@
 # v2 記帳核心（`src/core`）
 
-v2 的資料層，不依賴任何 UI。舊畫面仍使用 v1 的 `StudyBudgetDB`；v2 使用獨立的 IndexedDB `studybudget-v2`，兩者並存，直到 UI 改接 v2 為止。
+記帳的資料層，不依賴任何 UI。資料存在 IndexedDB `studybudget-v2`，畫面透過 `ledgerDb`（`db.ts`）存取。
 
 ## 資料模型
 

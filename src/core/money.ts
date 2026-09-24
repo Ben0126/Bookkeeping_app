@@ -63,6 +63,15 @@ export function parseMoney(input: string, currency: CurrencyCode): number | null
   return sign && minor !== 0 ? -minor : minor;
 }
 
+/** Minor units as an editable string without grouping: 1250 USD → "12.50", 1500 TWD → "1500". */
+export function toMoneyInput(amountMinor: number, currency: CurrencyCode): string {
+  const decimals = currencyDecimals(currency);
+  const sign = amountMinor < 0 ? '-' : '';
+  const digits = String(Math.abs(amountMinor)).padStart(decimals + 1, '0');
+  if (decimals === 0) return sign + digits;
+  return `${sign}${digits.slice(0, -decimals)}.${digits.slice(-decimals)}`;
+}
+
 const formatters = new Map<string, Intl.NumberFormat>();
 
 export function formatMoney(amountMinor: number, currency: CurrencyCode, locale?: string): string {

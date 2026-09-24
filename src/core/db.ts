@@ -1,7 +1,6 @@
 import Dexie, { type DexieOptions, type Table } from 'dexie';
 import type { Account, Budget, Category, ExchangeRate, SettingRow, Transaction } from './types';
 
-/** Separate from the v1 `StudyBudgetDB`, which the old UI still uses. */
 export const LEDGER_DB_NAME = 'studybudget-v2';
 
 export class LedgerDB extends Dexie {

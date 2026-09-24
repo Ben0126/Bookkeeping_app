@@ -47,7 +47,7 @@ export async function listAccounts(
   const accounts = await db.accounts.toArray();
   return accounts
     .filter((account) => includeArchived || !account.archived)
-    .sort((a, b) => a.createdAt - b.createdAt);
+    .sort((a, b) => a.createdAt - b.createdAt || a.name.localeCompare(b.name) || (a.id < b.id ? -1 : 1));
 }
 
 export async function updateAccount(db: LedgerDB, id: string, patch: AccountPatch): Promise<Account> {

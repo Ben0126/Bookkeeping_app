@@ -53,10 +53,14 @@ describe('summarize', () => {
     ]);
   });
 
-  it('keeps unconverted totals per currency', () => {
+  it('keeps unconverted totals per currency, even without a rate', () => {
     expect(summarize(transactions, ctx).byCurrency).toEqual({
       USD: { incomeMinor: 100000, expenseMinor: 1250 },
       TWD: { incomeMinor: 0, expenseMinor: 5300 },
+      GBP: { incomeMinor: 0, expenseMinor: 1000 },
+    });
+    expect(summarize(transactions, ctx, { from: '2026-09-04', to: '2026-09-04' }).byCurrency).toEqual({
+      GBP: { incomeMinor: 0, expenseMinor: 1000 },
     });
   });
 

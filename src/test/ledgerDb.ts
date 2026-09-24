@@ -2,9 +2,14 @@ import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { createAccount, type NewAccount } from '../core/accounts';
 import { LedgerDB } from '../core/db';
 
-/** A fresh, isolated in-memory database for each test. */
+let count = 0;
+
+/**
+ * A fresh, isolated in-memory database for each test. Names must be unique:
+ * Dexie caches live query results per database name across instances.
+ */
 export function createTestDb(): LedgerDB {
-  return new LedgerDB('test', { indexedDB: new IDBFactory(), IDBKeyRange });
+  return new LedgerDB(`test-${++count}`, { indexedDB: new IDBFactory(), IDBKeyRange });
 }
 
 export function addAccount(db: LedgerDB, overrides: Partial<NewAccount> = {}) {

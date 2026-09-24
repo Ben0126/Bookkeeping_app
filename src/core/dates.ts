@@ -25,6 +25,23 @@ export function toDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+/** Local midnight of a "YYYY-MM-DD" day, for display formatting. */
+export function fromDateKey(dateKey: string): Date {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+export function isMonthKey(value: unknown): value is string {
+  return typeof value === 'string' && /^\d{4}-\d{2}$/.test(value) && isDateKey(`${value}-01`);
+}
+
+/** "2026-01" shifted by -1 → "2025-12" */
+export function shiftMonth(month: string, delta: number): string {
+  const [year, monthIndex] = month.split('-').map(Number);
+  const date = new Date(Date.UTC(year, monthIndex - 1 + delta, 1));
+  return `${String(date.getUTCFullYear()).padStart(4, '0')}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
 /** "2026-09-24" → "2026-09" */
 export function monthOf(dateKey: string): string {
   return dateKey.slice(0, 7);

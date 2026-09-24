@@ -38,7 +38,7 @@ export interface Summary {
   netMinor: number;
   /** Largest first. */
   byCategory: CategoryTotal[];
-  /** Unconverted totals in each account currency. */
+  /** Unconverted totals in each account currency, including currencies without a rate. */
   byCurrency: Partial<Record<CurrencyCode, { incomeMinor: number; expenseMinor: number }>>;
   missingRates: CurrencyCode[];
 }
@@ -68,7 +68,7 @@ export function summarize(
   };
   const byCategory = new Map<string, CategoryTotal>();
 
-  summary.missingRates = forEachConverted(transactions, ctx, period, (t, baseMinor, currency) => {
+  summary.missingRates = forEachConverted(transactions, ctx, period, (t, baseMinor) => {
     const kind = t.kind as 'income' | 'expense';
     const magnitude = Math.abs(baseMinor);
     if (kind === 'income') summary.incomeMinor += magnitude;
@@ -82,15 +82,34 @@ export function summarize(
     }
     total.totalMinor += magnitude;
     total.count += 1;
-
-    const native = (summary.byCurrency[currency] ??= { incomeMinor: 0, expenseMinor: 0 });
-    if (kind === 'income') native.incomeMinor += Math.abs(t.amountMinor);
-    else native.expenseMinor += Math.abs(t.amountMinor);
   });
+
+  summary.byCurrency = totalsByCurrency(transactions, ctx.accounts, period);
 
   summary.netMinor = summary.incomeMinor - summary.expenseMinor;
   summary.byCategory = [...byCategory.values()].sort((a, b) => b.totalMinor - a.totalMinor);
   return summary;
+}
+
+/**
+ * Unconverted income and expense per account currency. Needs no exchange
+ * rates, so every currency is included.
+ */
+export function totalsByCurrency(
+  transactions: readonly Transaction[],
+  accounts: readonly Account[],
+  period: Period = {},
+): Summary['byCurrency'] {
+  const currencyOf = new Map(accounts.map((account) => [account.id, account.currency]));
+  const totals: Summary['byCurrency'] = {};
+  for (const t of transactions) {
+    const currency = currencyOf.get(t.accountId);
+    if (t.kind === 'transfer' || currency === undefined || !inPeriod(t, period)) continue;
+    const native = (totals[currency] ??= { incomeMinor: 0, expenseMinor: 0 });
+    if (t.kind === 'income') native.incomeMinor += Math.abs(t.amountMinor);
+    else native.expenseMinor += Math.abs(t.amountMinor);
+  }
+  return totals;
 }
 
 /** Income and expense per month, oldest first. Months without activity are omitted. */
@@ -142,15 +161,15 @@ export function netWorth(
 function forEachConverted(
   transactions: readonly Transaction[],
   ctx: ReportContext,
-  { from, to }: Period,
-  visit: (transaction: Transaction, baseMinor: number, currency: CurrencyCode) => void,
+  period: Period,
+  visit: (transaction: Transaction, baseMinor: number) => void,
 ): CurrencyCode[] {
   const currencyOf = new Map(ctx.accounts.map((account) => [account.id, account.currency]));
   const missing = new Set<CurrencyCode>();
 
   for (const t of transactions) {
     if (t.kind === 'transfer') continue;
-    if ((from !== undefined && t.date < from) || (to !== undefined && t.date > to)) continue;
+    if (!inPeriod(t, period)) continue;
     const currency = currencyOf.get(t.accountId);
     if (currency === undefined) continue;
     const rate = ctx.rates(currency, ctx.baseCurrency, t.date);
@@ -158,7 +177,11 @@ function forEachConverted(
       missing.add(currency);
       continue;
     }
-    visit(t, convertMinor(t.amountMinor, currency, ctx.baseCurrency, rate), currency);
+    visit(t, convertMinor(t.amountMinor, currency, ctx.baseCurrency, rate));
   }
   return [...missing].sort();
+}
+
+function inPeriod(t: Transaction, { from, to }: Period): boolean {
+  return (from === undefined || t.date >= from) && (to === undefined || t.date <= to);
 }
