@@ -14,6 +14,7 @@ import {
   type Category,
   type CurrencyCode,
   type RateResolver,
+  type Transaction,
 } from '../../core';
 import { ErrorBanner, Field, Segmented } from '../../ui/form';
 import { ModalFooter } from '../../ui/Modal';
@@ -37,6 +38,9 @@ import {
   type FormState,
 } from './formState';
 import { readPaymentCurrency, writePaymentCurrency } from './paymentCurrency';
+import { categoryForPayee, frequentEntries, payeeSuggestions, type QuickPick } from './quickPicks';
+
+const NO_HISTORY: readonly Transaction[] = [];
 
 interface TransactionFormProps {
   /** All accounts and categories, archived included (for editing old entries). */
@@ -47,6 +51,8 @@ interface TransactionFormProps {
   baseCurrency: CurrencyCode;
   /** Stored exchange rates, to estimate charges for amounts paid in another currency. */
   rates: RateResolver;
+  /** Recent entries, newest first, for frequent entries and payee suggestions (new entries only). */
+  history?: readonly Transaction[];
   /** Record or transfer id when editing. */
   editingId?: string;
   /** `keepOpen` is true after "save and add another". */
@@ -61,6 +67,7 @@ export function TransactionForm({
   initial,
   baseCurrency,
   rates,
+  history = NO_HISTORY,
   editingId,
   onSaved,
   onDeleted,
@@ -92,6 +99,10 @@ export function TransactionForm({
   // Only new income and expenses can start repeating.
   const offerMonthly = !editingId && (state.kind === 'expense' || state.kind === 'income');
   const mode = chargeMode(state, account, rates);
+  const everydayKind = state.kind === 'expense' || state.kind === 'income' ? state.kind : undefined;
+  const allPicks = useMemo(() => frequentEntries(history, accounts), [history, accounts]);
+  const quickPicks = editingId || !everydayKind ? [] : allPicks.filter((pick) => pick.kind === everydayKind);
+  const payees = useMemo(() => payeeSuggestions(history), [history]);
   const estimate = estimateCharge(state, account, rates);
 
   const categoryKind = categoryKindOf(state.kind);
@@ -129,6 +140,32 @@ export function TransactionForm({
     if (!next || state.kind === 'transfer') return update({ accountId });
     const currency = paymentCurrencyForAccount(state, next, editingId ? undefined : readPaymentCurrency(next.id));
     update({ accountId, ...withPaymentCurrency(state, currency, next.currency) });
+  };
+
+  /** Fills in a frequent entry, leaving only the amount to type. */
+  const applyPick = (pick: QuickPick) => {
+    const next = accounts.find((a) => a.id === pick.accountId);
+    const patch: Partial<FormState> = { payee: pick.payee ?? '', categoryId: pick.categoryId ?? '', accountId: pick.accountId };
+    if (next) {
+      const currency = paymentCurrencyForAccount(state, next, readPaymentCurrency(next.id));
+      Object.assign(patch, withPaymentCurrency(state, currency, next.currency));
+    }
+    update(patch);
+    setTimeout(() => amountInput.current?.focus(), 0);
+  };
+  const isPicked = (pick: QuickPick) =>
+    state.accountId === pick.accountId &&
+    state.categoryId === (pick.categoryId ?? '') &&
+    state.payee.trim().toLocaleLowerCase() === (pick.payee ?? '').toLocaleLowerCase();
+
+  const changePayee = (payee: string) => {
+    const patch: Partial<FormState> = { payee };
+    // A payee used before brings its usual category, unless one is already chosen.
+    if (everydayKind && !state.categoryId && payees.some((p) => p.toLocaleLowerCase() === payee.trim().toLocaleLowerCase())) {
+      const categoryId = categoryForPayee(history, payee, everydayKind);
+      if (categoryId) patch.categoryId = categoryId;
+    }
+    update(patch);
   };
 
   const typeChargeIn = () => {
@@ -276,6 +313,43 @@ export function TransactionForm({
           ]}
         />
         {state.kind === 'refund' && <p className="-mt-2 text-xs text-slate-500">{t('transactionForm.refundHint')}</p>}
+
+        {quickPicks.length > 0 && (
+          <div className="space-y-1">
+            <p id={`${id}-picks`} className="text-sm font-medium text-slate-700">
+              {t('transactionForm.quickPicks')}
+            </p>
+            <div role="group" aria-labelledby={`${id}-picks`} className="-mx-1 flex gap-2 overflow-x-auto px-1 pt-0.5 pb-1">
+              {quickPicks.map((pick) => {
+                const category = categories.find((c) => c.id === pick.categoryId);
+                const name = pick.payee ?? fmt.categoryName(category);
+                const picked = isPicked(pick);
+                return (
+                  <button
+                    key={`${pick.payee}|${pick.categoryId}|${pick.accountId}`}
+                    type="button"
+                    aria-pressed={picked}
+                    aria-label={t('transactionForm.quickPickLabel', {
+                      name,
+                      category: fmt.categoryName(category),
+                      account: accounts.find((a) => a.id === pick.accountId)?.name ?? '?',
+                    })}
+                    onClick={() => applyPick(pick)}
+                    className={
+                      'flex shrink-0 items-center gap-1.5 rounded-full py-1.5 pr-3 pl-2 text-sm whitespace-nowrap ring-1 ' +
+                      (picked
+                        ? 'bg-indigo-50 font-semibold text-indigo-800 ring-2 ring-indigo-500'
+                        : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-50')
+                    }
+                  >
+                    <span aria-hidden="true">{category?.icon ?? '🏷️'}</span>
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {state.kind === 'transfer' ? (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -503,9 +577,17 @@ export function TransactionForm({
                 id={`${id}-payee`}
                 className={inputClass}
                 autoComplete="off"
+                list={payees.length > 0 ? `${id}-payees` : undefined}
                 value={state.payee}
-                onChange={(e) => update({ payee: e.target.value })}
+                onChange={(e) => changePayee(e.target.value)}
               />
+              {payees.length > 0 && (
+                <datalist id={`${id}-payees`}>
+                  {payees.map((payee) => (
+                    <option key={payee} value={payee} />
+                  ))}
+                </datalist>
+              )}
             </Field>
           )}
         </div>

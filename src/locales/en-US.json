@@ -83,7 +83,10 @@
     "searchResults_one": "{{count}} match in all months",
     "searchResults_other": "{{count}} matches in all months",
     "feeIncluded": "incl. {{fee}} fee",
-    "firstTimeGuide": "New here? Read the guide"
+    "firstTimeGuide": "New here? Read the guide",
+    "filters": "Filters",
+    "filterAccountChip": "Account: {{name}}",
+    "filterKindChip": "Type: {{name}}"
   },
   "transactionForm": {
     "kind": "Transaction type",
@@ -133,7 +136,9 @@
     "estimated": "Estimated {{amount}}",
     "noRate": "No {{from}} to {{to}} rate yet; enter the amount on your statement.",
     "cardFee": "Of which foreign fee",
-    "useEstimate": "Use the estimate instead"
+    "useEstimate": "Use the estimate instead",
+    "quickPicks": "Frequent",
+    "quickPickLabel": "{{name}} ({{category}}, {{account}})"
   },
   "accounts": {
     "title": "Accounts",
@@ -403,7 +408,7 @@
     },
     "record": {
       "title": "Adding an entry",
-      "body": "Tap “+”, pick the account, type the amount, tap a category and save. To enter several in a row, use “Save & add another”.\nNew entries start on the account you have used most lately; tap another to switch."
+      "body": "Tap “+” in the middle of the bottom bar, pick the account, type the amount, tap a category and save. To enter several in a row, use “Save & add another”.\nPlaces you go often appear under “Frequent” at the top of the form: tap one and only the amount is left. Typing a payee you have used before also picks its usual category."
     },
     "foreignCard": {
       "title": "Using your home card abroad",

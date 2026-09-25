@@ -82,7 +82,10 @@
     "budgetOver": "預算已超出 {{amount}}",
     "searchResults_other": "所有月份共找到 {{count}} 筆",
     "feeIncluded": "含手續費 {{fee}}",
-    "firstTimeGuide": "第一次使用？看看使用說明"
+    "firstTimeGuide": "第一次使用？看看使用說明",
+    "filters": "篩選",
+    "filterAccountChip": "帳戶：{{name}}",
+    "filterKindChip": "類型：{{name}}"
   },
   "transactionForm": {
     "kind": "交易類型",
@@ -132,7 +135,9 @@
     "estimated": "依匯率估計約 {{amount}}",
     "noRate": "還沒有 {{from}} 對 {{to}} 的匯率，請填帳單上的金額。",
     "cardFee": "其中海外手續費",
-    "useEstimate": "改用匯率估算"
+    "useEstimate": "改用匯率估算",
+    "quickPicks": "常用",
+    "quickPickLabel": "{{name}}（{{category}}，{{account}}）"
   },
   "accounts": {
     "title": "帳戶",
@@ -398,7 +403,7 @@
     },
     "record": {
       "title": "記一筆",
-      "body": "點右下角的「+」，選帳戶、輸入金額、點分類，再按「儲存」。要連續記好幾筆，按「再記一筆」。\n新增時會預選你最近最常用的帳戶，也可以直接點其他帳戶切換。"
+      "body": "點下方中間的「+」，選帳戶、輸入金額、點分類，再按「儲存」。要連續記好幾筆，按「再記一筆」。\n常去的店會出現在表單上方的「常用」，點一下就只剩金額要填；輸入以前用過的商家時，也會自動帶入常用的分類。"
     },
     "foreignCard": {
       "title": "在國外刷台灣的卡",

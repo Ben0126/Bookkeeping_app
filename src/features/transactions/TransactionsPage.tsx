@@ -17,15 +17,13 @@ import {
 } from '../../core';
 import { BackupReminder } from '../backup/BackupReminder';
 import { RecurringDue } from '../recurring/RecurringDue';
-import { CloseIcon, PlusIcon, SearchIcon, TransferIcon } from '../../ui/icons';
+import { CloseIcon, FilterIcon, PlusIcon, SearchIcon, TransferIcon } from '../../ui/icons';
 import { MonthNav } from '../../ui/MonthNav';
 import { inputClass, primaryButtonClass } from '../../ui/styles';
 import { useFormat } from '../../ui/useFormat';
 import { groupByDate, toEntries, type Entry } from './entries';
 import { MonthSummary } from './MonthSummary';
 import { TransactionDialog } from './TransactionDialog';
-
-type DialogState = { mode: 'create' } | { mode: 'edit'; id: string } | null;
 
 const KINDS: readonly TransactionKind[] = ['expense', 'income', 'transfer'];
 
@@ -34,7 +32,11 @@ export function TransactionsPage() {
   const fmt = useFormat();
   const db = useLedgerDb();
   const [params, setParams] = useSearchParams();
-  const [dialog, setDialog] = useState<DialogState>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  // In the URL so the "+" in the bottom bar can open it from any page.
+  const adding = params.get('add') === '1';
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const today = toDateKey(new Date());
   const monthParam = params.get('month');
@@ -106,10 +108,28 @@ export function TransactionsPage() {
     );
   }
 
+  const openNewEntry = () => setParam('add', '1');
   const closeAndShow = (date?: string) => {
-    setDialog(null);
-    if (date && !searching && monthOf(date) !== month) setParam('month', monthOf(date));
+    setEditingId(null);
+    setParams(
+      (previous) => {
+        const next = new URLSearchParams(previous);
+        next.delete('add');
+        if (date && !searching && monthOf(date) !== month) next.set('month', monthOf(date));
+        return next;
+      },
+      { replace: true },
+    );
   };
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setParam('q', undefined);
+  };
+  const filterCount = [accountId, kind, categoryFilter].filter(Boolean).length;
+  const chipClass =
+    'inline-flex items-center gap-1.5 rounded-full bg-indigo-50 py-1 pr-2 pl-3 text-sm font-medium text-indigo-800 ring-1 ring-indigo-200 hover:bg-indigo-100';
+  const iconButtonClass = (active: boolean) =>
+    'relative rounded-full p-2 hover:bg-slate-200 ' + (active ? 'text-indigo-700' : 'text-slate-600');
   // Search results span years.
   const dayLabel = searching ? fmt.dayWithYear : fmt.day;
 
@@ -125,14 +145,118 @@ export function TransactionsPage() {
         ) : (
           <MonthNav month={month} onChange={(next) => setParam('month', next)} />
         )}
-        {/* Phones use the floating button instead. */}
-        <div className="hidden md:block">
-          <button type="button" className={primaryButtonClass} onClick={() => setDialog({ mode: 'create' })}>
-            <PlusIcon />
-            {t('transactions.add')}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            className={iconButtonClass(searchOpen || searching)}
+            aria-label={t('transactions.search')}
+            aria-expanded={searchOpen || searching}
+            onClick={() => (searchOpen || searching ? closeSearch() : setSearchOpen(true))}
+          >
+            <SearchIcon />
           </button>
+          <button
+            type="button"
+            className={iconButtonClass(filtersOpen || filterCount > 0)}
+            aria-label={t('transactions.filters')}
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((open) => !open)}
+          >
+            <FilterIcon />
+            {filterCount > 0 && (
+              <span className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
+                {filterCount}
+              </span>
+            )}
+          </button>
+          {/* Phones use the "+" in the bottom bar. */}
+          <div className="ml-2 hidden md:block">
+            <button type="button" className={primaryButtonClass} onClick={openNewEntry}>
+              <PlusIcon />
+              {t('transactions.add')}
+            </button>
+          </div>
         </div>
       </div>
+
+      {(searchOpen || searching) && (
+        <div className="flex items-center gap-2">
+          <label className="relative flex-1">
+            <span className="sr-only">{t('transactions.search')}</span>
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
+              <SearchIcon />
+            </span>
+            <input
+              type="search"
+              className={`${inputClass} pl-10`}
+              placeholder={t('transactions.searchPlaceholder')}
+              autoFocus={searchOpen && !searching}
+              value={search}
+              onChange={(e) => setParam('q', e.target.value)}
+            />
+          </label>
+          <button type="button" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200" onClick={closeSearch}>
+            {t('common.cancel')}
+          </button>
+        </div>
+      )}
+
+      {filtersOpen && (
+        <div className="grid grid-cols-2 gap-2">
+          <select
+            aria-label={t('transactions.filterAccount')}
+            className={inputClass}
+            value={accountId ?? ''}
+            onChange={(e) => setParam('account', e.target.value)}
+          >
+            <option value="">{t('transactions.allAccounts')}</option>
+            {accounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.archived ? t('accounts.archivedName', { name: account.name }) : account.name}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label={t('transactions.filterKind')}
+            className={inputClass}
+            value={kind ?? ''}
+            onChange={(e) => setParam('kind', e.target.value)}
+          >
+            <option value="">{t('transactions.allKinds')}</option>
+            {KINDS.map((k) => (
+              <option key={k} value={k}>
+                {t(`kinds.${k}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {filterCount > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {accountId && (
+            <button type="button" onClick={() => setParam('account', undefined)} className={chipClass}>
+              {t('transactions.filterAccountChip', { name: accountsById.get(accountId)?.name ?? '?' })}
+              <span className="sr-only">{t('transactions.clearFilter')}</span>
+              <CloseIcon className="size-4" />
+            </button>
+          )}
+          {kind && (
+            <button type="button" onClick={() => setParam('kind', undefined)} className={chipClass}>
+              {t('transactions.filterKindChip', { name: t(`kinds.${kind}`) })}
+              <span className="sr-only">{t('transactions.clearFilter')}</span>
+              <CloseIcon className="size-4" />
+            </button>
+          )}
+          {categoryFilter && (
+            <button type="button" onClick={() => setParam('category', undefined)} className={chipClass}>
+              {t('transactions.filterCategory', { name: fmt.categoryName(categoriesById.get(categoryFilter)) })}
+              <span className="sr-only">{t('transactions.clearFilter')}</span>
+              <CloseIcon className="size-4" />
+            </button>
+          )}
+        </div>
+      )}
 
       {kind !== 'transfer' && listed && (
         <MonthSummary
@@ -143,60 +267,6 @@ export function TransactionsPage() {
           filtered={Boolean(search || accountId || kind || categoryFilter)}
           categoryIds={listed.categoryIds}
         />
-      )}
-
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_10rem_8rem]">
-        <label className="relative col-span-2 sm:col-span-1">
-          <span className="sr-only">{t('transactions.search')}</span>
-          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
-            <SearchIcon />
-          </span>
-          <input
-            type="search"
-            className={`${inputClass} pl-10`}
-            placeholder={t('transactions.searchPlaceholder')}
-            value={search}
-            onChange={(e) => setParam('q', e.target.value)}
-          />
-        </label>
-        <select
-          aria-label={t('transactions.filterAccount')}
-          className={inputClass}
-          value={accountId ?? ''}
-          onChange={(e) => setParam('account', e.target.value)}
-        >
-          <option value="">{t('transactions.allAccounts')}</option>
-          {accounts.map((account) => (
-            <option key={account.id} value={account.id}>
-              {account.archived ? t('accounts.archivedName', { name: account.name }) : account.name}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label={t('transactions.filterKind')}
-          className={inputClass}
-          value={kind ?? ''}
-          onChange={(e) => setParam('kind', e.target.value)}
-        >
-          <option value="">{t('transactions.allKinds')}</option>
-          {KINDS.map((k) => (
-            <option key={k} value={k}>
-              {t(`kinds.${k}`)}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {categoryFilter && (
-        <button
-          type="button"
-          onClick={() => setParam('category', undefined)}
-          className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 py-1 pr-2 pl-3 text-sm font-medium text-indigo-800 ring-1 ring-indigo-200 hover:bg-indigo-100"
-        >
-          {t('transactions.filterCategory', { name: fmt.categoryName(categoriesById.get(categoryFilter)) })}
-          <span className="sr-only">{t('transactions.clearFilter')}</span>
-          <CloseIcon className="size-4" />
-        </button>
       )}
 
       {listed && listed.entries.length === 0 ? (
@@ -220,7 +290,7 @@ export function TransactionsPage() {
                     entry={entry}
                     accountsById={accountsById}
                     categoriesById={categoriesById}
-                    onOpen={() => setDialog({ mode: 'edit', id: entry.id })}
+                    onOpen={() => setEditingId(entry.id)}
                   />
                 </li>
               ))}
@@ -229,18 +299,9 @@ export function TransactionsPage() {
         ))
       )}
 
-      <button
-        type="button"
-        onClick={() => setDialog({ mode: 'create' })}
-        aria-label={t('transactions.add')}
-        className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 flex size-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-500 md:hidden"
-      >
-        <PlusIcon className="size-7" />
-      </button>
-
-      {dialog && (
+      {(adding || editingId) && (
         <TransactionDialog
-          editingId={dialog.mode === 'edit' ? dialog.id : undefined}
+          editingId={editingId ?? undefined}
           accounts={accounts}
           categories={categories}
           filterAccountId={accountId}

@@ -22,6 +22,9 @@ import { TransactionForm } from './TransactionForm';
 
 /** How far back "the account you use most" looks. */
 const RECENT_DAYS = 30;
+/** How far back frequent entries and payee suggestions look. */
+const HISTORY_DAYS = 90;
+const DAY_MS = 86_400_000;
 
 interface TransactionDialogProps {
   /** Omitted to create a new entry. */
@@ -43,8 +46,8 @@ export function TransactionDialog({ editingId, accounts, categories, filterAccou
   const storedRates = useLiveQuery(() => listExchangeRates(db), [db]);
   const rates = useMemo(() => storedRates && createRateResolver(storedRates), [storedRates]);
   const [today] = useState(() => toDateKey(new Date()));
-  const recent = useLiveQuery(
-    () => (editingId ? [] : listTransactions(db, { from: toDateKey(new Date(Date.now() - RECENT_DAYS * 86_400_000)) })),
+  const history = useLiveQuery(
+    () => (editingId ? [] : listTransactions(db, { from: toDateKey(new Date(Date.now() - HISTORY_DAYS * DAY_MS)) })),
     [db, editingId],
   );
   const [edited, setEdited] = useState<TransactionInput | null | undefined>(undefined);
@@ -67,7 +70,9 @@ export function TransactionDialog({ editingId, accounts, categories, filterAccou
 
   const initial = (() => {
     if (editingId) return edited ? formStateFromInput(edited, accounts) : undefined;
-    if (!recent) return undefined;
+    if (!history) return undefined;
+    const since = toDateKey(new Date(Date.now() - RECENT_DAYS * DAY_MS));
+    const recent = history.filter((t) => t.date >= since);
     const accountId = suggestAccountId({ kind: 'expense', accounts, recent, filterAccountId });
     const account = accounts.find((a) => a.id === accountId);
     const empty = emptyFormState({ date: today, accountId });
@@ -91,6 +96,7 @@ export function TransactionDialog({ editingId, accounts, categories, filterAccou
             initial={initial}
             baseCurrency={settings.baseCurrency ?? DEFAULT_SETTINGS.baseCurrency}
             rates={rates}
+            history={history}
             editingId={editingId}
             onDirtyChange={setDirty}
             onSaved={(date, keepOpen) => {

@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, Outlet } from 'react-router-dom';
-import { ChartIcon, HelpIcon, ListIcon, SettingsIcon, WalletIcon } from '../ui/icons';
+import { ChartIcon, HelpIcon, ListIcon, PlusIcon, SettingsIcon, WalletIcon } from '../ui/icons';
+import { useOpenNewEntry } from './useOpenNewEntry';
 
 const NAV_ITEMS = [
   { to: '/transactions', labelKey: 'nav.transactions', icon: <ListIcon /> },
@@ -12,6 +13,8 @@ const NAV_ITEMS = [
 
 export function Layout() {
   const { t } = useTranslation();
+  const openNewEntry = useOpenNewEntry();
+  const [first, second, ...rest] = NAV_ITEMS;
 
   return (
     <div className="min-h-dvh bg-slate-50 text-slate-900">
@@ -57,8 +60,22 @@ export function Layout() {
         aria-label={t('nav.label')}
         className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
       >
-        <div className="mx-auto grid max-w-md grid-cols-4">
-          {NAV_ITEMS.map((item) => (
+        <div className="mx-auto grid max-w-md grid-cols-5">
+          {[first, second].map((item) => (
+            <BottomNavLink key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} />
+          ))}
+          {/* In the bar rather than floating, so it never covers an amount in the list. */}
+          <div className="flex items-start justify-center">
+            <button
+              type="button"
+              onClick={openNewEntry}
+              aria-label={t('transactions.add')}
+              className="-mt-4 flex size-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg ring-4 ring-white hover:bg-indigo-500"
+            >
+              <PlusIcon className="size-7" />
+            </button>
+          </div>
+          {rest.map((item) => (
             <BottomNavLink key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} />
           ))}
         </div>

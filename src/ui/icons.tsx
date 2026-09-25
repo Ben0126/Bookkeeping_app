@@ -57,6 +57,12 @@ export const ChevronRightIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const FilterIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3 5h18M6 12h12M10 19h4" />
+  </Icon>
+);
+
 export const SearchIcon = (props: IconProps) => (
   <Icon {...props}>
     <circle cx="11" cy="11" r="7" />

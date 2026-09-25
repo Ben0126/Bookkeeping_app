@@ -144,14 +144,22 @@ describe('TransactionsPage', () => {
     renderApp(db, '/transactions');
     await screen.findByRole('button', { name: /Costco/ });
 
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
     change(screen.getByPlaceholderText('Search payee, note or category'), 'cost');
     await waitFor(() => expect(screen.queryByRole('button', { name: /Refund/ })).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: /Costco/ })).toBeInTheDocument();
 
-    change(screen.getByPlaceholderText('Search payee, note or category'), '');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByPlaceholderText('Search payee, note or category')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
     change(screen.getByLabelText('Filter by type'), 'income');
     await waitFor(() => expect(screen.queryByRole('button', { name: /Costco/ })).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: /Refund/ })).toBeInTheDocument();
+
+    // The active filter stays visible as a chip that clears it.
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    fireEvent.click(screen.getByRole('button', { name: /Type: Income/ }));
+    expect(await screen.findByRole('button', { name: /Costco/ })).toBeInTheDocument();
   });
 
   it('quotes the implied rate in its readable direction', async () => {
@@ -353,6 +361,7 @@ describe('searching', () => {
     renderApp(db, '/transactions');
     await screen.findByRole('button', { name: /Pret/ });
 
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
     change(screen.getByPlaceholderText('Search payee, note or category'), 'dentist');
     expect(await screen.findByRole('heading', { name: '1 match in all months' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Dentist/ })).toBeInTheDocument();
@@ -517,5 +526,57 @@ describe('paying in another currency', () => {
     expect(await screen.findByRole('button', { name: /Dining out.*-NT\$1,091/ })).toBeInTheDocument();
     const spent = (await screen.findByText('Spent this month')).parentElement!;
     await waitFor(() => expect(within(spent).getByText('NT$16')).toBeInTheDocument());
+  });
+});
+
+describe('getting to the form quickly', () => {
+  it('opens a new entry from the bar on any page', async () => {
+    renderApp(db, '/overview');
+    const bar = (await screen.findAllByRole('navigation', { name: 'Main' })).at(-1)!;
+    fireEvent.click(within(bar).getByRole('button', { name: 'Add transaction' }));
+    expect(await screen.findByRole('dialog', { name: 'Add transaction' })).toBeInTheDocument();
+  });
+
+  it('offers frequent entries that leave only the amount to type', async () => {
+    for (const day of ['01', '02']) {
+      await createTransaction(db, { kind: 'expense', accountId: taiwan.id, amountMinor: 120, date: `${thisMonth}-${day}`, payee: 'Pret', categoryId: 'default-dining' });
+    }
+    // Chase is used most, so the form starts there; the pick must switch accounts.
+    for (const day of ['03', '04', '05']) {
+      await createTransaction(db, { kind: 'expense', accountId: chase.id, amountMinor: 999, date: `${thisMonth}-${day}`, payee: `Once ${day}` });
+    }
+    renderApp(db, '/transactions');
+    const dialog = await openAddDialog();
+    expect(within(dialog).getByRole('radio', { name: /Chase/ })).toHaveAttribute('aria-checked', 'true');
+    within(dialog).getByLabelText('Payee').focus();
+    const picks = within(dialog).getByRole('group', { name: 'Frequent' });
+    expect(within(picks).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Pret (Dining out, Bank of Taiwan)',
+    ]);
+    fireEvent.click(within(picks).getByRole('button', { name: /Pret/ }));
+    expect(within(picks).getByRole('button', { name: /Pret/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(dialog).getByRole('radio', { name: /Bank of Taiwan/ })).toHaveAttribute('aria-checked', 'true');
+    expect(within(dialog).getByRole('button', { name: 'Dining out' })).toHaveAttribute('aria-pressed', 'true');
+    await waitFor(() => expect(within(dialog).getByLabelText('Amount')).toHaveFocus());
+    change(within(dialog).getByLabelText('Amount'), '150');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitForDialogToClose();
+    expect((await db.transactions.orderBy('date').last())).toMatchObject({ amountMinor: -150, payee: 'Pret', categoryId: 'default-dining' });
+  });
+
+  it('suggests payees and brings their usual category', async () => {
+    await createTransaction(db, { kind: 'expense', accountId: chase.id, amountMinor: 450, date: `${thisMonth}-01`, payee: 'Trader Joe’s', categoryId: 'default-groceries' });
+    renderApp(db, '/transactions');
+    const dialog = await openAddDialog();
+    const payee = within(dialog).getByLabelText('Payee');
+    const options = [...document.getElementById(payee.getAttribute('list')!)!.querySelectorAll('option')];
+    expect(options.map((o) => o.getAttribute('value'))).toEqual(['Trader Joe’s']);
+    change(payee, 'trader joe’s');
+    expect(within(dialog).getByRole('button', { name: 'Groceries & household' })).toHaveAttribute('aria-pressed', 'true');
+
+    // A category already chosen is kept.
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Dining out' }));
+    change(payee, 'Trader Joe’s');
+    expect(within(dialog).getByRole('button', { name: 'Dining out' })).toHaveAttribute('aria-pressed', 'true');
   });
 });

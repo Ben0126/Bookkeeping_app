@@ -75,8 +75,9 @@ describe('AccountsPage', () => {
       .getAllByRole('link', { name: 'Transactions' })
       .find((link) => link.getAttribute('href')?.includes('account='));
     fireEvent.click(accountLink!);
-    await screen.findByLabelText('Filter by account');
-    expect(screen.getByLabelText('Filter by account')).toHaveValue(account.id);
+    expect(await screen.findByRole('button', { name: /Account: Wallet/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filters' })).toHaveTextContent('1');
+    void account;
   });
 });
 
