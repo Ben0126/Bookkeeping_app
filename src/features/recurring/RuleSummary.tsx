@@ -29,7 +29,7 @@ export function RuleSummary({
         </span>
       </span>
       {account && (
-        <span className={`shrink-0 font-semibold tabular-nums ${signed > 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
+        <span className={`shrink-0 font-semibold tabular-nums ${signed > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900'}`}>
           {fmt.signedMoney(signed, account.currency)}
         </span>
       )}

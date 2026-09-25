@@ -11,6 +11,7 @@ const TOPICS = [
   { id: 'monthly', icon: '📅' },
   { id: 'overview', icon: '📊', to: '/overview' },
   { id: 'search', icon: '🔎' },
+  { id: 'undo', icon: '↩️' },
   { id: 'backup', icon: '💾', to: '/settings' },
 ] as const;
 
@@ -27,7 +28,7 @@ export function GuidePage() {
           <a
             key={topic.id}
             href={`#${topic.id}`}
-            className="rounded-full bg-white px-3 py-1 text-sm text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+            className="rounded-full bg-surface px-3 py-1 text-sm text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 dark:hover:bg-slate-100"
           >
             <span aria-hidden="true">{topic.icon}</span> {t(`guide.${topic.id}.title`)}
           </a>
@@ -38,7 +39,7 @@ export function GuidePage() {
           key={topic.id}
           id={topic.id}
           aria-labelledby={`${topic.id}-title`}
-          className="scroll-mt-20 space-y-2 rounded-xl bg-white p-4 ring-1 ring-slate-200"
+          className="scroll-mt-20 space-y-2 rounded-xl bg-surface p-4 ring-1 ring-slate-200"
         >
           <h2 id={`${topic.id}-title`} className="flex items-center gap-2 font-semibold">
             <span className="text-xl" aria-hidden="true">

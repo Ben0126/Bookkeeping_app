@@ -8,8 +8,11 @@ import { ledgerDb } from './core';
 import { RateUpdater } from './features/rates/RateUpdater';
 import './i18n';
 import './index.css';
+import { applyTheme, watchSystemTheme } from './ui/theme';
 
 registerSW({ immediate: true });
+applyTheme();
+watchSystemTheme();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

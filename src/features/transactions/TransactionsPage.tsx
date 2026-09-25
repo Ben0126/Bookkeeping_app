@@ -108,7 +108,7 @@ export function TransactionsPage() {
 
   if (activeAccounts.length === 0) {
     return (
-      <div className="mt-8 rounded-2xl bg-white p-8 text-center ring-1 ring-slate-200">
+      <div className="mt-8 rounded-2xl bg-surface p-8 text-center ring-1 ring-slate-200">
         <p className="text-4xl" aria-hidden="true">
           👛
         </p>
@@ -305,7 +305,7 @@ export function TransactionsPage() {
       )}
 
       {listed && listed.entries.length === 0 ? (
-        <div className="rounded-xl bg-white px-4 py-10 text-center text-sm text-slate-500 ring-1 ring-slate-200">
+        <div className="rounded-xl bg-surface px-4 py-10 text-center text-sm text-slate-500 ring-1 ring-slate-200">
           {searching || filterCount > 0 ? t('transactions.noMatches') : t('transactions.emptyMonth')}
           {!hasEntries && (
             <Link to="/guide" className="mt-3 block font-medium text-indigo-700 hover:underline">
@@ -318,7 +318,7 @@ export function TransactionsPage() {
         groupByDate(listed.entries).map((group) => (
           <section key={group.date} aria-label={dayLabel(group.date)}>
             <h2 className="px-1 pb-1 text-xs font-medium text-slate-500">{dayLabel(group.date)}</h2>
-            <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
+            <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl bg-surface ring-1 ring-slate-200">
               {group.entries.map((entry) => (
                 <li key={entry.id}>
                   <EntryRow
@@ -383,7 +383,7 @@ function EntryRow({
     }
     details = [record.payee, account?.name, record.note].filter(Boolean).join(' · ');
     amount = account ? fmt.signedMoney(record.amountMinor, account.currency) : '';
-    amountClass = record.amountMinor > 0 ? 'text-emerald-600' : 'text-slate-900';
+    amountClass = record.amountMinor > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900';
     if (record.originalAmountMinor !== undefined && record.originalCurrency) {
       extra.push(fmt.money(Math.abs(record.originalAmountMinor), record.originalCurrency));
     }
@@ -404,7 +404,7 @@ function EntryRow({
       amount = fmt.signedMoney(entry.outflow.amountMinor, fromAccount.currency);
     } else if (entry.side === 'inflow') {
       amount = fmt.signedMoney(entry.inflow.amountMinor, toAccount.currency);
-      amountClass = 'text-emerald-600';
+      amountClass = 'text-emerald-600 dark:text-emerald-400';
     } else {
       amount = fmt.money(-entry.outflow.amountMinor, fromAccount.currency);
       if (fromAccount.currency !== toAccount.currency) {
@@ -414,7 +414,7 @@ function EntryRow({
   }
 
   return (
-    <button type="button" onClick={onOpen} className="flex w-full items-center gap-3 px-3 py-3 text-left hover:bg-slate-50">
+    <button type="button" onClick={onOpen} className="flex w-full items-center gap-3 px-3 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-100">
       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-100" aria-hidden="true">
         {icon}
       </span>

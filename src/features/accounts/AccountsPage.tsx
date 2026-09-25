@@ -73,7 +73,7 @@ export function AccountsPage() {
       : undefined;
 
   const renderList = (list: readonly Account[]) => (
-    <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
+    <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl bg-surface ring-1 ring-slate-200">
       {list.map((account) => {
         const balance = balances[account.id] ?? 0;
         // Cash or a wallet can't go below zero: a withdrawal or top-up probably wasn't recorded.
@@ -85,7 +85,7 @@ export function AccountsPage() {
               <button
                 type="button"
                 onClick={() => setDialog({ mode: 'edit', account })}
-                className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left hover:bg-slate-50"
+                className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-100"
               >
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xl" aria-hidden="true">
                   {KIND_ICONS[account.kind]}
@@ -96,7 +96,7 @@ export function AccountsPage() {
                     {fmt.accountKind(account.kind)} · {account.currency}
                   </span>
                 </span>
-                <span className={`shrink-0 font-semibold tabular-nums ${balance < 0 ? 'text-rose-600' : 'text-slate-900'}`}>
+                <span className={`shrink-0 font-semibold tabular-nums ${balance < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900'}`}>
                   {account.kind === 'credit_card' && balance < 0
                     ? t('accounts.owed', { amount: fmt.money(-balance, account.currency) })
                     : fmt.money(balance, account.currency)}
@@ -104,7 +104,7 @@ export function AccountsPage() {
               </button>
               <Link
                 to={`/transactions?account=${encodeURIComponent(account.id)}`}
-                className="shrink-0 px-3 py-3 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+                className="shrink-0 px-3 py-3 text-sm font-medium text-indigo-700 hover:text-indigo-500"
               >
                 {t('accounts.viewTransactions')}
               </Link>
@@ -150,11 +150,11 @@ export function AccountsPage() {
       </div>
 
       {totals.size > 0 && (
-        <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200">
+        <div className="rounded-xl bg-surface p-3 ring-1 ring-slate-200">
           <p className="text-xs font-medium text-slate-500">{t('accounts.totals')}</p>
           <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-semibold tabular-nums">
             {[...totals].map(([currency, total]) => (
-              <li key={currency} className={total < 0 ? 'text-rose-600' : undefined}>
+              <li key={currency} className={total < 0 ? 'text-rose-600 dark:text-rose-400' : undefined}>
                 {fmt.money(total, currency)}
               </li>
             ))}
@@ -168,7 +168,7 @@ export function AccountsPage() {
       )}
 
       {active.length === 0 ? (
-        <div className="rounded-xl bg-white px-4 py-10 text-center text-sm text-slate-500 ring-1 ring-slate-200">
+        <div className="rounded-xl bg-surface px-4 py-10 text-center text-sm text-slate-500 ring-1 ring-slate-200">
           {t('accounts.empty')}
         </div>
       ) : (

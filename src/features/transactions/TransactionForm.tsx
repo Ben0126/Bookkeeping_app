@@ -6,20 +6,24 @@ import {
   createTransaction,
   CURRENCY_CODES,
   deleteTransaction,
+  getTransactionGroup,
   parseMoney,
   toMajor,
   toMoneyInput,
+  undoTransactionChange,
   updateTransaction,
   type Account,
   type Category,
   type CurrencyCode,
   type RateResolver,
   type Transaction,
+  type TransactionChange,
 } from '../../core';
 import { ErrorBanner, Field, Segmented } from '../../ui/form';
 import { ModalFooter } from '../../ui/Modal';
 import { MoneyInput } from '../../ui/MoneyInput';
 import { dangerButtonClass, inputClass, primaryButtonClass, secondaryButtonClass } from '../../ui/styles';
+import { useToast } from '../../ui/toastContext';
 import { useFormat } from '../../ui/useFormat';
 import {
   categoryKindOf,
@@ -82,6 +86,9 @@ export function TransactionForm({
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
+  // The last "save and add another", which the notice can undo.
+  const [lastChange, setLastChange] = useState<TransactionChange | null>(null);
+  const toast = useToast();
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [moreOpen, setMoreOpen] = useState(initial.note !== '');
@@ -196,9 +203,31 @@ export function TransactionForm({
     return account ? `${title} ${fmt.money(amountMinor, account.currency)}` : title;
   };
 
+  /** "Dining out ¥480" for stored records, e.g. to name what a toast can undo. */
+  const describe = (records: readonly Transaction[]) => {
+    const [first] = records;
+    if (!first) return '';
+    const recordAccount = accounts.find((a) => a.id === first.accountId);
+    const title =
+      first.kind === 'transfer'
+        ? t('kinds.transfer')
+        : fmt.categoryName(categories.find((c) => c.id === first.categoryId));
+    return recordAccount ? `${title} ${fmt.money(Math.abs(first.amountMinor), recordAccount.currency)}` : title;
+  };
+
+  const undo = async (change: TransactionChange) => {
+    try {
+      await undoTransactionChange(db, change);
+      toast({ message: t('toast.undone') });
+    } catch (error) {
+      toast({ message: fmt.error(error) });
+    }
+  };
+
   const save = async (keepOpen: boolean) => {
     setSubmitError(null);
     setSavedNotice(null);
+    setLastChange(null);
     const result = formStateToInput(state, accounts, rates);
     if (result.errors) {
       setErrors(result.errors);
@@ -208,9 +237,16 @@ export function TransactionForm({
     setSaving(true);
     try {
       const { input } = result;
-      if (editingId) await updateTransaction(db, editingId, input);
-      else if (offerMonthly && state.monthly && input.kind !== 'transfer') await createMonthlyTransaction(db, input);
-      else await createTransaction(db, input);
+      let change: TransactionChange;
+      if (editingId) {
+        const removed = await getTransactionGroup(db, editingId);
+        change = { removed, added: await updateTransaction(db, editingId, input) };
+      } else if (offerMonthly && state.monthly && input.kind !== 'transfer') {
+        const { records, rule } = await createMonthlyTransaction(db, input);
+        change = { removed: [], added: records, addedRuleId: rule.id };
+      } else {
+        change = { removed: [], added: await createTransaction(db, input) };
+      }
       if (account && input.kind !== 'transfer') {
         writePaymentCurrency(account.id, state.foreign ? state.originalCurrency : account.currency);
       }
@@ -219,8 +255,14 @@ export function TransactionForm({
         setBaseline(next);
         setState(next);
         setSavedNotice(t('transactionForm.savedNotice', { entry: summarize(state, input.amountMinor) }));
+        setLastChange(change);
         setSaving(false);
         amountInput.current?.focus();
+      } else {
+        toast({
+          message: t(editingId ? 'toast.updated' : 'toast.saved', { entry: describe(change.added) }),
+          action: { label: t('toast.undo'), run: () => undo(change) },
+        });
       }
       onSaved(result.input.date, keepOpen);
     } catch (error) {
@@ -233,7 +275,12 @@ export function TransactionForm({
     if (!editingId) return;
     setSaving(true);
     try {
-      await deleteTransaction(db, editingId);
+      const removed = await deleteTransaction(db, editingId);
+      const change: TransactionChange = { removed, added: [] };
+      toast({
+        message: t('toast.deleted', { entry: describe(removed) }),
+        action: { label: t('toast.undo'), run: () => undo(change) },
+      });
       onDeleted();
     } catch (error) {
       setSubmitError(fmt.error(error));
@@ -340,7 +387,7 @@ export function TransactionForm({
                       'flex shrink-0 items-center gap-1.5 rounded-full py-1.5 pr-3 pl-2 text-sm whitespace-nowrap ring-1 ' +
                       (picked
                         ? 'bg-indigo-50 font-semibold text-indigo-800 ring-2 ring-indigo-500'
-                        : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-50')
+                        : 'bg-surface text-slate-700 ring-slate-300 hover:bg-slate-50 dark:hover:bg-slate-100')
                     }
                   >
                     <span aria-hidden="true">{category?.icon ?? '🏷️'}</span>
@@ -570,7 +617,7 @@ export function TransactionForm({
                       'flex min-h-16 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-center text-xs leading-tight ring-1 ' +
                       (selected
                         ? 'bg-indigo-50 text-indigo-800 ring-2 ring-indigo-500'
-                        : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50')
+                        : 'bg-surface text-slate-700 ring-slate-200 hover:bg-slate-50 dark:hover:bg-slate-100')
                     }
                   >
                     <span className="text-xl" aria-hidden="true">
@@ -642,9 +689,25 @@ export function TransactionForm({
       <ModalFooter>
         <ErrorBanner message={submitError} />
         {savedNotice && (
-          <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 ring-1 ring-emerald-200">
-            {savedNotice}
-          </p>
+          <div className="flex items-center gap-2 rounded-lg bg-emerald-50 py-1 pr-1 pl-3 text-sm text-emerald-800 ring-1 ring-emerald-200">
+            <p role="status" className="flex-1 py-1">
+              {savedNotice}
+            </p>
+            {lastChange && (
+              <button
+                type="button"
+                className="shrink-0 rounded-md px-2.5 py-1 font-semibold text-emerald-900 hover:bg-emerald-100"
+                onClick={() => {
+                  const change = lastChange;
+                  setLastChange(null);
+                  setSavedNotice(t('toast.undone'));
+                  void undoTransactionChange(db, change).catch((error: unknown) => setSubmitError(fmt.error(error)));
+                }}
+              >
+                {t('toast.undo')}
+              </button>
+            )}
+          </div>
         )}
         <div className="flex items-center gap-2">
           {editingId &&
@@ -719,7 +782,7 @@ function AccountPicker({
                 'flex items-center gap-1.5 rounded-full py-1.5 pr-3 pl-1.5 text-sm ring-1 ' +
                 (selected
                   ? 'bg-indigo-600 font-semibold text-white ring-indigo-600'
-                  : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-50')
+                  : 'bg-surface text-slate-700 ring-slate-300 hover:bg-slate-50 dark:hover:bg-slate-100')
               }
             >
               <span
@@ -736,7 +799,7 @@ function AccountPicker({
         })}
       </div>
       {error && (
-        <p id={`${id}-error`} className="text-sm text-rose-600">
+        <p id={`${id}-error`} className="text-sm text-rose-600 dark:text-rose-400">
           {error}
         </p>
       )}

@@ -38,7 +38,7 @@ export function MoneyInput({
   return (
     <div
       className={
-        'flex overflow-hidden rounded-lg border bg-white shadow-xs focus-within:ring-2 ' +
+        'flex overflow-hidden rounded-lg border bg-surface shadow-xs focus-within:ring-2 ' +
         (invalid ? 'border-rose-500 focus-within:ring-rose-500/30' : 'border-slate-300 focus-within:border-indigo-500 focus-within:ring-indigo-500/30')
       }
     >

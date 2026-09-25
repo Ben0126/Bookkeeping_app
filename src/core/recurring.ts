@@ -62,6 +62,32 @@ export async function createMonthlyTransaction(
   });
 }
 
+/** Changes a rule's amount, day or payee; entries it already recorded stay as they are. */
+export async function updateRecurringRule(
+  db: LedgerDB,
+  id: string,
+  patch: { amountMinor?: number; dayOfMonth?: number; payee?: string },
+): Promise<RecurringRule> {
+  return db.transaction('rw', [db.recurring, db.accounts, db.categories], async () => {
+    const rule = await db.recurring.get(id);
+    if (!rule) throw new LedgerError('NOT_FOUND', `Recurring rule ${id} not found`);
+    const template: RecurringTemplate = { ...rule.template };
+    if (patch.amountMinor !== undefined) template.amountMinor = patch.amountMinor;
+    if (patch.payee !== undefined) {
+      if (patch.payee.trim()) template.payee = patch.payee.trim();
+      else delete template.payee;
+    }
+    const dayOfMonth = patch.dayOfMonth ?? rule.dayOfMonth;
+    if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
+      throw new LedgerError('INVALID_DATE', 'Day of month must be 1–31');
+    }
+    await checkTransactionInput(db, { ...template, date: recurringDate(dayOfMonth, rule.startMonth) });
+    const next: RecurringRule = { ...rule, template, dayOfMonth, updatedAt: Date.now() };
+    await db.recurring.put(next);
+    return next;
+  });
+}
+
 export async function listRecurringRules(db: LedgerDB): Promise<RecurringRule[]> {
   const rules = await db.recurring.toArray();
   return rules.sort((a, b) => a.dayOfMonth - b.dayOfMonth || a.createdAt - b.createdAt);

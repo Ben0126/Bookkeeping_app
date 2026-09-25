@@ -16,7 +16,7 @@ export function Field({ label, htmlFor, error, hint, children }: FieldProps) {
       </label>
       {children}
       {error ? (
-        <p id={`${htmlFor}-error`} className="text-sm text-rose-600">
+        <p id={`${htmlFor}-error`} className="text-sm text-rose-600 dark:text-rose-400">
           {error}
         </p>
       ) : hint ? (
@@ -50,7 +50,7 @@ export function Segmented<T extends string>({
           className={
             'rounded-md px-3 py-1.5 text-sm font-medium transition-colors ' +
             (option.value === value
-              ? 'bg-white font-semibold text-indigo-700 shadow-sm ring-1 ring-slate-200'
+              ? 'bg-surface font-semibold text-indigo-700 shadow-sm ring-1 ring-slate-200'
               : 'text-slate-600 hover:text-slate-900')
           }
         >

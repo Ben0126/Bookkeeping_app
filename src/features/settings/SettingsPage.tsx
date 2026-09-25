@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import { useLedgerDb } from '../../app/ledgerContext';
+import { readTheme, setTheme, THEMES, type Theme } from '../../ui/theme';
 import { LANGUAGE_NAMES, LANGUAGES } from '../../i18n';
 import { Segmented } from '../../ui/form';
 import { ChevronLeftIcon, ChevronRightIcon } from '../../ui/icons';
@@ -51,6 +52,7 @@ export function SettingsPage() {
   const language = LANGUAGES.find((lng) => lng === i18n.resolvedLanguage) ?? 'en-US';
   const { hash } = useLocation();
   const db = useLedgerDb();
+  const [theme, setThemeChoice] = useState<Theme>(readTheme);
   const counts = useLiveQuery(
     async () => ({
       categories: await db.categories.filter((c) => !c.archived).count(),
@@ -70,7 +72,7 @@ export function SettingsPage() {
       <BackupSection lastBackupAt={lastBackupAt} onBackedUp={setLastBackupAt} />
       <RestoreSection lastBackupAt={lastBackupAt} onLastBackupChange={setLastBackupAt} />
       <BaseCurrencySection />
-      <nav aria-label={t('settings.ledger')} className="overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
+      <nav aria-label={t('settings.ledger')} className="overflow-hidden rounded-xl bg-surface ring-1 ring-slate-200">
         <ul className="divide-y divide-slate-100">
           <SettingsLink
             to="/settings/categories"
@@ -86,7 +88,21 @@ export function SettingsPage() {
       </nav>
       <ExportSection />
       <StorageSection />
-      <section aria-labelledby="language-title" className="space-y-3 rounded-xl bg-white p-4 ring-1 ring-slate-200">
+      <section aria-labelledby="appearance-title" className="space-y-3 rounded-xl bg-surface p-4 ring-1 ring-slate-200">
+        <h2 id="appearance-title" className="font-semibold">
+          {t('settings.appearance')}
+        </h2>
+        <Segmented
+          label={t('settings.appearance')}
+          value={theme}
+          onChange={(next) => {
+            setTheme(next);
+            setThemeChoice(next);
+          }}
+          options={THEMES.map((value) => ({ value, label: t(`settings.themes.${value}`) }))}
+        />
+      </section>
+      <section aria-labelledby="language-title" className="space-y-3 rounded-xl bg-surface p-4 ring-1 ring-slate-200">
         <h2 id="language-title" className="font-semibold">
           {t('settings.language')}
         </h2>
@@ -97,7 +113,7 @@ export function SettingsPage() {
           options={LANGUAGES.map((lng) => ({ value: lng, label: LANGUAGE_NAMES[lng] }))}
         />
       </section>
-      <section aria-labelledby="help-title" className="space-y-2 rounded-xl bg-white p-4 ring-1 ring-slate-200">
+      <section aria-labelledby="help-title" className="space-y-2 rounded-xl bg-surface p-4 ring-1 ring-slate-200">
         <h2 id="help-title" className="font-semibold">
           {t('guide.title')}
         </h2>
@@ -113,7 +129,7 @@ export function SettingsPage() {
 function SettingsLink({ to, title, detail }: { to: string; title: string; detail?: string }) {
   return (
     <li>
-      <Link to={to} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+      <Link to={to} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-100">
         <span className="min-w-0 flex-1">
           <span className="block font-semibold">{title}</span>
           {detail && <span className="block text-sm text-slate-500">{detail}</span>}

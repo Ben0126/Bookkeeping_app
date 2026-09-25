@@ -9,6 +9,7 @@ import {
   getTransactionGroup,
   getTransactionInput,
   listTransactions,
+  undoTransactionChange,
   updateTransaction,
   type TransactionInput,
 } from './transactions';
@@ -156,6 +157,26 @@ describe('fees included in an expense', () => {
   ])('rejects a fee %s', async (_, fields) => {
     await expect(createTransaction(db, dinner(fields))).rejects.toMatchObject({ code: expect.stringMatching(/INVALID_(FEE|AMOUNT)/) });
     expect(await db.transactions.count()).toBe(0);
+  });
+});
+
+describe('undoTransactionChange', () => {
+  it('removes what a save added and puts back what it replaced', async () => {
+    const [expense] = await createTransaction(db, { kind: 'expense', accountId: usd.id, amountMinor: 100, date: '2026-09-01' });
+    const removed = await getTransactionGroup(db, expense.id);
+    const added = await updateTransaction(db, expense.id, {
+      kind: 'transfer', fromAccountId: usd.id, toAccountId: usd2.id, amountMinor: 300, date: '2026-09-02',
+    });
+    await undoTransactionChange(db, { removed, added });
+    expect(await db.transactions.toArray()).toEqual([expense]);
+  });
+
+  it('brings back a deleted transfer with its ids', async () => {
+    const legs = await createTransaction(db, { kind: 'transfer', fromAccountId: usd.id, toAccountId: usd2.id, amountMinor: 300, date: '2026-09-02' });
+    const removed = await deleteTransaction(db, legs[0].id);
+    expect(removed).toHaveLength(2);
+    await undoTransactionChange(db, { removed, added: [] });
+    expect((await getTransactionGroup(db, legs[0].id)).map((t) => t.id).sort()).toEqual(legs.map((t) => t.id).sort());
   });
 });
 

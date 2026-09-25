@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, Outlet } from 'react-router-dom';
 import { ChartIcon, HelpIcon, ListIcon, PlusIcon, SettingsIcon, WalletIcon } from '../ui/icons';
+import { ToastProvider } from '../ui/ToastProvider';
 import { useOpenNewEntry } from './useOpenNewEntry';
 
 const NAV_ITEMS = [
@@ -18,7 +19,7 @@ export function Layout() {
 
   return (
     <div className="min-h-dvh bg-slate-50 text-slate-900">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-surface/90 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-3xl items-center gap-6 px-4">
           <div className="flex items-center gap-2 font-semibold">
             <img src="/favicon.png" alt="" className="size-7 rounded-md" />
@@ -53,12 +54,14 @@ export function Layout() {
       </header>
 
       <main className="mx-auto max-w-3xl px-4 pt-4 pb-40 md:pb-12">
-        <Outlet />
+        <ToastProvider>
+          <Outlet />
+        </ToastProvider>
       </main>
 
       <nav
         aria-label={t('nav.label')}
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         <div className="mx-auto grid max-w-md grid-cols-5">
           {[first, second].map((item) => (
@@ -70,7 +73,7 @@ export function Layout() {
               type="button"
               onClick={openNewEntry}
               aria-label={t('transactions.add')}
-              className="-mt-4 flex size-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg ring-4 ring-white hover:bg-indigo-500"
+              className="-mt-4 flex size-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg ring-4 ring-surface hover:bg-indigo-500"
             >
               <PlusIcon className="size-7" />
             </button>

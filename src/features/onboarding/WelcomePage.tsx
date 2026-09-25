@@ -143,7 +143,7 @@ export function WelcomePage() {
               </div>
               <ul className="space-y-3">
                 {FEATURES.map((feature) => (
-                  <li key={feature.id} className="flex gap-3 rounded-xl bg-white p-3 ring-1 ring-slate-200">
+                  <li key={feature.id} className="flex gap-3 rounded-xl bg-surface p-3 ring-1 ring-slate-200">
                     <span className="text-2xl" aria-hidden="true">
                       {feature.icon}
                     </span>
@@ -213,7 +213,7 @@ export function WelcomePage() {
               <StepTitle title={t('welcome.safety.title')} intro={t('welcome.safety.intro')} />
               <ul className="space-y-3">
                 {(['private', 'backup', 'install'] as const).map((point, index) => (
-                  <li key={point} className="flex gap-3 rounded-xl bg-white p-3 ring-1 ring-slate-200">
+                  <li key={point} className="flex gap-3 rounded-xl bg-surface p-3 ring-1 ring-slate-200">
                     <span className="text-2xl" aria-hidden="true">
                       {['🔒', '💾', '📲'][index]}
                     </span>
@@ -318,7 +318,7 @@ function DraftCard({
   const invalid = (field: DraftError) =>
     error === field ? { 'aria-invalid': true, 'aria-describedby': `${id}-${field}-error` } : {};
   return (
-    <section aria-label={title} className="rounded-xl bg-white p-3 ring-1 ring-slate-200">
+    <section aria-label={title} className="rounded-xl bg-surface p-3 ring-1 ring-slate-200">
       <label className="flex items-center gap-3">
         <input
           type="checkbox"
@@ -368,7 +368,7 @@ function DraftCard({
               htmlFor={`${id}-feeRate`}
               error={error === 'feeRate' ? t('accounts.foreignFeeInvalid') : undefined}
             >
-              <div className="flex overflow-hidden rounded-lg border border-slate-300 bg-white shadow-xs focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/30">
+              <div className="flex overflow-hidden rounded-lg border border-slate-300 bg-surface shadow-xs focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/30">
                 <input
                   id={`${id}-feeRate`}
                   className="min-w-0 flex-1 px-3 py-2 text-base tabular-nums outline-none placeholder:text-slate-300"

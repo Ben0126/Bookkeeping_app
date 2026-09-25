@@ -102,7 +102,7 @@ export function MonthSummary({ month, rows, accounts, categories, filtered, cate
             <dt className="text-xs font-medium text-slate-500">
               {t(`transactions.total.${kind}`, { context: month ? undefined : 'found' })}
             </dt>
-            <dd className={`mt-1 space-y-0.5 font-semibold tabular-nums ${kind === 'income' ? 'text-emerald-600' : 'text-slate-900'}`}>
+            <dd className={`mt-1 space-y-0.5 font-semibold tabular-nums ${kind === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900'}`}>
               {renderTotal(kind === 'income' ? 'incomeMinor' : 'expenseMinor')}
             </dd>
           </div>
@@ -111,7 +111,7 @@ export function MonthSummary({ month, rows, accounts, categories, filtered, cate
       {budget && (
         <div className="mt-3 space-y-1">
           <BudgetBar spentMinor={budget.spentMinor} limitMinor={budget.budget.amountMinor} thin />
-          <p className={`text-xs ${budget.remainingMinor < 0 ? 'text-rose-600' : 'text-slate-600'}`}>
+          <p className={`text-xs ${budget.remainingMinor < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600'}`}>
             {budget.remainingMinor < 0
               ? t('transactions.budgetOver', { amount: fmt.money(-budget.remainingMinor, budget.budget.currency) })
               : budget.perDayMinor !== undefined
@@ -126,7 +126,7 @@ export function MonthSummary({ month, rows, accounts, categories, filtered, cate
     </>
   );
 
-  const className = 'block rounded-xl bg-white p-3 ring-1 ring-slate-200';
+  const className = 'block rounded-xl bg-surface p-3 ring-1 ring-slate-200';
   return month ? (
     <Link to={`/overview?month=${month}`} className={`${className} hover:ring-indigo-300`}>
       {content}

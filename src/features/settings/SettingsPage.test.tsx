@@ -149,6 +149,28 @@ describe('exporting to CSV', () => {
 });
 
 describe('monthly entries', () => {
+  it('changes the amount and day of future entries', async () => {
+    const wallet = await addAccount(db, { name: 'Wallet', currency: 'GBP' });
+    await createMonthlyTransaction(db, {
+      kind: 'expense', accountId: wallet.id, amountMinor: 1099, date: '2026-09-15', categoryId: 'default-phone_internet', payee: 'Spotify',
+    });
+    renderApp(db, '/settings/recurring');
+    const section = await screen.findByRole('region', { name: 'Monthly entries' });
+    fireEvent.click(await within(section).findByRole('button', { name: 'Edit Phone & internet' }));
+    const form = within(section).getByRole('form', { name: 'Edit Phone & internet' });
+    fireEvent.change(within(form).getByLabelText('Amount'), { target: { value: '0' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Save' }));
+    expect(await within(form).findByRole('alert')).toHaveTextContent('Enter a number above 0');
+
+    fireEvent.change(within(form).getByLabelText('Amount'), { target: { value: '11.99' } });
+    fireEvent.change(within(form).getByLabelText('Day of the month'), { target: { value: '20' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Save' }));
+    expect(await within(section).findByText('-£11.99')).toBeInTheDocument();
+    expect(within(section).getByText('Monthly on day 20 · Spotify · Wallet')).toBeInTheDocument();
+    expect((await db.recurring.toArray())[0]).toMatchObject({ dayOfMonth: 20, template: { amountMinor: 1199 } });
+    expect((await db.transactions.toArray())[0].amountMinor).toBe(-1099);
+  });
+
   it('lists them and stops one without touching what it recorded', async () => {
     const wallet = await addAccount(db, { name: 'Wallet', currency: 'GBP' });
     await createMonthlyTransaction(db, {
@@ -267,5 +289,18 @@ describe('settings layout', () => {
     fireEvent.click(within(screen.getByRole('main')).getByRole('link', { name: 'Settings' }));
     fireEvent.click(await screen.findByRole('link', { name: /Monthly entries.*None yet/ }));
     expect(await screen.findByRole('region', { name: 'Monthly entries' })).toBeInTheDocument();
+  });
+});
+
+describe('appearance', () => {
+  it('switches between system, light and dark', async () => {
+    renderApp(db, '/settings');
+    const choices = await screen.findByRole('radiogroup', { name: 'Appearance' });
+    expect(within(choices).getByRole('radio', { name: 'System' })).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(within(choices).getByRole('radio', { name: 'Dark' }));
+    expect(document.documentElement).toHaveClass('dark');
+    expect(localStorage.getItem('studybudget.theme')).toBe('dark');
+    fireEvent.click(within(choices).getByRole('radio', { name: 'Light' }));
+    expect(document.documentElement).not.toHaveClass('dark');
   });
 });

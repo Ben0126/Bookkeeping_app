@@ -25,7 +25,7 @@ import { BudgetForm } from './BudgetForm';
 import type { MonthOverview } from './monthOverview';
 import { useMonthOverview } from './useMonthOverview';
 
-const cardClass = 'space-y-3 rounded-xl bg-white p-4 ring-1 ring-slate-200';
+const cardClass = 'space-y-3 rounded-xl bg-surface p-4 ring-1 ring-slate-200';
 
 export function OverviewPage() {
   const { t } = useTranslation();
@@ -100,11 +100,11 @@ function SpendingCard({ overview }: { overview: MonthOverview }) {
       <dl className="grid grid-cols-2 gap-3 text-sm">
         <div>
           <dt className="text-slate-500">{t('overview.received')}</dt>
-          <dd className="font-semibold text-emerald-600 tabular-nums">{show(summary.incomeMinor)}</dd>
+          <dd className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{show(summary.incomeMinor)}</dd>
         </div>
         <div>
           <dt className="text-slate-500">{t('overview.net')}</dt>
-          <dd className={`font-semibold tabular-nums ${summary.netMinor < 0 ? 'text-rose-600' : 'text-slate-900'}`}>
+          <dd className={`font-semibold tabular-nums ${summary.netMinor < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900'}`}>
             {show(summary.netMinor)}
           </dd>
         </div>
@@ -151,7 +151,7 @@ function BudgetCard({ overview, onEdit }: { overview: MonthOverview; onEdit: () 
         <h2 id="budget-title" className="font-semibold">
           {t('overview.budgetTitle')} <span className="tabular-nums">{fmt.money(amountMinor, currency)}</span>
         </h2>
-        <button type="button" onClick={onEdit} className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+        <button type="button" onClick={onEdit} className="text-sm font-medium text-indigo-700 hover:text-indigo-500">
           {t('overview.editBudget')}
         </button>
       </div>
@@ -163,7 +163,7 @@ function BudgetCard({ overview, onEdit }: { overview: MonthOverview; onEdit: () 
             percent: `${Math.round((budget.spentMinor / amountMinor) * 100)}%`,
           })}
         </span>
-        <span className={`font-semibold tabular-nums ${over ? 'text-rose-600' : 'text-slate-900'}`}>
+        <span className={`font-semibold tabular-nums ${over ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900'}`}>
           {over
             ? t('overview.budgetOver', { amount: fmt.money(-budget.remainingMinor, currency) })
             : t('overview.budgetLeft', { amount: fmt.money(budget.remainingMinor, currency) })}
@@ -232,7 +232,7 @@ function CategoryRanking({
                 {row.categoryId ? (
                   <Link
                     to={`/transactions?month=${month}&category=${encodeURIComponent(row.categoryId)}`}
-                    className="flex items-center gap-3 rounded-lg px-1 py-2 hover:bg-slate-50"
+                    className="flex items-center gap-3 rounded-lg px-1 py-2 hover:bg-slate-50 dark:hover:bg-slate-100"
                   >
                     {content}
                   </Link>
@@ -274,11 +274,11 @@ function AccountsTotal({
         <h2 id="accounts-total-title" className="text-sm font-medium text-slate-500">
           {t('overview.accountsTotal')}
         </h2>
-        <Link to="/accounts" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+        <Link to="/accounts" className="text-sm font-medium text-indigo-700 hover:text-indigo-500">
           {t('overview.viewAccounts')}
         </Link>
       </div>
-      <p className={`text-2xl font-bold tabular-nums ${total.totalMinor < 0 ? 'text-rose-600' : ''}`}>
+      <p className={`text-2xl font-bold tabular-nums ${total.totalMinor < 0 ? 'text-rose-600 dark:text-rose-400' : ''}`}>
         {converted ? t('overview.approx', { amount: fmt.money(total.totalMinor, base) }) : fmt.money(total.totalMinor, base)}
       </p>
       <MissingRatesNote currencies={total.missingRates} />
@@ -333,11 +333,11 @@ function RatesFootnote({
         type="button"
         onClick={() => void refresh()}
         disabled={status === 'working'}
-        className="font-medium text-indigo-600 hover:text-indigo-500 disabled:text-slate-400"
+        className="font-medium text-indigo-700 hover:text-indigo-500 disabled:text-slate-400"
       >
         {status === 'working' ? t('overview.refreshing') : t('overview.refreshRates')}
       </button>
-      {status === 'failed' && <p className="text-rose-600">{t('overview.refreshFailed')}</p>}
+      {status === 'failed' && <p className="text-rose-600 dark:text-rose-400">{t('overview.refreshFailed')}</p>}
     </footer>
   );
 }

@@ -38,7 +38,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-4"
+      className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -47,7 +47,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:max-w-lg sm:rounded-2xl"
+        className="flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface shadow-xl sm:max-w-lg sm:rounded-2xl"
       >
         <div className="flex shrink-0 items-center justify-between gap-4 px-5 pt-4 pb-3">
           <h2 id={titleId} className="text-lg font-semibold text-slate-900">
@@ -73,7 +73,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
 /** Actions pinned to the bottom of a Modal so they stay reachable in long forms. */
 export function ModalFooter({ children }: { children: ReactNode }) {
   return (
-    <div className="sticky bottom-0 -mx-5 space-y-2 border-t border-slate-200 bg-white px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <div className="sticky bottom-0 -mx-5 space-y-2 border-t border-slate-200 bg-surface px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       {children}
     </div>
   );

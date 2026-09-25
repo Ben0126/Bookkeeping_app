@@ -183,7 +183,7 @@ export function AccountForm({ account, currentBalanceMinor = 0, defaultCurrency,
           error={balanceError}
           hint={isDebt(kind) ? t('accounts.amountOwedHint') : t('accounts.currentBalanceHint')}
         >
-          <div className="flex overflow-hidden rounded-lg border border-slate-300 bg-white shadow-xs focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/30">
+          <div className="flex overflow-hidden rounded-lg border border-slate-300 bg-surface shadow-xs focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/30">
             <span className="flex shrink-0 items-center bg-slate-100 px-3 text-sm font-bold text-slate-600">{currency}</span>
             <input
               id={`${id}-balance`}
@@ -208,7 +208,7 @@ export function AccountForm({ account, currentBalanceMinor = 0, defaultCurrency,
             error={feeRateError}
             hint={t('accounts.foreignFeeHint')}
           >
-            <div className="flex w-36 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-xs focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/30">
+            <div className="flex w-36 overflow-hidden rounded-lg border border-slate-300 bg-surface shadow-xs focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/30">
               <input
                 id={`${id}-feeRate`}
                 className="min-w-0 flex-1 px-3 py-2 text-base tabular-nums outline-none placeholder:text-slate-300"

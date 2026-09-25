@@ -60,7 +60,7 @@ export function ExportSection() {
   };
 
   return (
-    <section aria-labelledby="csv-export-title" className="space-y-3 rounded-xl bg-white p-4 ring-1 ring-slate-200">
+    <section aria-labelledby="csv-export-title" className="space-y-3 rounded-xl bg-surface p-4 ring-1 ring-slate-200">
       <h2 id="csv-export-title" className="font-semibold">
         {t('csvExport.title')}
       </h2>

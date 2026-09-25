@@ -636,3 +636,63 @@ describe('estimated charges', () => {
     expect(await db.transactions.get(record.id)).toMatchObject({ note: 'ramen', estimated: true });
   });
 });
+
+describe('undo', () => {
+  const toast = () => screen.findByText(/^(Saved|Updated|Deleted|Undone)/);
+
+  it('takes back a new entry', async () => {
+    renderApp(db, '/transactions');
+    const dialog = await openAddDialog();
+    fireEvent.click(within(dialog).getByRole('radio', { name: /Chase/ }));
+    change(within(dialog).getByLabelText('Amount'), '12.50');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Dining out' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitForDialogToClose();
+
+    expect(await toast()).toHaveTextContent('Saved: Dining out $12.50');
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(await screen.findByText('Undone')).toBeInTheDocument();
+    await waitFor(async () => expect(await db.transactions.count()).toBe(0));
+  });
+
+  it('brings back a deleted entry and reverts an edit', async () => {
+    const [record] = await createTransaction(db, { kind: 'expense', accountId: chase.id, amountMinor: 500, date: `${thisMonth}-01`, payee: 'Costco' });
+    renderApp(db, '/transactions');
+
+    fireEvent.click(await screen.findByRole('button', { name: /Costco/ }));
+    let dialog = await screen.findByRole('dialog', { name: 'Edit transaction' });
+    change(await within(dialog).findByLabelText('Amount'), '9');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitForDialogToClose();
+    expect(await toast()).toHaveTextContent('Updated: Uncategorized $9.00');
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    await waitFor(async () => expect((await db.transactions.get(record.id))?.amountMinor).toBe(-500));
+
+    fireEvent.click(await screen.findByRole('button', { name: /Costco.*-\$5\.00/ }));
+    dialog = await screen.findByRole('dialog', { name: 'Edit transaction' });
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Delete' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Really delete?' }));
+    await waitForDialogToClose();
+    expect(await toast()).toHaveTextContent('Deleted: Uncategorized $5.00');
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(await screen.findByRole('button', { name: /Costco/ })).toBeInTheDocument();
+    expect(await db.transactions.get(record.id)).toEqual(record);
+  });
+
+  it('takes back an entry saved with "add another", and a monthly rule with it', async () => {
+    renderApp(db, '/transactions');
+    const dialog = await openAddDialog();
+    fireEvent.click(within(dialog).getByRole('radio', { name: /Chase/ }));
+    change(within(dialog).getByLabelText('Amount'), '1200');
+    fireEvent.click(within(dialog).getByText('More: note, repeat monthly'));
+    fireEvent.click(within(dialog).getByLabelText('Repeats monthly (rent, subscriptions…)'));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save & add another' }));
+    await within(dialog).findByText(/^Saved:/);
+    expect(await db.recurring.count()).toBe(1);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Undo' }));
+    expect(await within(dialog).findByText('Undone')).toBeInTheDocument();
+    await waitFor(async () => expect(await db.transactions.count()).toBe(0));
+    expect(await db.recurring.count()).toBe(0);
+  });
+});

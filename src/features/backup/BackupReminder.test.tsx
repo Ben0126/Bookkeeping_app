@@ -50,7 +50,7 @@ describe('BackupReminder', () => {
     await addDataFrom(2);
     await renderTransactions();
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Back up now' })).not.toBeInTheDocument();
   });
 
   it('stays quiet when everything was backed up afterwards', async () => {
@@ -58,7 +58,7 @@ describe('BackupReminder', () => {
     writeLastBackupAt(Date.now() - DAY);
     await renderTransactions();
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Back up now' })).not.toBeInTheDocument();
   });
 
   it('leads to the backup settings', async () => {

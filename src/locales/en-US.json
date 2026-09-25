@@ -214,7 +214,13 @@
     "categoriesDetail_other": "{{count}} in use; add, rename or hide",
     "recurringDetail_zero": "None yet. Tick “Repeats monthly” under “More” when adding an entry",
     "recurringDetail_one": "{{count}} entry",
-    "recurringDetail_other": "{{count}} entries"
+    "recurringDetail_other": "{{count}} entries",
+    "appearance": "Appearance",
+    "themes": {
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    }
   },
   "backup": {
     "title": "Back up your data",
@@ -339,7 +345,11 @@
     "post": "Record",
     "skip": "Skip",
     "postLabel": "Record {{name}} for {{date}}",
-    "skipLabel": "Skip {{name}} for {{date}}"
+    "skipLabel": "Skip {{name}} for {{date}}",
+    "edit": "Edit",
+    "editLabel": "Edit {{name}}",
+    "day": "Day of the month",
+    "editHint": "Applies to entries recorded from now on; ones already recorded stay as they are."
   },
   "welcome": {
     "title": "Welcome to StudyBudget",
@@ -442,7 +452,7 @@
     },
     "monthly": {
       "title": "Rent, subscriptions and other monthly entries",
-      "body": "When adding the entry, open “More” and tick “Repeats monthly”. Each month when it is due, the Transactions page asks you to record or skip it. You can stop it in Settings."
+      "body": "When adding the entry, open “More” and tick “Repeats monthly”. Each month when it is due, the Transactions page asks you to record or skip it.\nIn Settings → Monthly entries you can change the amount or day (say, after a price rise) or stop it."
     },
     "overview": {
       "title": "What’s left this month",
@@ -451,12 +461,23 @@
     },
     "search": {
       "title": "Finding old entries",
-      "body": "Search looks through every month, by payee, note or category name. To analyse in a spreadsheet, export a CSV in Settings."
+      "body": "Tap the magnifier next to the month to search every month by payee, note or category name; the filter button next to it narrows the list to an account or type. To analyse in a spreadsheet, export a CSV in Settings."
     },
     "backup": {
       "title": "Backups and new phones",
       "body": "Your data lives only in this browser and is never uploaded. Download a backup from Settings now and then and keep it in your cloud drive; on a new phone, restore it. You are reminded after 7 days without one.\nAdd the app to your home screen (iPhone: Safari “Share → Add to Home Screen”; Android: Chrome menu “Install app”) so it works offline and the browser is less likely to clear its data.",
       "link": "Go to Settings"
+    },
+    "undo": {
+      "title": "Saved or deleted by mistake?",
+      "body": "After saving or deleting, “Undo” appears at the bottom of the screen for a few seconds and puts things back. “Save & add another” offers Undo in its message too."
     }
+  },
+  "toast": {
+    "saved": "Saved: {{entry}}",
+    "updated": "Updated: {{entry}}",
+    "deleted": "Deleted: {{entry}}",
+    "undo": "Undo",
+    "undone": "Undone"
   }
 }

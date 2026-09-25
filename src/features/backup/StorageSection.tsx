@@ -33,7 +33,7 @@ export function StorageSection() {
   };
 
   return (
-    <section aria-labelledby="storage-title" className="space-y-3 rounded-xl bg-white p-4 ring-1 ring-slate-200">
+    <section aria-labelledby="storage-title" className="space-y-3 rounded-xl bg-surface p-4 ring-1 ring-slate-200">
       <h2 id="storage-title" className="font-semibold">
         {t('storage.title')}
       </h2>

@@ -12,6 +12,7 @@ import {
   postRecurring,
   recurringDate,
   skipRecurring,
+  updateRecurringRule,
 } from './recurring';
 import type { Account, RecurringRule } from './types';
 
@@ -126,5 +127,20 @@ describe('recurring rules', () => {
     ).rejects.toMatchObject({ code: 'CATEGORY_KIND_MISMATCH' });
     expect(await db.transactions.count()).toBe(0);
     expect(await db.recurring.count()).toBe(0);
+  });
+
+  it('changes the amount, day and payee of future entries only', async () => {
+    const rule = await rent();
+    await postRecurring(db, rule.id, '2026-10');
+    await updateRecurringRule(db, rule.id, { amountMinor: 125000, dayOfMonth: 31, payee: '  New landlord ' });
+    const [entry] = await postRecurring(db, rule.id, '2026-11');
+    expect(entry).toMatchObject({ amountMinor: -125000, date: '2026-11-30', payee: 'New landlord' });
+    expect((await db.transactions.orderBy('date').first())?.amountMinor).toBe(-120000);
+
+    await updateRecurringRule(db, rule.id, { payee: '' });
+    expect((await db.recurring.get(rule.id))?.template).not.toHaveProperty('payee');
+    await expect(updateRecurringRule(db, rule.id, { amountMinor: 0 })).rejects.toMatchObject({ code: 'INVALID_AMOUNT' });
+    await expect(updateRecurringRule(db, rule.id, { dayOfMonth: 0 })).rejects.toMatchObject({ code: 'INVALID_DATE' });
+    await expect(updateRecurringRule(db, 'missing', {})).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 });

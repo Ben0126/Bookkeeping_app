@@ -33,7 +33,7 @@ export function CategorySection() {
   const categories = useLiveQuery(() => listCategories(db, { kind, includeArchived: true }), [db, kind]);
 
   return (
-    <section aria-labelledby="categories-title" className="space-y-3 rounded-xl bg-white p-4 ring-1 ring-slate-200">
+    <section aria-labelledby="categories-title" className="space-y-3 rounded-xl bg-surface p-4 ring-1 ring-slate-200">
       <h2 id="categories-title" className="font-semibold">
         {t('categorySettings.title')}
       </h2>
@@ -56,7 +56,7 @@ export function CategorySection() {
                 type="button"
                 onClick={() => setEditing(category)}
                 aria-label={t('categorySettings.editNamed', { name })}
-                className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-1 text-left hover:bg-slate-50"
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-1 text-left hover:bg-slate-50 dark:hover:bg-slate-100"
               >
                 <span className={`text-xl ${category.archived ? 'opacity-40' : ''}`} aria-hidden="true">
                   {category.icon ?? '🏷️'}
@@ -163,7 +163,7 @@ function CategoryForm({
                 onClick={() => setIcon(choice)}
                 className={
                   'flex aspect-square items-center justify-center rounded-lg text-xl ring-1 ' +
-                  (choice === icon ? 'bg-indigo-50 ring-2 ring-indigo-500' : 'ring-slate-200 hover:bg-slate-50')
+                  (choice === icon ? 'bg-indigo-50 ring-2 ring-indigo-500' : 'ring-slate-200 hover:bg-slate-50 dark:hover:bg-slate-100')
                 }
               >
                 {choice}
@@ -199,7 +199,7 @@ function Switch({ checked, label, onChange }: { checked: boolean; label: string;
     >
       <span
         className={
-          'inline-block size-5 rounded-full bg-white shadow transition-transform ' +
+          'inline-block size-5 rounded-full bg-surface shadow transition-transform ' +
           (checked ? 'translate-x-5.5' : 'translate-x-0.5')
         }
       />

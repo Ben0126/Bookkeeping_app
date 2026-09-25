@@ -57,7 +57,7 @@ export function RecurringDue({
           const { template } = item.rule;
           const category = template.categoryId ? categoriesById.get(template.categoryId) : undefined;
           return (
-            <li key={item.rule.id} className="space-y-2 rounded-lg bg-white p-3 ring-1 ring-indigo-100">
+            <li key={item.rule.id} className="space-y-2 rounded-lg bg-surface p-3 ring-1 ring-indigo-100">
               <RuleSummary
                 rule={item.rule}
                 account={accountsById.get(template.accountId)}

@@ -120,11 +120,31 @@ export async function updateTransaction(
   });
 }
 
-/** Deletes a transaction; deleting either leg of a transfer deletes both. */
-export async function deleteTransaction(db: LedgerDB, id: string): Promise<void> {
-  await db.transaction('rw', db.transactions, async () => {
+/** Deletes a transaction; deleting either leg of a transfer deletes both. Returns what was deleted. */
+export async function deleteTransaction(db: LedgerDB, id: string): Promise<Transaction[]> {
+  return db.transaction('rw', db.transactions, async () => {
     const group = await getTransactionGroup(db, id);
     await db.transactions.bulkDelete(group.map((record) => record.id));
+    return group;
+  });
+}
+
+/** What a save or delete changed, kept briefly so it can be undone. */
+export interface TransactionChange {
+  /** Records as they were before (none for a new entry). */
+  removed: readonly Transaction[];
+  /** Records written (none for a deletion). */
+  added: readonly Transaction[];
+  /** A monthly rule created along with a new entry. */
+  addedRuleId?: string;
+}
+
+/** Puts the records back as they were before `change`. */
+export async function undoTransactionChange(db: LedgerDB, change: TransactionChange): Promise<void> {
+  await db.transaction('rw', [db.transactions, db.recurring], async () => {
+    await db.transactions.bulkDelete(change.added.map((record) => record.id));
+    await db.transactions.bulkPut([...change.removed]);
+    if (change.addedRuleId !== undefined) await db.recurring.delete(change.addedRuleId);
   });
 }
 

@@ -14,7 +14,7 @@ export function BaseCurrencySection() {
   if (!settings) return null;
 
   return (
-    <section aria-labelledby="base-currency-title" className="space-y-3 rounded-xl bg-white p-4 ring-1 ring-slate-200">
+    <section aria-labelledby="base-currency-title" className="space-y-3 rounded-xl bg-surface p-4 ring-1 ring-slate-200">
       <h2 id="base-currency-title" className="font-semibold">
         {t('settings.baseCurrency')}
       </h2>
