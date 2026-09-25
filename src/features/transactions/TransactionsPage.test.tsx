@@ -466,7 +466,7 @@ describe('paying in another currency', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
     await waitForDialogToClose();
 
-    expect(await screen.findByRole('button', { name: /Dining out.*Visa · incl\. NT\$16 fee.*-NT\$1,091.*¥5,000/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Dining out\s*Est\..*Visa.*-NT\$1,091.*¥5,000.*incl\. NT\$16 fee/ })).toBeInTheDocument();
     expect(await db.transactions.toArray()).toMatchObject([
       { amountMinor: -1091, feeMinor: -16, originalAmountMinor: -5000, originalCurrency: 'JPY' },
     ]);
@@ -578,5 +578,61 @@ describe('getting to the form quickly', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Dining out' }));
     change(payee, 'Trader Joe’s');
     expect(within(dialog).getByRole('button', { name: 'Dining out' })).toHaveAttribute('aria-pressed', 'true');
+  });
+});
+
+describe('estimated charges', () => {
+  let visa: Account;
+  const estimate = (date: string, amountMinor = 1091) =>
+    createTransaction(db, {
+      kind: 'expense', accountId: visa.id, amountMinor, feeMinor: 16, date, categoryId: 'default-dining',
+      original: { amountMinor: 5000, currency: 'JPY' }, estimated: true,
+    });
+
+  beforeEach(async () => {
+    visa = await createAccount(db, { name: 'Visa', kind: 'credit_card', currency: 'TWD', foreignFeeBps: 150 });
+  });
+
+  it('are listed across months from the card’s reminder, then confirmed one by one', async () => {
+    await estimate(`${shiftMonth(thisMonth, -1)}-20`);
+    await estimate(`${thisMonth}-02`, 2182);
+    renderApp(db, '/accounts');
+    fireEvent.click(await screen.findByRole('link', { name: /2 estimates to check/ }));
+
+    expect(await screen.findByRole('heading', { name: '2 estimates to check' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Estimates/ })).toBeInTheDocument();
+    const rows = screen.getAllByRole('button', { name: /Dining out\s*Est\./ });
+    expect(rows).toHaveLength(2);
+
+    // The amount matches the statement: tick it.
+    fireEvent.click(rows[0]);
+    let dialog = await screen.findByRole('dialog', { name: 'Edit transaction' });
+    expect(await within(dialog).findByText(/estimate from exchange rates/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByLabelText('Matches the statement'));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitForDialogToClose();
+    expect(await screen.findByRole('heading', { name: '1 estimate to check' })).toBeInTheDocument();
+
+    // The statement differs: typing it confirms it.
+    fireEvent.click(screen.getByRole('button', { name: /Dining out\s*Est\./ }));
+    dialog = await screen.findByRole('dialog', { name: 'Edit transaction' });
+    change(await within(dialog).findByLabelText('Charged (TWD)'), '1,095');
+    expect(within(dialog).getByLabelText('Matches the statement')).toBeChecked();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitForDialogToClose();
+    expect(await screen.findByRole('heading', { name: '0 estimates to check' })).toBeInTheDocument();
+    expect(await db.transactions.filter((t) => t.estimated === true).count()).toBe(0);
+  });
+
+  it('keep the mark when only the note changes', async () => {
+    const [record] = await estimate(`${thisMonth}-02`);
+    renderApp(db, '/transactions');
+    fireEvent.click(await screen.findByRole('button', { name: /Dining out\s*Est\./ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Edit transaction' });
+    fireEvent.click(await within(dialog).findByText('More: note'));
+    change(within(dialog).getByLabelText('Note'), 'ramen');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitForDialogToClose();
+    expect(await db.transactions.get(record.id)).toMatchObject({ note: 'ramen', estimated: true });
   });
 });

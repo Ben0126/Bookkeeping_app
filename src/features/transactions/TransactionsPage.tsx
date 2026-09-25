@@ -46,8 +46,11 @@ export function TransactionsPage() {
   const search = params.get('q') ?? '';
   const searching = search.trim() !== '';
   const categoryFilter = params.get('category') || undefined;
-  // A search looks through every month: "when did I last pay the dentist?"
-  const { from, to } = searching ? { from: undefined, to: undefined } : monthRange(month);
+  const estimatedOnly = params.get('estimated') === '1';
+  // A search looks through every month ("when did I last pay the dentist?"), as does
+  // the list of estimates still to check against a statement.
+  const allMonths = searching || estimatedOnly;
+  const { from, to } = allMonths ? { from: undefined, to: undefined } : monthRange(month);
 
   const setParam = (key: string, value: string | undefined) =>
     setParams(
@@ -77,11 +80,21 @@ export function TransactionsPage() {
       ? [categoryFilter, ...(await db.categories.where('parentId').equals(categoryFilter).primaryKeys())]
       : undefined;
     const searchCategoryIds = searchCategoryKey ? searchCategoryKey.split(',') : [];
-    const rows = await listTransactions(db, { from, to, accountId, kind, search, categoryIds, searchCategoryIds });
+    const rows = await listTransactions(db, {
+      from,
+      to,
+      accountId,
+      kind,
+      search,
+      categoryIds,
+      searchCategoryIds,
+      estimatedOnly,
+    });
     const transferIds = [...new Set(rows.flatMap((row) => (row.transferId ? [row.transferId] : [])))];
     const legs = transferIds.length > 0 ? await db.transactions.where('transferId').anyOf(transferIds).toArray() : [];
     return { rows, entries: toEntries(rows, legs, accountId), categoryIds };
-  }, [db, from, to, accountId, kind, search, searchCategoryKey, categoryFilter]);
+  }, [db, from, to, accountId, kind, search, searchCategoryKey, categoryFilter, estimatedOnly]);
+  const estimateCount = useLiveQuery(() => db.transactions.filter((t) => t.estimated === true).count(), [db]);
 
   const accountsById = useMemo(() => new Map((accounts ?? []).map((a) => [a.id, a])), [accounts]);
   const categoriesById = useMemo(() => new Map((categories ?? []).map((c) => [c.id, c])), [categories]);
@@ -115,7 +128,7 @@ export function TransactionsPage() {
       (previous) => {
         const next = new URLSearchParams(previous);
         next.delete('add');
-        if (date && !searching && monthOf(date) !== month) next.set('month', monthOf(date));
+        if (date && !allMonths && monthOf(date) !== month) next.set('month', monthOf(date));
         return next;
       },
       { replace: true },
@@ -125,22 +138,26 @@ export function TransactionsPage() {
     setSearchOpen(false);
     setParam('q', undefined);
   };
-  const filterCount = [accountId, kind, categoryFilter].filter(Boolean).length;
+  const filterCount = [accountId, kind, categoryFilter, estimatedOnly].filter(Boolean).length;
   const chipClass =
     'inline-flex items-center gap-1.5 rounded-full bg-indigo-50 py-1 pr-2 pl-3 text-sm font-medium text-indigo-800 ring-1 ring-indigo-200 hover:bg-indigo-100';
   const iconButtonClass = (active: boolean) =>
     'relative rounded-full p-2 hover:bg-slate-200 ' + (active ? 'text-indigo-700' : 'text-slate-600');
-  // Search results span years.
-  const dayLabel = searching ? fmt.dayWithYear : fmt.day;
+  // Results across months span years.
+  const dayLabel = allMonths ? fmt.dayWithYear : fmt.day;
 
   return (
     <div className="space-y-4">
       <BackupReminder />
       <RecurringDue accountsById={accountsById} categoriesById={categoriesById} />
       <div className="flex items-center justify-between gap-2">
-        {searching ? (
+        {allMonths ? (
           <h1 className="py-1.5 text-lg font-semibold">
-            {listed ? t('transactions.searchResults', { count: listed.entries.length }) : t('transactions.search')}
+            {!listed
+              ? t('transactions.search')
+              : searching
+                ? t('transactions.searchResults', { count: listed.entries.length })
+                : t('transactions.estimatedResults', { count: listed.entries.length })}
           </h1>
         ) : (
           <MonthNav month={month} onChange={(next) => setParam('month', next)} />
@@ -229,6 +246,17 @@ export function TransactionsPage() {
               </option>
             ))}
           </select>
+          {(estimateCount ?? 0) > 0 && (
+            <label className="col-span-2 flex items-center gap-2 px-1 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                className="size-4 rounded border-slate-300 text-indigo-600"
+                checked={estimatedOnly}
+                onChange={(e) => setParam('estimated', e.target.checked ? '1' : undefined)}
+              />
+              {t('transactions.estimatedFilter', { count: estimateCount })}
+            </label>
+          )}
         </div>
       )}
 
@@ -248,6 +276,13 @@ export function TransactionsPage() {
               <CloseIcon className="size-4" />
             </button>
           )}
+          {estimatedOnly && (
+            <button type="button" onClick={() => setParam('estimated', undefined)} className={chipClass}>
+              {t('transactions.estimatedChip')}
+              <span className="sr-only">{t('transactions.clearFilter')}</span>
+              <CloseIcon className="size-4" />
+            </button>
+          )}
           {categoryFilter && (
             <button type="button" onClick={() => setParam('category', undefined)} className={chipClass}>
               {t('transactions.filterCategory', { name: fmt.categoryName(categoriesById.get(categoryFilter)) })}
@@ -260,7 +295,7 @@ export function TransactionsPage() {
 
       {kind !== 'transfer' && listed && (
         <MonthSummary
-          month={searching ? undefined : month}
+          month={allMonths ? undefined : month}
           rows={listed.rows}
           accounts={accounts}
           categories={categories}
@@ -271,7 +306,7 @@ export function TransactionsPage() {
 
       {listed && listed.entries.length === 0 ? (
         <div className="rounded-xl bg-white px-4 py-10 text-center text-sm text-slate-500 ring-1 ring-slate-200">
-          {searching || accountId || kind || categoryFilter ? t('transactions.noMatches') : t('transactions.emptyMonth')}
+          {searching || filterCount > 0 ? t('transactions.noMatches') : t('transactions.emptyMonth')}
           {!hasEntries && (
             <Link to="/guide" className="mt-3 block font-medium text-indigo-700 hover:underline">
               {t('transactions.firstTimeGuide')}
@@ -331,8 +366,8 @@ function EntryRow({
   let details: string;
   let amount: string;
   let amountClass: string;
-  let extra: string | undefined;
-  let badge: string | undefined;
+  const extra: string[] = [];
+  const badges: { label: string; className: string }[] = [];
 
   if (entry.type === 'single') {
     const record = entry.record;
@@ -340,16 +375,21 @@ function EntryRow({
     const category = record.categoryId ? categoriesById.get(record.categoryId) : undefined;
     icon = <span className="text-xl">{category?.icon ?? (record.kind === 'income' ? '💰' : '🏷️')}</span>;
     title = record.kind === 'transfer' ? t('kinds.transfer') : fmt.categoryName(category);
-    if (record.kind === 'expense' && record.amountMinor > 0) badge = t('kinds.refund');
-    const fee =
-      record.feeMinor !== undefined && account
-        ? t('transactions.feeIncluded', { fee: fmt.money(-record.feeMinor, account.currency) })
-        : undefined;
-    details = [record.payee, account?.name, fee, record.note].filter(Boolean).join(' · ');
+    if (record.kind === 'expense' && record.amountMinor > 0) {
+      badges.push({ label: t('kinds.refund'), className: 'bg-emerald-50 text-emerald-700' });
+    }
+    if (record.estimated) {
+      badges.push({ label: t('transactions.estimatedBadge'), className: 'bg-amber-50 text-amber-800' });
+    }
+    details = [record.payee, account?.name, record.note].filter(Boolean).join(' · ');
     amount = account ? fmt.signedMoney(record.amountMinor, account.currency) : '';
     amountClass = record.amountMinor > 0 ? 'text-emerald-600' : 'text-slate-900';
     if (record.originalAmountMinor !== undefined && record.originalCurrency) {
-      extra = fmt.money(Math.abs(record.originalAmountMinor), record.originalCurrency);
+      extra.push(fmt.money(Math.abs(record.originalAmountMinor), record.originalCurrency));
+    }
+    // Under the amounts rather than in the details line, where it got cut off.
+    if (record.feeMinor !== undefined && account) {
+      extra.push(t('transactions.feeIncluded', { fee: fmt.money(-record.feeMinor, account.currency) }));
     }
   } else {
     const fromAccount = accountsById.get(entry.outflow.accountId);
@@ -368,7 +408,7 @@ function EntryRow({
     } else {
       amount = fmt.money(-entry.outflow.amountMinor, fromAccount.currency);
       if (fromAccount.currency !== toAccount.currency) {
-        extra = `→ ${fmt.money(entry.inflow.amountMinor, toAccount.currency)}`;
+        extra.push(`→ ${fmt.money(entry.inflow.amountMinor, toAccount.currency)}`);
       }
     }
   }
@@ -381,15 +421,21 @@ function EntryRow({
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
           <span className="truncate font-medium text-slate-900">{title}</span>
-          {badge && (
-            <span className="shrink-0 rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-700">{badge}</span>
-          )}
+          {badges.map((badge) => (
+            <span key={badge.label} className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${badge.className}`}>
+              {badge.label}
+            </span>
+          ))}
         </span>
         {details && <span className="block truncate text-sm text-slate-500">{details}</span>}
       </span>
       <span className="shrink-0 text-right tabular-nums">
         <span className={`block font-semibold ${amountClass}`}>{amount}</span>
-        {extra && <span className="block text-xs text-slate-500">{extra}</span>}
+        {extra.map((line) => (
+          <span key={line} className="block text-xs text-slate-500">
+            {line}
+          </span>
+        ))}
       </span>
     </button>
   );

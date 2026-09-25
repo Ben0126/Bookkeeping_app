@@ -86,6 +86,11 @@ export interface Transaction {
    * under the Fees category rather than the purchase's category.
    */
   feeMinor?: number;
+  /**
+   * Paid in another currency and not yet checked against the statement:
+   * `amountMinor` (and `feeMinor`) were estimated from exchange rates.
+   */
+  estimated?: true;
   createdAt: number;
   updatedAt: number;
 }

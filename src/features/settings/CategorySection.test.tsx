@@ -31,7 +31,7 @@ async function categoryChipsInAddForm() {
 
 describe('category settings', () => {
   it('hides a category from the entry form', async () => {
-    renderApp(db, '/settings');
+    renderApp(db, '/settings/categories');
     const section = await categoriesSection();
     fireEvent.click(await within(section).findByRole('switch', { name: 'Show “Tuition” when adding entries' }));
     await waitFor(async () => expect((await db.categories.get('default-tuition'))?.archived).toBe(true));
@@ -42,7 +42,7 @@ describe('category settings', () => {
   });
 
   it('adds a category with an icon', async () => {
-    renderApp(db, '/settings');
+    renderApp(db, '/settings/categories');
     const section = await categoriesSection();
     fireEvent.click(within(section).getByRole('button', { name: 'Add category' }));
     const dialog = await screen.findByRole('dialog', { name: 'Add category' });
@@ -57,7 +57,7 @@ describe('category settings', () => {
   });
 
   it('rejects a duplicate name', async () => {
-    renderApp(db, '/settings');
+    renderApp(db, '/settings/categories');
     const section = await categoriesSection();
     fireEvent.click(within(section).getByRole('button', { name: 'Add category' }));
     const dialog = await screen.findByRole('dialog', { name: 'Add category' });
@@ -67,7 +67,7 @@ describe('category settings', () => {
   });
 
   it('changes a built-in icon but keeps its translated name', async () => {
-    renderApp(db, '/settings');
+    renderApp(db, '/settings/categories');
     const section = await categoriesSection();
     fireEvent.click(await within(section).findByRole('button', { name: 'Edit “Dining out”' }));
     const dialog = await screen.findByRole('dialog', { name: 'Edit category' });

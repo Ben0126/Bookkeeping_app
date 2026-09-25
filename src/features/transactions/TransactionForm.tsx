@@ -173,6 +173,7 @@ export function TransactionForm({
       manualCharge: true,
       amount: estimate && account ? toMoneyInput(estimate.amountMinor, account.currency) : '',
       cardFee: estimate?.feeMinor && account ? toMoneyInput(estimate.feeMinor, account.currency) : '',
+      estimated: false,
     });
     setTimeout(() => document.getElementById(`${id}-amount`)?.focus(), 0);
   };
@@ -451,6 +452,11 @@ export function TransactionForm({
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
+                  {initial.estimated && (
+                    <p className="col-span-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
+                      {t('transactionForm.estimatedNotice')}
+                    </p>
+                  )}
                   <Field
                     label={t(state.kind === 'expense' ? 'transactionForm.charged' : 'transactionForm.credited', {
                       currency: account.currency,
@@ -469,7 +475,7 @@ export function TransactionForm({
                       id={`${id}-amount`}
                       currency={account.currency}
                       value={state.amount}
-                      onChange={(amount) => update({ amount })}
+                      onChange={(amount) => update({ amount, estimated: false })}
                       invalidProps={invalidProps('amount')}
                     />
                   </Field>
@@ -483,16 +489,27 @@ export function TransactionForm({
                         id={`${id}-cardFee`}
                         currency={account.currency}
                         value={state.cardFee}
-                        onChange={(cardFee) => update({ cardFee })}
+                        onChange={(cardFee) => update({ cardFee, estimated: false })}
                         invalidProps={invalidProps('cardFee')}
                       />
                     </Field>
+                  )}
+                  {initial.estimated && (
+                    <label className="col-span-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+                      <input
+                        type="checkbox"
+                        className="size-4 rounded border-slate-300 text-indigo-600"
+                        checked={!state.estimated}
+                        onChange={(e) => update({ estimated: !e.target.checked })}
+                      />
+                      {t('transactionForm.chargeConfirmed')}
+                    </label>
                   )}
                   {state.manualCharge && chargeMode({ ...state, manualCharge: false }, account, rates) === 'estimate' && (
                     <button
                       type="button"
                       className="col-span-2 justify-self-start text-sm font-medium text-indigo-700 hover:underline"
-                      onClick={() => update({ manualCharge: false, amount: '', cardFee: '' })}
+                      onClick={() => update({ manualCharge: false, amount: '', cardFee: '', estimated: false })}
                     >
                       {t('transactionForm.useEstimate')}
                     </button>

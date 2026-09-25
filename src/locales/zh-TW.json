@@ -85,7 +85,11 @@
     "firstTimeGuide": "第一次使用？看看使用說明",
     "filters": "篩選",
     "filterAccountChip": "帳戶：{{name}}",
-    "filterKindChip": "類型：{{name}}"
+    "filterKindChip": "類型：{{name}}",
+    "estimatedBadge": "估",
+    "estimatedResults_other": "{{count}} 筆估計的扣款待核對",
+    "estimatedFilter_other": "只看估計的扣款（{{count}} 筆）",
+    "estimatedChip": "估計的扣款"
   },
   "transactionForm": {
     "kind": "交易類型",
@@ -137,7 +141,9 @@
     "cardFee": "其中海外手續費",
     "useEstimate": "改用匯率估算",
     "quickPicks": "常用",
-    "quickPickLabel": "{{name}}（{{category}}，{{account}}）"
+    "quickPickLabel": "{{name}}（{{category}}，{{account}}）",
+    "estimatedNotice": "這是依匯率估計的金額，還沒和帳單核對。帳單出來後改成實際扣款，或勾選下方的「已和帳單核對」。",
+    "chargeConfirmed": "已和帳單核對"
   },
   "accounts": {
     "title": "帳戶",
@@ -164,7 +170,10 @@
     "totalApprox": "換算後約 {{amount}}",
     "foreignFee": "海外交易手續費",
     "foreignFeeHint": "用其他幣別付款時銀行加收的比例，記帳時用來估算扣款。台灣發行的卡多為 1.5%，免手續費的卡填 0。",
-    "foreignFeeInvalid": "請輸入 0 到 10 之間的數字，最多到小數點後 2 位"
+    "foreignFeeInvalid": "請輸入 0 到 10 之間的數字，最多到小數點後 2 位",
+    "negativeHint": "餘額是負的，可能漏記了提款、儲值或收入。",
+    "fixBalance": "校正餘額",
+    "estimatesToCheck_other": "{{count}} 筆估計的扣款待核對"
   },
   "errors": {
     "NOT_FOUND": "找不到資料，可能已被刪除。",
@@ -194,7 +203,11 @@
     "title": "設定",
     "language": "語言",
     "baseCurrency": "主要幣別",
-    "baseCurrencyHint": "概況和帳戶合計都會換算成這個幣別。匯率每天自動更新（來源：currency-api），只會下載匯率，不會上傳你的任何資料。"
+    "baseCurrencyHint": "概況和帳戶合計都會換算成這個幣別。匯率每天自動更新（來源：currency-api），只會下載匯率，不會上傳你的任何資料。",
+    "ledger": "記帳項目",
+    "categoriesDetail_other": "{{count}} 個使用中，可新增、改名、隱藏",
+    "recurringDetail_zero": "還沒有。記帳時在「更多」勾選「每月固定」",
+    "recurringDetail_other": "{{count}} 筆"
   },
   "backup": {
     "title": "資料備份",
@@ -407,7 +420,7 @@
     },
     "foreignCard": {
       "title": "在國外刷台灣的卡",
-      "body": "點金額左邊的幣別，改成當地幣別（例如 JPY），輸入刷卡金額。App 會依匯率和卡片的海外交易手續費估算台幣扣款；帳單出來後，按「填帳單金額」改成實際金額。\n手續費併在同一筆，但概況會把它算進「手續費」分類。費率在「帳戶」設定，台灣發行的卡多為 1.5%。每個帳戶會記住上次用的幣別。"
+      "body": "點金額左邊的幣別，改成當地幣別（例如 JPY），輸入刷卡金額。App 會依匯率和卡片的海外交易手續費估算台幣扣款，列表上會標「估」。\n帳單出來後，在「帳戶」點那張卡的「N 筆估計的扣款待核對」，逐筆改成實際金額，或勾選「已和帳單核對」。\n手續費併在同一筆，但概況會把它算進「手續費」分類。費率在「帳戶」設定，台灣發行的卡多為 1.5%。每個帳戶會記住上次用的幣別。"
     },
     "refund": {
       "title": "朋友還錢、退貨退款",

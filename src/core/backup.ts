@@ -354,6 +354,13 @@ function parseTransaction(fields: Fields, path: string): Transaction {
     if (fee >= -amountMinor) invalid(`${path}.feeMinor`, 'must be less than the amount');
     transaction.feeMinor = -fee;
   }
+
+  if (fields.estimated !== undefined) {
+    if (fields.estimated !== true || transaction.originalCurrency === undefined) {
+      invalid(`${path}.estimated`, 'only amounts paid in another currency are estimated');
+    }
+    transaction.estimated = true;
+  }
   return transaction;
 }
 
@@ -411,6 +418,10 @@ function parseRecurring(fields: Fields, path: string): RecurringRule {
     const fee = field(`${tp}.feeMinor`, () => requirePositiveMinor(t.feeMinor));
     if (fee >= template.amountMinor) invalid(`${tp}.feeMinor`, 'must be less than the amount');
     template.feeMinor = fee;
+  }
+  if (t.estimated !== undefined) {
+    if (t.estimated !== true || !template.original) invalid(`${tp}.estimated`, 'only amounts paid in another currency are estimated');
+    template.estimated = true;
   }
 
   const day = fields.dayOfMonth;

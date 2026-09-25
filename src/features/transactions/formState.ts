@@ -50,6 +50,11 @@ export interface FormState {
   manualCharge: boolean;
   /** With `manualCharge`, expenses only: the part of `amount` that is the card's fee. */
   cardFee: string;
+  /**
+   * With `manualCharge`: the typed charge is still an earlier estimate, not
+   * yet checked against the statement.
+   */
+  estimated: boolean;
   /** Income and expenses, when creating: repeat on this day every month. */
   monthly: boolean;
 }
@@ -141,11 +146,19 @@ export function withPaymentCurrency(
 ): Partial<FormState> {
   const typed = state.foreign ? state.originalAmount : state.amount;
   if (currency === accountCurrency) {
-    return { foreign: false, amount: typed, originalAmount: '', manualCharge: false, cardFee: '' };
+    return { foreign: false, amount: typed, originalAmount: '', manualCharge: false, cardFee: '', estimated: false };
   }
   return state.foreign
     ? { originalCurrency: currency }
-    : { foreign: true, originalCurrency: currency, originalAmount: typed, amount: '', manualCharge: false, cardFee: '' };
+    : {
+        foreign: true,
+        originalCurrency: currency,
+        originalAmount: typed,
+        amount: '',
+        manualCharge: false,
+        cardFee: '',
+        estimated: false,
+      };
 }
 
 /**
@@ -189,6 +202,7 @@ export function emptyFormState({
     originalAmount: '',
     manualCharge: false,
     cardFee: '',
+    estimated: false,
     monthly: false,
   };
 }
@@ -283,6 +297,7 @@ export function formStateFromInput(input: TransactionInput, accounts: readonly A
     originalAmount: input.original ? toMoneyInput(input.original.amountMinor, input.original.currency) : '',
     manualCharge: input.original !== undefined,
     cardFee: input.feeMinor ? toMoneyInput(input.feeMinor, accountCurrency) : '',
+    estimated: input.estimated === true,
   };
 }
 
@@ -364,6 +379,7 @@ export function formStateToInput(
       ...(state.note.trim() ? { note: state.note } : {}),
       ...(original && { original }),
       ...(feeMinor !== undefined && { feeMinor }),
+      ...((mode === 'estimate' || (mode === 'manual' && state.estimated)) && { estimated: true }),
     },
   };
 }

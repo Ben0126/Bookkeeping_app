@@ -27,6 +27,8 @@ export interface IncomeExpenseInput {
    * foreign transaction fee (positive, less than `amountMinor`).
    */
   feeMinor?: number;
+  /** Paid in another currency: the amounts are estimates, to check against the statement. */
+  estimated?: boolean;
 }
 
 export interface TransferInput {
@@ -174,6 +176,7 @@ export function toTransactionInput(group: readonly Transaction[]): TransactionIn
     input.original = { amountMinor: Math.abs(first.originalAmountMinor), currency: first.originalCurrency };
   }
   if (first.feeMinor !== undefined) input.feeMinor = Math.abs(first.feeMinor);
+  if (first.estimated) input.estimated = true;
   return input;
 }
 
@@ -196,13 +199,15 @@ export interface TransactionFilter {
    * built-in names are translated.
    */
   searchCategoryIds?: readonly string[];
+  /** Only estimates still to check against a statement. */
+  estimatedOnly?: boolean;
   offset?: number;
   limit?: number;
 }
 
 /** Postings matching `filter`, newest first. Each transfer leg is its own row. */
 export async function listTransactions(db: LedgerDB, filter: TransactionFilter = {}): Promise<Transaction[]> {
-  const { accountId, categoryIds, searchCategoryIds, kind, from, to, offset = 0, limit } = filter;
+  const { accountId, categoryIds, searchCategoryIds, kind, from, to, estimatedOnly, offset = 0, limit } = filter;
   const search = filter.search?.trim().toLocaleLowerCase();
 
   const collection = accountId !== undefined
@@ -219,6 +224,7 @@ export async function listTransactions(db: LedgerDB, filter: TransactionFilter =
   const rows = (await collection.toArray()).filter(
     (t) =>
       (kind === undefined || t.kind === kind) &&
+      (!estimatedOnly || t.estimated === true) &&
       (from === undefined || t.date >= from) &&
       (to === undefined || t.date <= to) &&
       (categoryIds === undefined || inCategories(t, categoryIds)) &&
@@ -313,6 +319,12 @@ async function buildRecords(db: LedgerDB, input: TransactionInput, ctx: BuildCon
     const fee = requireMinor(input.feeMinor);
     if (fee <= 0 || fee >= amountMinor) throw new LedgerError('INVALID_FEE', 'Fee must be above zero and below the amount');
     record.feeMinor = sign * fee;
+  }
+  if (input.estimated) {
+    if (input.original === undefined) {
+      throw new LedgerError('INVALID_ORIGINAL_AMOUNT', 'Only amounts paid in another currency are estimated');
+    }
+    record.estimated = true;
   }
   return [record];
 }

@@ -155,6 +155,7 @@ describe('monthly entries', () => {
       kind: 'expense', accountId: wallet.id, amountMinor: 1099, date: '2026-09-15', categoryId: 'default-phone_internet', payee: 'Spotify',
     });
     renderApp(db, '/settings');
+    fireEvent.click(await screen.findByRole('link', { name: /Monthly entries.*1 entry/ }));
     const section = await screen.findByRole('region', { name: 'Monthly entries' });
     expect(await within(section).findByText('Monthly on day 15 · Spotify · Wallet')).toBeInTheDocument();
     expect(within(section).getByText('-£10.99')).toBeInTheDocument();
@@ -255,5 +256,16 @@ describe('persistent storage', () => {
     renderApp(db, '/settings');
     await screen.findByRole('button', { name: 'Download backup' });
     expect(screen.queryByRole('heading', { name: 'Storage' })).not.toBeInTheDocument();
+  });
+});
+
+describe('settings layout', () => {
+  it('keeps long lists on their own pages', async () => {
+    renderApp(db, '/settings');
+    fireEvent.click(await screen.findByRole('link', { name: /Categories.*22 in use/ }));
+    expect(await screen.findByRole('heading', { name: 'Categories' })).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole('main')).getByRole('link', { name: 'Settings' }));
+    fireEvent.click(await screen.findByRole('link', { name: /Monthly entries.*None yet/ }));
+    expect(await screen.findByRole('region', { name: 'Monthly entries' })).toBeInTheDocument();
   });
 });

@@ -4,7 +4,7 @@ import { AccountsPage } from './features/accounts/AccountsPage';
 import { GuidePage } from './features/onboarding/GuidePage';
 import { WelcomePage } from './features/onboarding/WelcomePage';
 import { OverviewPage } from './features/overview/OverviewPage';
-import { SettingsPage } from './features/settings/SettingsPage';
+import { CategoriesPage, RecurringPage, SettingsPage } from './features/settings/SettingsPage';
 import { TransactionsPage } from './features/transactions/TransactionsPage';
 
 export default function App() {
@@ -16,6 +16,8 @@ export default function App() {
         <Route path="/overview" element={<OverviewPage />} />
         <Route path="/accounts" element={<AccountsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings/categories" element={<CategoriesPage />} />
+        <Route path="/settings/recurring" element={<RecurringPage />} />
         <Route path="/guide" element={<GuidePage />} />
         <Route path="*" element={<Navigate to="/transactions" replace />} />
       </Route>

@@ -155,3 +155,20 @@ describe('foreign transaction fee', () => {
     expect(within(dialog).queryByLabelText('Foreign transaction fee')).not.toBeInTheDocument();
   });
 });
+
+describe('balance hints', () => {
+  it('flags cash below zero and opens the account to correct it', async () => {
+    const cash = await addAccount(db, { name: 'Wallet', kind: 'cash', currency: 'JPY', openingBalanceMinor: 1000 });
+    await createTransaction(db, { kind: 'expense', accountId: cash.id, amountMinor: 3000, date: toDateKey(new Date()) });
+    const card = await addAccount(db, { name: 'Visa', kind: 'credit_card', currency: 'TWD' });
+    await createTransaction(db, { kind: 'expense', accountId: card.id, amountMinor: 500, date: toDateKey(new Date()) });
+    renderApp(db, '/accounts');
+
+    expect(await screen.findByText(/balance is below zero/)).toBeInTheDocument();
+    // A card owing money is normal.
+    expect(screen.getAllByText(/balance is below zero/)).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Correct the balance' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Edit account' });
+    expect(within(dialog).getByLabelText('Current balance')).toHaveValue('-2000');
+  });
+});

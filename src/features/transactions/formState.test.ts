@@ -205,7 +205,7 @@ describe('paying in another currency', () => {
   it('saves the estimate with its fee and the amount paid', () => {
     expect(formStateToInput(yen(), cards, rates).input).toEqual({
       kind: 'expense', accountId: 'card', amountMinor: 1091, feeMinor: 16, date: '2026-09-24', categoryId: 'c',
-      original: { amountMinor: 5000, currency: 'JPY' },
+      original: { amountMinor: 5000, currency: 'JPY' }, estimated: true,
     });
     expect(formStateToInput(yen({ originalAmount: '' }), cards, rates).errors).toEqual({ originalAmount: 'amountRequired' });
   });
@@ -230,10 +230,10 @@ describe('paying in another currency', () => {
   it('moves the typed number when switching currency', () => {
     const typedTwd = base({ accountId: 'card', amount: '500' });
     expect(withPaymentCurrency(typedTwd, 'JPY', 'TWD')).toEqual({
-      foreign: true, originalCurrency: 'JPY', originalAmount: '500', amount: '', manualCharge: false, cardFee: '',
+      foreign: true, originalCurrency: 'JPY', originalAmount: '500', amount: '', manualCharge: false, cardFee: '', estimated: false,
     });
     expect(withPaymentCurrency(yen(), 'TWD', 'TWD')).toEqual({
-      foreign: false, amount: '5,000', originalAmount: '', manualCharge: false, cardFee: '',
+      foreign: false, amount: '5,000', originalAmount: '', manualCharge: false, cardFee: '', estimated: false,
     });
     expect(withPaymentCurrency(yen(), 'EUR', 'TWD')).toEqual({ originalCurrency: 'EUR' });
   });

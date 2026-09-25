@@ -45,6 +45,14 @@ export function AccountsPage() {
   const balances = useLiveQuery(() => getBalances(db), [db]);
   const settings = useLiveQuery(() => getSettings(db), [db]);
   const rates = useLiveQuery(() => listExchangeRates(db), [db]);
+  // Estimated foreign charges still to check against each account's statement.
+  const estimates = useLiveQuery(async () => {
+    const counts = new Map<string, number>();
+    await db.transactions
+      .filter((t) => t.estimated === true)
+      .each((t) => counts.set(t.accountId, (counts.get(t.accountId) ?? 0) + 1));
+    return counts;
+  }, [db]);
   if (!accounts || !balances || !settings) return null;
 
   const active = accounts.filter((a) => !a.archived);
@@ -68,34 +76,63 @@ export function AccountsPage() {
     <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
       {list.map((account) => {
         const balance = balances[account.id] ?? 0;
+        // Cash or a wallet can't go below zero: a withdrawal or top-up probably wasn't recorded.
+        const impossible = balance < 0 && !account.archived && (account.kind === 'cash' || account.kind === 'e_wallet');
+        const toCheck = estimates?.get(account.id) ?? 0;
         return (
-          <li key={account.id} className="flex items-center">
-            <button
-              type="button"
-              onClick={() => setDialog({ mode: 'edit', account })}
-              className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left hover:bg-slate-50"
-            >
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xl" aria-hidden="true">
-                {KIND_ICONS[account.kind]}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium text-slate-900">{account.name}</span>
-                <span className="block text-sm text-slate-500">
-                  {fmt.accountKind(account.kind)} · {account.currency}
+          <li key={account.id}>
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={() => setDialog({ mode: 'edit', account })}
+                className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left hover:bg-slate-50"
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xl" aria-hidden="true">
+                  {KIND_ICONS[account.kind]}
                 </span>
-              </span>
-              <span className={`shrink-0 font-semibold tabular-nums ${balance < 0 ? 'text-rose-600' : 'text-slate-900'}`}>
-                {account.kind === 'credit_card' && balance < 0
-                  ? t('accounts.owed', { amount: fmt.money(-balance, account.currency) })
-                  : fmt.money(balance, account.currency)}
-              </span>
-            </button>
-            <Link
-              to={`/transactions?account=${encodeURIComponent(account.id)}`}
-              className="shrink-0 px-3 py-3 text-sm font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              {t('accounts.viewTransactions')}
-            </Link>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium text-slate-900">{account.name}</span>
+                  <span className="block text-sm text-slate-500">
+                    {fmt.accountKind(account.kind)} · {account.currency}
+                  </span>
+                </span>
+                <span className={`shrink-0 font-semibold tabular-nums ${balance < 0 ? 'text-rose-600' : 'text-slate-900'}`}>
+                  {account.kind === 'credit_card' && balance < 0
+                    ? t('accounts.owed', { amount: fmt.money(-balance, account.currency) })
+                    : fmt.money(balance, account.currency)}
+                </span>
+              </button>
+              <Link
+                to={`/transactions?account=${encodeURIComponent(account.id)}`}
+                className="shrink-0 px-3 py-3 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                {t('accounts.viewTransactions')}
+              </Link>
+            </div>
+            {(impossible || toCheck > 0) && (
+              <div className="space-y-1.5 px-3 pb-3 pl-16 text-sm">
+                {impossible && (
+                  <p className="text-amber-800">
+                    {t('accounts.negativeHint')}{' '}
+                    <button
+                      type="button"
+                      className="font-medium text-indigo-700 hover:underline"
+                      onClick={() => setDialog({ mode: 'edit', account })}
+                    >
+                      {t('accounts.fixBalance')}
+                    </button>
+                  </p>
+                )}
+                {toCheck > 0 && (
+                  <Link
+                    to={`/transactions?account=${encodeURIComponent(account.id)}&estimated=1`}
+                    className="block font-medium text-amber-800 hover:underline"
+                  >
+                    {t('accounts.estimatesToCheck', { count: toCheck })} →
+                  </Link>
+                )}
+              </div>
+            )}
           </li>
         );
       })}

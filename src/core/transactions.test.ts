@@ -159,6 +159,29 @@ describe('fees included in an expense', () => {
   });
 });
 
+describe('estimated charges', () => {
+  const estimate = (fields: Partial<TransactionInput> = {}) =>
+    ({
+      kind: 'expense', accountId: twd.id, amountMinor: 1091, feeMinor: 16, date: '2026-09-01',
+      original: { amountMinor: 5000, currency: 'JPY' }, estimated: true, ...fields,
+    }) as TransactionInput;
+
+  it('are marked until checked against the statement', async () => {
+    const [record] = await createTransaction(db, estimate());
+    expect(record.estimated).toBe(true);
+    expect(await getTransactionInput(db, record.id)).toMatchObject({ estimated: true });
+    expect((await listTransactions(db, { estimatedOnly: true })).map((t) => t.id)).toEqual([record.id]);
+
+    await updateTransaction(db, record.id, estimate({ amountMinor: 1100, estimated: false }));
+    expect(await db.transactions.get(record.id)).not.toHaveProperty('estimated');
+    expect(await listTransactions(db, { estimatedOnly: true })).toEqual([]);
+  });
+
+  it('need an amount paid in another currency', async () => {
+    await expect(createTransaction(db, estimate({ original: undefined }))).rejects.toMatchObject({ code: 'INVALID_ORIGINAL_AMOUNT' });
+  });
+});
+
 describe('transfers', () => {
   it('moves money between same-currency accounts without changing the total', async () => {
     const legs = await createTransaction(db, {

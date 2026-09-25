@@ -28,7 +28,7 @@ beforeEach(async () => {
   });
   await createTransaction(source, {
     kind: 'expense', accountId: twd.id, amountMinor: 1091, feeMinor: 16, date: '2026-09-03', categoryId: 'default-dining',
-    original: { amountMinor: 5000, currency: 'JPY' },
+    original: { amountMinor: 5000, currency: 'JPY' }, estimated: true,
   });
   await setExchangeRate(source, { from: 'USD', to: 'TWD', rate: 32, date: '2026-09-01' });
   await setBudget(source, { categoryId: 'default-dining', amountMinor: 5000, currency: 'TWD' });
@@ -100,6 +100,12 @@ describe('invalid backups', () => {
     ['recurring fee as large as the amount', (data) => { data.recurring[0].template.feeMinor = 121800; }],
     ['fee rate above 10%', (data) => { data.accounts.find((a) => a.foreignFeeBps)!.foreignFeeBps = 2000; }],
     ['fee as large as the charge', (data) => { data.transactions.find((t) => t.feeMinor)!.feeMinor = -1091; }],
+    ['estimate without a foreign amount', (data) => {
+      const estimate = data.transactions.find((t) => t.estimated)!;
+      delete estimate.originalAmountMinor;
+      delete estimate.originalCurrency;
+    }],
+    ['estimate flag that is not true', (data) => { (data.transactions.find((t) => t.estimated)! as { estimated: unknown }).estimated = 'yes'; }],
     ['fee on income', (data) => {
       const income = data.transactions.find((t) => t.feeMinor)!;
       Object.assign(income, { kind: 'income', amountMinor: 1091, categoryId: undefined });

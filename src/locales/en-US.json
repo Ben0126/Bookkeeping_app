@@ -86,7 +86,13 @@
     "firstTimeGuide": "New here? Read the guide",
     "filters": "Filters",
     "filterAccountChip": "Account: {{name}}",
-    "filterKindChip": "Type: {{name}}"
+    "filterKindChip": "Type: {{name}}",
+    "estimatedBadge": "Est.",
+    "estimatedResults_one": "{{count}} estimate to check",
+    "estimatedResults_other": "{{count}} estimates to check",
+    "estimatedFilter_one": "Only estimates to check ({{count}})",
+    "estimatedFilter_other": "Only estimates to check ({{count}})",
+    "estimatedChip": "Estimates"
   },
   "transactionForm": {
     "kind": "Transaction type",
@@ -138,7 +144,9 @@
     "cardFee": "Of which foreign fee",
     "useEstimate": "Use the estimate instead",
     "quickPicks": "Frequent",
-    "quickPickLabel": "{{name}} ({{category}}, {{account}})"
+    "quickPickLabel": "{{name}} ({{category}}, {{account}})",
+    "estimatedNotice": "This is an estimate from exchange rates, not yet checked against the statement. When it arrives, enter the actual charge, or tick “Matches the statement” below.",
+    "chargeConfirmed": "Matches the statement"
   },
   "accounts": {
     "title": "Accounts",
@@ -166,7 +174,11 @@
     "totalApprox": "≈ {{amount}} converted",
     "foreignFee": "Foreign transaction fee",
     "foreignFeeHint": "What the bank adds when you pay in another currency; used to estimate charges. Most Taiwanese cards charge 1.5%; enter 0 for fee-free cards.",
-    "foreignFeeInvalid": "Enter a number from 0 to 10, with at most 2 decimals"
+    "foreignFeeInvalid": "Enter a number from 0 to 10, with at most 2 decimals",
+    "negativeHint": "The balance is below zero; a withdrawal, top-up or income may be missing.",
+    "fixBalance": "Correct the balance",
+    "estimatesToCheck_one": "{{count}} estimate to check",
+    "estimatesToCheck_other": "{{count}} estimates to check"
   },
   "errors": {
     "NOT_FOUND": "Not found. It may have been deleted.",
@@ -196,7 +208,13 @@
     "title": "Settings",
     "language": "Language",
     "baseCurrency": "Main currency",
-    "baseCurrencyHint": "The overview and account totals are converted into this currency. Rates update daily from currency-api; only rates are downloaded, nothing of yours is sent."
+    "baseCurrencyHint": "The overview and account totals are converted into this currency. Rates update daily from currency-api; only rates are downloaded, nothing of yours is sent.",
+    "ledger": "Entries",
+    "categoriesDetail_one": "{{count}} in use; add, rename or hide",
+    "categoriesDetail_other": "{{count}} in use; add, rename or hide",
+    "recurringDetail_zero": "None yet. Tick “Repeats monthly” under “More” when adding an entry",
+    "recurringDetail_one": "{{count}} entry",
+    "recurringDetail_other": "{{count}} entries"
   },
   "backup": {
     "title": "Back up your data",
@@ -412,7 +430,7 @@
     },
     "foreignCard": {
       "title": "Using your home card abroad",
-      "body": "Tap the currency next to the amount and pick the local one (e.g. JPY), then type what you paid. The charge to your card is estimated from exchange rates and the card’s foreign fee; when the statement arrives, use “Enter statement amount” to correct it.\nThe fee stays in the same entry but counts under Fees in the overview. Set the rate on the Accounts page; Taiwanese cards typically charge 1.5%. Each account remembers the currency it last paid in."
+      "body": "Tap the currency next to the amount and pick the local one (e.g. JPY), then type what you paid. The charge to your card is estimated from exchange rates and the card’s foreign fee, and marked “Est.” in the list.\nWhen the statement arrives, open “N estimates to check” under the card on the Accounts page and enter each actual charge, or tick “Matches the statement”.\nThe fee stays in the same entry but counts under Fees in the overview. Set the rate on the Accounts page; Taiwanese cards typically charge 1.5%. Each account remembers the currency it last paid in."
     },
     "refund": {
       "title": "Friends paying you back, refunds",

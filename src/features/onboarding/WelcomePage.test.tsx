@@ -113,7 +113,7 @@ describe('guide', () => {
     fireEvent.click(await screen.findByRole('link', { name: 'Guide' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Guide' })).toBeInTheDocument();
     const card = screen.getByRole('region', { name: 'Using your home card abroad' });
-    expect(within(card).getByText(/Enter statement amount/)).toBeInTheDocument();
+    expect(within(card).getByText(/Matches the statement/)).toBeInTheDocument();
     fireEvent.click(within(screen.getByRole('region', { name: 'Backups and new phones' })).getByRole('link', { name: /Go to Settings/ }));
     expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument();
   });
