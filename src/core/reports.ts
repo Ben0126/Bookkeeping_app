@@ -1,0 +1,212 @@
+import { monthOf } from './dates';
+import { convertMinor, type CurrencyCode } from './money';
+import type { RateResolver } from './rates';
+import type { Account, Transaction } from './types';
+
+/**
+ * Reports are pure functions over loaded data. Every amount is converted to
+ * `baseCurrency` at the rate for its own date; amounts in a currency with no
+ * known rate are left out and that currency is listed in `missingRates`,
+ * never silently added as if it were the base currency.
+ */
+export interface ReportContext {
+  accounts: readonly Account[];
+  baseCurrency: CurrencyCode;
+  rates: RateResolver;
+  /**
+   * Where fees included in expenses (`feeMinor`) are counted, usually the
+   * built-in Fees category; without it they stay with the purchase.
+   */
+  feeCategoryId?: string;
+}
+
+export interface Period {
+  /** Inclusive "YYYY-MM-DD" bounds. */
+  from?: string;
+  to?: string;
+}
+
+export interface CategoryTotal {
+  /** null for uncategorized transactions. */
+  categoryId: string | null;
+  kind: 'income' | 'expense';
+  /** Positive, in base currency minor units. */
+  totalMinor: number;
+  count: number;
+}
+
+export interface Summary {
+  currency: CurrencyCode;
+  incomeMinor: number;
+  /** Spending net of refunds; positive when money went out. */
+  expenseMinor: number;
+  netMinor: number;
+  /** Largest first. */
+  byCategory: CategoryTotal[];
+  /** Unconverted totals in each account currency, including currencies without a rate. */
+  byCurrency: Partial<Record<CurrencyCode, { incomeMinor: number; expenseMinor: number }>>;
+  missingRates: CurrencyCode[];
+}
+
+export interface MonthTotal {
+  /** "YYYY-MM" */
+  month: string;
+  incomeMinor: number;
+  expenseMinor: number;
+  netMinor: number;
+}
+
+/**
+ * Splits each expense that includes a fee into the purchase and the fee, so
+ * that a ¥5,000 dinner charged NT$1,091 counts NT$1,075 as dining and NT$16
+ * as fees. Totals are unchanged; other records pass through.
+ */
+export function splitFees(transactions: readonly Transaction[], feeCategoryId: string | undefined): Transaction[] {
+  if (feeCategoryId === undefined) return [...transactions];
+  return transactions.flatMap((t) => {
+    if (t.feeMinor === undefined) return [t];
+    const purchase: Transaction = { ...t, amountMinor: t.amountMinor - t.feeMinor };
+    delete purchase.feeMinor;
+    const fee: Transaction = { ...purchase, id: `${t.id}:fee`, amountMinor: t.feeMinor, categoryId: feeCategoryId };
+    delete fee.originalAmountMinor;
+    delete fee.originalCurrency;
+    return [purchase, fee];
+  });
+}
+
+/** Income and expense totals for a period. Transfers are not income or spending. */
+export function summarize(
+  allTransactions: readonly Transaction[],
+  ctx: ReportContext,
+  period: Period = {},
+): Summary {
+  const transactions = splitFees(allTransactions, ctx.feeCategoryId);
+  const summary: Summary = {
+    currency: ctx.baseCurrency,
+    incomeMinor: 0,
+    expenseMinor: 0,
+    netMinor: 0,
+    byCategory: [],
+    byCurrency: {},
+    missingRates: [],
+  };
+  const byCategory = new Map<string, CategoryTotal>();
+
+  summary.missingRates = forEachConverted(transactions, ctx, period, (t, baseMinor) => {
+    const kind = t.kind as 'income' | 'expense';
+    // Spending counts up; a refund (a positive expense) counts it back down.
+    const amount = kind === 'income' ? baseMinor : -baseMinor;
+    if (kind === 'income') summary.incomeMinor += amount;
+    else summary.expenseMinor += amount;
+
+    const key = `${kind}:${t.categoryId ?? ''}`;
+    let total = byCategory.get(key);
+    if (!total) {
+      total = { categoryId: t.categoryId ?? null, kind, totalMinor: 0, count: 0 };
+      byCategory.set(key, total);
+    }
+    total.totalMinor += amount;
+    total.count += 1;
+  });
+
+  summary.byCurrency = totalsByCurrency(transactions, ctx.accounts, period);
+
+  summary.netMinor = summary.incomeMinor - summary.expenseMinor;
+  summary.byCategory = [...byCategory.values()].sort((a, b) => b.totalMinor - a.totalMinor);
+  return summary;
+}
+
+/**
+ * Unconverted income and expense per account currency. Needs no exchange
+ * rates, so every currency is included.
+ */
+export function totalsByCurrency(
+  transactions: readonly Transaction[],
+  accounts: readonly Account[],
+  period: Period = {},
+): Summary['byCurrency'] {
+  const currencyOf = new Map(accounts.map((account) => [account.id, account.currency]));
+  const totals: Summary['byCurrency'] = {};
+  for (const t of transactions) {
+    const currency = currencyOf.get(t.accountId);
+    if (t.kind === 'transfer' || currency === undefined || !inPeriod(t, period)) continue;
+    const native = (totals[currency] ??= { incomeMinor: 0, expenseMinor: 0 });
+    if (t.kind === 'income') native.incomeMinor += t.amountMinor;
+    else native.expenseMinor -= t.amountMinor;
+  }
+  return totals;
+}
+
+/** Income and expense per month, oldest first. Months without activity are omitted. */
+export function monthlyTotals(
+  transactions: readonly Transaction[],
+  ctx: ReportContext,
+  period: Period = {},
+): { months: MonthTotal[]; missingRates: CurrencyCode[] } {
+  const months = new Map<string, MonthTotal>();
+  const missingRates = forEachConverted(transactions, ctx, period, (t, baseMinor) => {
+    const month = monthOf(t.date);
+    let total = months.get(month);
+    if (!total) {
+      total = { month, incomeMinor: 0, expenseMinor: 0, netMinor: 0 };
+      months.set(month, total);
+    }
+    if (t.kind === 'income') total.incomeMinor += baseMinor;
+    else total.expenseMinor -= baseMinor;
+    total.netMinor = total.incomeMinor - total.expenseMinor;
+  });
+  return {
+    months: [...months.values()].sort((a, b) => (a.month < b.month ? -1 : 1)),
+    missingRates,
+  };
+}
+
+/** Sum of account balances in the base currency, converted at the rates for `date`. */
+export function netWorth(
+  balances: Readonly<Record<string, number>>,
+  ctx: ReportContext,
+  date: string,
+): { totalMinor: number; missingRates: CurrencyCode[] } {
+  let totalMinor = 0;
+  const missing = new Set<CurrencyCode>();
+  for (const account of ctx.accounts) {
+    const balance = balances[account.id] ?? 0;
+    if (balance === 0) continue;
+    const rate = ctx.rates(account.currency, ctx.baseCurrency, date);
+    if (rate === undefined) {
+      missing.add(account.currency);
+      continue;
+    }
+    totalMinor += convertMinor(balance, account.currency, ctx.baseCurrency, rate);
+  }
+  return { totalMinor, missingRates: [...missing].sort() };
+}
+
+/** Calls `visit` for each income/expense posting in the period that can be converted. */
+function forEachConverted(
+  transactions: readonly Transaction[],
+  ctx: ReportContext,
+  period: Period,
+  visit: (transaction: Transaction, baseMinor: number) => void,
+): CurrencyCode[] {
+  const currencyOf = new Map(ctx.accounts.map((account) => [account.id, account.currency]));
+  const missing = new Set<CurrencyCode>();
+
+  for (const t of transactions) {
+    if (t.kind === 'transfer') continue;
+    if (!inPeriod(t, period)) continue;
+    const currency = currencyOf.get(t.accountId);
+    if (currency === undefined) continue;
+    const rate = ctx.rates(currency, ctx.baseCurrency, t.date);
+    if (rate === undefined) {
+      missing.add(currency);
+      continue;
+    }
+    visit(t, convertMinor(t.amountMinor, currency, ctx.baseCurrency, rate));
+  }
+  return [...missing].sort();
+}
+
+function inPeriod(t: Transaction, { from, to }: Period): boolean {
+  return (from === undefined || t.date >= from) && (to === undefined || t.date <= to);
+}
