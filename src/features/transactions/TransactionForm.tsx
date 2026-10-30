@@ -55,6 +55,8 @@ interface TransactionFormProps {
   baseCurrency: CurrencyCode;
   /** Stored exchange rates, to estimate charges for amounts paid in another currency. */
   rates: RateResolver;
+  /** Told the date shown, so rates for it can be loaded. */
+  onDateChange?: (date: string) => void;
   /** Recent entries, newest first, for frequent entries and payee suggestions (new entries only). */
   history?: readonly Transaction[];
   /** Record or transfer id when editing. */
@@ -71,6 +73,7 @@ export function TransactionForm({
   initial,
   baseCurrency,
   rates,
+  onDateChange,
   history = NO_HISTORY,
   editingId,
   onSaved,
@@ -95,6 +98,7 @@ export function TransactionForm({
   const amountInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => onDirtyChange(isFormDirty(state, baseline)), [state, baseline, onDirtyChange]);
+  useEffect(() => onDateChange?.(state.date), [state.date, onDateChange]);
 
   // Archived accounts and categories stay selectable only if the entry already uses them.
   const selectableAccounts = accounts.filter(

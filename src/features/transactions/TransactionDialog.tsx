@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLedgerDb } from '../../app/ledgerContext';
 import {
@@ -7,6 +7,7 @@ import {
   DEFAULT_SETTINGS,
   getSettings,
   getTransactionInput,
+  isDateKey,
   listExchangeRates,
   listTransactions,
   toDateKey,
@@ -43,14 +44,26 @@ export function TransactionDialog({ editingId, accounts, categories, filterAccou
   const { setDirty, confirmDiscard } = useDiscardGuard(t('transactionForm.discardConfirm'));
   const lastSavedDate = useRef<string | undefined>(undefined);
   const settings = useLiveQuery(() => getSettings(db), [db]);
-  const storedRates = useLiveQuery(() => listExchangeRates(db), [db]);
-  const rates = useMemo(() => storedRates && createRateResolver(storedRates), [storedRates]);
   const [today] = useState(() => toDateKey(new Date()));
+  const [edited, setEdited] = useState<TransactionInput | null | undefined>(undefined);
+  // Rates from the earliest day the form has shown; picking an earlier date loads more.
+  const [earliestDate, setEarliestDate] = useState(today);
+  const ratesFrom = edited && edited.date < earliestDate ? edited.date : earliestDate;
+  const loadedRates = useLiveQuery(
+    async () => ({ from: ratesFrom, rates: await listExchangeRates(db, { from: ratesFrom }) }),
+    [db, ratesFrom],
+  );
+  const rates = useMemo(
+    () => loadedRates && { from: loadedRates.from, resolve: createRateResolver(loadedRates.rates) },
+    [loadedRates],
+  );
+  const showDate = useCallback((date: string) => {
+    if (isDateKey(date)) setEarliestDate((earliest) => (date < earliest ? date : earliest));
+  }, []);
   const history = useLiveQuery(
     () => (editingId ? [] : listTransactions(db, { from: toDateKey(new Date(Date.now() - HISTORY_DAYS * DAY_MS)) })),
     [db, editingId],
   );
-  const [edited, setEdited] = useState<TransactionInput | null | undefined>(undefined);
 
   useEffect(() => {
     if (!editingId) return;
@@ -89,13 +102,15 @@ export function TransactionDialog({ editingId, accounts, categories, filterAccou
       ) : (
         initial &&
         settings &&
-        rates && (
+        rates &&
+        rates.from <= initial.date && (
           <TransactionForm
             accounts={accounts}
             categories={categories}
             initial={initial}
             baseCurrency={settings.baseCurrency ?? DEFAULT_SETTINGS.baseCurrency}
-            rates={rates}
+            rates={rates.resolve}
+            onDateChange={showDate}
             history={history}
             editingId={editingId}
             onDirtyChange={setDirty}
