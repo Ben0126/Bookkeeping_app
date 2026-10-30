@@ -7,7 +7,9 @@ import {
   monthOf,
   saveExchangeRates,
   seedDefaultCategories,
+  shiftMonth,
   toDateKey,
+  updateSettings,
   type Account,
   type LedgerDB,
 } from '../../core';
@@ -131,6 +133,51 @@ describe('OverviewPage', () => {
     renderApp(db, '/overview');
     fireEvent.click(await screen.findByRole('button', { name: 'Update rates' }));
     expect(await screen.findByText(/Couldn't get exchange rates/)).toBeInTheDocument();
+  });
+});
+
+describe('semester and year reports', () => {
+  const previousMonth = shiftMonth(thisMonth, -1);
+
+  beforeEach(async () => {
+    await createTransaction(db, {
+      kind: 'expense', accountId: taiwan.id, amountMinor: 4000, date: `${previousMonth}-15`, categoryId: 'default-dining',
+    });
+    // A semester starting this month, so last month falls in the one before.
+    await updateSettings(db, { semesterStart: Number(thisMonth.slice(5)) });
+  });
+
+  it('totals the year, month by month, with each category’s trend', async () => {
+    renderApp(db, '/overview');
+    fireEvent.click(await screen.findByRole('radio', { name: 'Year' }));
+
+    expect(await screen.findByRole('heading', { level: 1, name: thisMonth.slice(0, 4) })).toBeInTheDocument();
+    const spent = await card('Spent in the year');
+    const inYear = previousMonth.slice(0, 4) === thisMonth.slice(0, 4);
+    expect(within(spent).getByText(inYear ? '≈ NT$25,000' : '≈ NT$21,000')).toBeInTheDocument();
+
+    const months = await card('Spending by month');
+    expect(within(months).getAllByRole('link')).toHaveLength(12);
+    const ranking = await card('Where it went');
+    expect(within(ranking).getByText(inYear ? '≈ NT$17,000' : '≈ NT$13,000')).toBeInTheDocument();
+
+    // A month opens on its own.
+    fireEvent.click(within(months).getByRole('link', { name: new RegExp(`: ≈ NT\\$21,000`) }));
+    expect(await card('Spent this month')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Month' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('starts semesters in the month chosen, and steps through them', async () => {
+    renderApp(db, `/overview?view=semester&month=${thisMonth}`);
+    const spent = await card('Spent in the semester');
+    expect(within(spent).getByText('≈ NT$21,000')).toBeInTheDocument();
+    expect(within(spent).getByText(/a month on average/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Previous semester' }));
+    expect(await within(await card('Spent in the semester')).findByText('NT$4,000')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('First semester starts in'), { target: { value: String(Number(previousMonth.slice(5))) } });
+    await waitFor(async () => expect((await db.settings.get('semesterStart'))?.value).toBe(Number(previousMonth.slice(5))));
   });
 });
 

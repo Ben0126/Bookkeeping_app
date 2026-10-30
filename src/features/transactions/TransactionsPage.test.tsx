@@ -99,6 +99,20 @@ describe('TransactionsPage', () => {
     expect(await getAccountBalance(db, chase.id)).toBe(100000);
   });
 
+  it('dates an entry yesterday with one tap', async () => {
+    renderApp(db, '/transactions');
+    const dialog = await openAddDialog();
+    expect(within(dialog).getByRole('button', { name: 'Today' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(within(dialog).getByRole('radio', { name: /Chase/ }));
+    change(within(dialog).getByLabelText('Amount'), '12');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Yesterday' }));
+    const yesterday = toDateKey(new Date(Date.now() - 86_400_000));
+    expect(within(dialog).getByLabelText('Date')).toHaveValue(yesterday);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitForDialogToClose();
+    expect(await db.transactions.toArray()).toMatchObject([{ date: yesterday, amountMinor: -1200 }]);
+  });
+
   it('shows validation errors without saving', async () => {
     renderApp(db, '/transactions');
     const dialog = await openAddDialog();
