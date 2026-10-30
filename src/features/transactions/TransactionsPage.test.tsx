@@ -381,7 +381,8 @@ describe('searching', () => {
     expect(screen.getByRole('button', { name: /Dentist/ })).toBeInTheDocument();
     // Dates carry the year, since results span years.
     expect(screen.getByRole('region', { name: new RegExp(lastYear.slice(0, 4)) })).toBeInTheDocument();
-    const spent = screen.getByText('Spent (results)').parentElement!;
+    // The summary reloads rates for the results' dates, so it can show up a moment after the list.
+    const spent = (await screen.findByText('Spent (results)')).parentElement!;
     expect(within(spent).getByText('$80.00')).toBeInTheDocument();
 
     change(screen.getByPlaceholderText('Search payee, note or category'), 'RENT');
