@@ -1,4 +1,5 @@
 import { budgetId } from './budgets';
+import { defaultCategoryRecords } from './categories';
 import type { LedgerDB } from './db';
 import { LedgerError } from './errors';
 import { isMonthKey } from './dates';
@@ -81,6 +82,14 @@ export async function importBackup(db: LedgerDB, raw: unknown): Promise<BackupDa
     await db.recurring.bulkAdd(data.recurring);
   });
   return data;
+}
+
+/** Deletes everything and starts over with the default categories, as on first launch. */
+export async function resetLedger(db: LedgerDB): Promise<void> {
+  await db.transaction('rw', db.tables, async () => {
+    await Promise.all(db.tables.map((table) => table.clear()));
+    await db.categories.bulkAdd(defaultCategoryRecords(Date.now()));
+  });
 }
 
 /** Parses and validates backup file text without touching the database. */
@@ -444,6 +453,10 @@ function parseRecurring(fields: Fields, path: string): RecurringRule {
 function parseSetting(fields: Fields, path: string): SettingRow | null {
   if (fields.key === 'baseCurrency') {
     return { key: 'baseCurrency', value: field(`${path}.value`, () => requireCurrency(fields.value)) };
+  }
+  if (fields.key === 'demo') {
+    if (fields.value !== true) invalid(`${path}.value`, 'expected true');
+    return { key: 'demo', value: true };
   }
   if (fields.key === 'semesterStart') {
     if (!isMonthNumber(fields.value)) invalid(`${path}.value`, 'expected a month, 1–12');

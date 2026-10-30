@@ -2,7 +2,22 @@
 
 給留學生用的記帳 App。台幣帳戶和當地貨幣一起記，總額自動換算；在國外刷台灣的信用卡，也會幫你估算含海外手續費的台幣扣款。
 
-**👉 立即使用：<https://bookkeeping-app-three.vercel.app/>**
+**👉 立即使用：<https://bookkeeping-app-three.vercel.app/>**（想先看看的話，第一個畫面選「先用範例資料看看」，不用設定就能逛）
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/entry.png" width="200" alt="記帳表單：輸入日圓，自動估算台灣信用卡含手續費的扣款"></td>
+    <td align="center"><img src="docs/screenshots/transactions.png" width="200" alt="交易列表與本月支出、預算進度"></td>
+    <td align="center"><img src="docs/screenshots/overview.png" width="200" alt="本月概況：預算、每天可花多少、分類排行"></td>
+    <td align="center"><img src="docs/screenshots/semester.png" width="200" alt="學期報表：學期支出、每月平均、每月支出"></td>
+  </tr>
+  <tr>
+    <td align="center">刷台灣的卡付日圓，<br>自動估算台幣扣款</td>
+    <td align="center">每天的帳<br>和本月預算</td>
+    <td align="center">這個月還能花多少、<br>錢花在哪</td>
+    <td align="center">一學期花了多少、<br>每月平均</td>
+  </tr>
+</table>
 
 - **不用註冊**：打開網頁就能用，可以加到手機主畫面當 App。
 - **離線可用**：沒有網路也能記帳，只有下載匯率時需要連網。
@@ -28,6 +43,8 @@
 3. **資料存在你的手機裡**：說明備份和加到主畫面。
 
 換手機的人，在第一個畫面選「從備份檔還原」就好。
+
+**只是想先看看？** 在第一個畫面選「先用範例資料看看」，會載入一個在東京留學的學生半年來的帳，可以隨便點、隨便改。看完後按畫面上方的「清除範例，開始記自己的帳」，範例會全部清掉，回到第一次設定。
 
 ## 每天記帳
 
@@ -149,7 +166,7 @@ src/
 
 發佈新版的步驟：
 
-1. 更新 `package.json` 的版本號，並在 `CHANGELOG.md` 最上面加上這一版的變更，合併到 `main`。
+1. 平常每個 PR 都把變更記在 `CHANGELOG.md` 最上面的「尚未發佈」。要發佈時，把「尚未發佈」改成新版本號，同時更新 `package.json` 的版本號，合併到 `main`。
 2. 在 GitHub 的 **Releases → Draft a new release** 建立新版本：tag 填 `v0.3.0` 這種格式，Target 選 `main`，內容貼上 `CHANGELOG.md` 裡這一版的段落。
 
 使用者的 App 會自動更新到最新部署的版本，所以 tag 主要是用來對照「線上跑的是哪一版」，有問題時也方便回到上一版重新部署。

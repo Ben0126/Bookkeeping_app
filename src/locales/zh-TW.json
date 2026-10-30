@@ -390,6 +390,7 @@
     "readGuide": "先看看使用說明",
     "start": "開始設定（約 1 分鐘）",
     "restore": "從備份檔還原",
+    "tryDemo": "先用範例資料看看",
     "skip": "略過",
     "stepOf": "第 {{step}} 步，共 {{total}} 步",
     "back": "上一步",
@@ -494,5 +495,19 @@
     "deleted": "已刪除：{{entry}}",
     "undo": "復原",
     "undone": "已復原"
+  },
+  "demo": {
+    "banner": "你正在看範例資料：一個在東京留學的學生半年來的帳。隨便點、隨便改都沒關係。",
+    "exit": "清除範例，開始記自己的帳",
+    "exitConfirm": "範例資料會全部清除，接著開始設定你自己的帳戶。確定嗎？",
+    "names": {
+      "cash": "現金",
+      "localBank": "日本的銀行帳戶",
+      "homeBank": "台灣的銀行帳戶",
+      "homeCard": "台灣的信用卡",
+      "landlord": "房東",
+      "partTimeJob": "居酒屋打工",
+      "friendPaidBack": "朋友還晚餐錢"
+    }
   }
 }
