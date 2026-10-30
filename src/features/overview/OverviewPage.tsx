@@ -1,9 +1,11 @@
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useLedgerDb } from '../../app/ledgerContext';
 import {
   createRateResolver,
+  getSettings,
   isMonthKey,
   monthOf,
   netWorth,
@@ -13,6 +15,7 @@ import {
   type CurrencyCode,
   type ExchangeRate,
 } from '../../core';
+import { Segmented } from '../../ui/form';
 import { Modal } from '../../ui/Modal';
 import { MonthNav } from '../../ui/MonthNav';
 import { guessLocalCurrency } from '../../ui/localCurrency';
@@ -23,15 +26,49 @@ import { refreshRates } from '../rates/rateSource';
 import { BudgetBar } from './BudgetBar';
 import { BudgetForm } from './BudgetForm';
 import type { MonthOverview } from './monthOverview';
+import { cardClass, MissingRatesNote, SpendingCard } from './overviewParts';
+import { PeriodReport } from './PeriodReport';
+import { guessSemesterStart, PERIOD_VIEWS, periodContaining, type PeriodView } from './periods';
+import { useConvertedMoney } from './useConvertedMoney';
 import { useMonthOverview } from './useMonthOverview';
-
-const cardClass = 'space-y-3 rounded-xl bg-surface p-4 ring-1 ring-slate-200';
 
 export function OverviewPage() {
   const { t } = useTranslation();
+  const db = useLedgerDb();
   const [params, setParams] = useSearchParams();
+  const view = PERIOD_VIEWS.find((v) => v === params.get('view')) ?? 'month';
   const monthParam = params.get('month');
   const month = isMonthKey(monthParam) ? monthParam : monthOf(toDateKey(new Date()));
+  const settings = useLiveQuery(() => getSettings(db), [db]);
+  if (!settings) return null;
+  const semesterStart = settings.semesterStart ?? guessSemesterStart(deviceTimeZone());
+
+  const show = (nextView: PeriodView, nextMonth: string) =>
+    setParams(nextView === 'month' ? { month: nextMonth } : { view: nextView, month: nextMonth });
+
+  return (
+    <div className="space-y-4">
+      <Segmented<PeriodView>
+        label={t('overview.viewLabel')}
+        value={view}
+        onChange={(next) => show(next, month)}
+        options={PERIOD_VIEWS.map((v) => ({ value: v, label: t(`overview.views.${v}`) }))}
+      />
+      {view === 'month' ? (
+        <MonthReport month={month} onMonthChange={(next) => show('month', next)} />
+      ) : (
+        <PeriodReport
+          period={periodContaining(view, month, semesterStart)}
+          semesterStart={semesterStart}
+          onNavigate={(next) => show(view, next)}
+        />
+      )}
+    </div>
+  );
+}
+
+function MonthReport({ month, onMonthChange }: { month: string; onMonthChange: (month: string) => void }) {
+  const { t } = useTranslation();
   const data = useMonthOverview(month);
   const [editingBudget, setEditingBudget] = useState(false);
   const { setDirty, confirmDiscard } = useDiscardGuard(t('transactionForm.discardConfirm'));
@@ -41,9 +78,15 @@ export function OverviewPage() {
   const budget = data.budgets.find((b) => b.categoryId === undefined);
 
   return (
-    <div className="space-y-4">
-      <MonthNav month={month} onChange={(next) => setParams({ month: next })} />
-      <SpendingCard overview={overview} />
+    <>
+      <MonthNav month={month} onChange={onMonthChange} />
+      <SpendingCard
+        title={t('overview.spent')}
+        summary={overview.summary}
+        native={overview.native}
+        currency={overview.currency}
+        missingRates={overview.missingRates}
+      />
       <BudgetCard overview={overview} onEdit={() => setEditingBudget(true)} />
       <CategoryRanking overview={overview} categories={categories} month={month} />
       <AccountsTotal accounts={accounts} balances={balances} rates={rates} base={overview.currency} today={today} />
@@ -59,68 +102,7 @@ export function OverviewPage() {
           />
         </Modal>
       )}
-    </div>
-  );
-}
-
-/** "≈ NT$12,345" when anything was converted, the plain amount otherwise. */
-function useConvertedMoney(overview: MonthOverview) {
-  const { t } = useTranslation();
-  const fmt = useFormat();
-  const converted = Object.keys(overview.native).some((currency) => currency !== overview.currency);
-  return (amountMinor: number) => {
-    const money = fmt.money(amountMinor, overview.currency);
-    // Nothing was converted into a zero, so it isn't approximate.
-    return converted && amountMinor !== 0 ? t('overview.approx', { amount: money }) : money;
-  };
-}
-
-function SpendingCard({ overview }: { overview: MonthOverview }) {
-  const { t } = useTranslation();
-  const fmt = useFormat();
-  const show = useConvertedMoney(overview);
-  const { summary } = overview;
-  const nativeSpending = (Object.entries(overview.native) as [CurrencyCode, { expenseMinor: number }][])
-    .sort(([a], [b]) => a.localeCompare(b))
-    .filter(([, totals]) => totals.expenseMinor > 0)
-    .map(([currency, totals]) => fmt.money(totals.expenseMinor, currency));
-  const converted = Object.keys(overview.native).some((currency) => currency !== overview.currency);
-
-  return (
-    <section aria-labelledby="spent-title" className={cardClass}>
-      <div>
-        <h2 id="spent-title" className="text-sm font-medium text-slate-500">
-          {t('overview.spent')}
-        </h2>
-        <p className="text-3xl font-bold tabular-nums">{show(summary.expenseMinor)}</p>
-        {converted && nativeSpending.length > 0 && (
-          <p className="text-sm text-slate-500">{t('overview.includes', { list: nativeSpending.join('、') })}</p>
-        )}
-      </div>
-      <dl className="grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <dt className="text-slate-500">{t('overview.received')}</dt>
-          <dd className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{show(summary.incomeMinor)}</dd>
-        </div>
-        <div>
-          <dt className="text-slate-500">{t('overview.net')}</dt>
-          <dd className={`font-semibold tabular-nums ${summary.netMinor < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900'}`}>
-            {show(summary.netMinor)}
-          </dd>
-        </div>
-      </dl>
-      <MissingRatesNote currencies={overview.missingRates} />
-    </section>
-  );
-}
-
-function MissingRatesNote({ currencies }: { currencies: readonly CurrencyCode[] }) {
-  const { t } = useTranslation();
-  if (currencies.length === 0) return null;
-  return (
-    <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
-      {t('overview.missingRates', { currencies: currencies.join('、') })}
-    </p>
+    </>
   );
 }
 
@@ -340,4 +322,12 @@ function RatesFootnote({
       {status === 'failed' && <p className="text-rose-600 dark:text-rose-400">{t('overview.refreshFailed')}</p>}
     </footer>
   );
+}
+
+function deviceTimeZone(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return undefined;
+  }
 }

@@ -8,6 +8,7 @@ import {
   getSettings,
   listBudgets,
   listExchangeRates,
+  monthRange,
   splitFees,
   summarize,
   toDateKey,
@@ -41,9 +42,15 @@ export function MonthSummary({ month, rows, accounts, categories, filtered, cate
   const { t } = useTranslation();
   const fmt = useFormat();
   const db = useLedgerDb();
+  // Rates for the days shown: the month, or the span of the search results.
+  const { from, to } = month ? monthRange(month) : dateSpan(rows);
   const context = useLiveQuery(
-    async () => ({ settings: await getSettings(db), rates: await listExchangeRates(db), budgets: await listBudgets(db) }),
-    [db],
+    async () => ({
+      settings: await getSettings(db),
+      rates: await listExchangeRates(db, { from, to }),
+      budgets: await listBudgets(db),
+    }),
+    [db, from, to],
   );
   if (!context) return null;
 
@@ -134,4 +141,15 @@ export function MonthSummary({ month, rows, accounts, categories, filtered, cate
   ) : (
     <div className={className}>{content}</div>
   );
+}
+
+function dateSpan(rows: readonly Transaction[]): { from: string; to: string } {
+  const today = toDateKey(new Date());
+  let from = rows[0]?.date ?? today;
+  let to = from;
+  for (const row of rows) {
+    if (row.date < from) from = row.date;
+    if (row.date > to) to = row.date;
+  }
+  return { from, to };
 }

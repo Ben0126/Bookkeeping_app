@@ -3,6 +3,7 @@ import type { LedgerDB } from './db';
 import { LedgerError } from './errors';
 import { isMonthKey } from './dates';
 import { exchangeRateId } from './rates';
+import { isMonthNumber } from './settings';
 import {
   ACCOUNT_KINDS,
   type Account,
@@ -443,6 +444,10 @@ function parseRecurring(fields: Fields, path: string): RecurringRule {
 function parseSetting(fields: Fields, path: string): SettingRow | null {
   if (fields.key === 'baseCurrency') {
     return { key: 'baseCurrency', value: field(`${path}.value`, () => requireCurrency(fields.value)) };
+  }
+  if (fields.key === 'semesterStart') {
+    if (!isMonthNumber(fields.value)) invalid(`${path}.value`, 'expected a month, 1–12');
+    return { key: 'semesterStart', value: fields.value };
   }
   return null;
 }

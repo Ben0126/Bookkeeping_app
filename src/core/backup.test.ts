@@ -32,7 +32,7 @@ beforeEach(async () => {
   });
   await setExchangeRate(source, { from: 'USD', to: 'TWD', rate: 32, date: '2026-09-01' });
   await setBudget(source, { categoryId: 'default-dining', amountMinor: 5000, currency: 'TWD' });
-  await updateSettings(source, { baseCurrency: 'USD' });
+  await updateSettings(source, { baseCurrency: 'USD', semesterStart: 4 });
   await createRecurringRule(source, {
     template: { kind: 'expense', accountId: usd.id, amountMinor: 121800, feeMinor: 1800, categoryId: 'default-rent' },
     dayOfMonth: 1,
@@ -66,7 +66,16 @@ describe('export and import', () => {
     tampered.data.settings.push({ key: 'theme', value: 'dark' });
     const parsed = parseBackup(tampered);
     expect(parsed.data.accounts[0]).not.toHaveProperty('injected');
-    expect(parsed.data.settings).toEqual([{ key: 'baseCurrency', value: 'USD' }]);
+    expect(parsed.data.settings).toEqual([
+      { key: 'baseCurrency', value: 'USD' },
+      { key: 'semesterStart', value: 4 },
+    ]);
+  });
+
+  it('rejects a semester start that is not a month', () => {
+    const copy = structuredClone(backup);
+    copy.data.settings = [{ key: 'semesterStart', value: 13 }];
+    expect(() => parseBackup(copy)).toThrow(/settings\[0\]\.value: expected a month/);
   });
 });
 

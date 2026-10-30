@@ -18,16 +18,17 @@ export function useMonthOverview(month: string) {
   const db = useLedgerDb();
   return useLiveQuery(async () => {
     const { from, to } = monthRange(month);
+    const today = toDateKey(new Date());
     const [transactions, accounts, categories, budgets, rates, settings, balances] = await Promise.all([
       listTransactions(db, { from, to }),
       listAccounts(db, { includeArchived: true }),
       listCategories(db, { includeArchived: true }),
       listBudgets(db),
-      listExchangeRates(db),
+      // The month's rates, and today's for the account totals.
+      listExchangeRates(db, { from: from < today ? from : today }),
       getSettings(db),
       getBalances(db),
     ]);
-    const today = toDateKey(new Date());
     const overview = buildMonthOverview({
       month,
       today,

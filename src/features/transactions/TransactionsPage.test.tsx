@@ -99,6 +99,20 @@ describe('TransactionsPage', () => {
     expect(await getAccountBalance(db, chase.id)).toBe(100000);
   });
 
+  it('dates an entry yesterday with one tap', async () => {
+    renderApp(db, '/transactions');
+    const dialog = await openAddDialog();
+    expect(within(dialog).getByRole('button', { name: 'Today' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(within(dialog).getByRole('radio', { name: /Chase/ }));
+    change(within(dialog).getByLabelText('Amount'), '12');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Yesterday' }));
+    const yesterday = toDateKey(new Date(Date.now() - 86_400_000));
+    expect(within(dialog).getByLabelText('Date')).toHaveValue(yesterday);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitForDialogToClose();
+    expect(await db.transactions.toArray()).toMatchObject([{ date: yesterday, amountMinor: -1200 }]);
+  });
+
   it('shows validation errors without saving', async () => {
     renderApp(db, '/transactions');
     const dialog = await openAddDialog();
@@ -504,6 +518,21 @@ describe('paying in another currency', () => {
     expect(await db.transactions.toArray()).toMatchObject([{ amountMinor: -1100, feeMinor: -17, originalAmountMinor: -5000 }]);
   });
 
+  it('estimates a back-dated purchase at the rate of its day', async () => {
+    const daysAgo = (days: number) => toDateKey(new Date(Date.now() - days * 86_400_000));
+    await setExchangeRate(db, { from: 'JPY', to: 'TWD', rate: 0.19, date: daysAgo(90) });
+    await setExchangeRate(db, { from: 'JPY', to: 'TWD', rate: 0.2, date: daysAgo(30) });
+    renderApp(db, '/transactions');
+    const dialog = await openAddDialog();
+    fireEvent.click(within(dialog).getByRole('radio', { name: /Visa/ }));
+    payIn(dialog, 'JPY');
+    change(within(dialog).getByLabelText('Amount'), '5000');
+    expect(within(dialog).getByText(/charged about NT\$1,091/)).toBeInTheDocument();
+
+    change(within(dialog).getByLabelText('Date'), daysAgo(60));
+    expect(await within(dialog).findByText(/charged about NT\$964/)).toBeInTheDocument();
+  });
+
   it('asks for the charge when there is no rate for the currency', async () => {
     renderApp(db, '/transactions');
     const dialog = await openAddDialog();
@@ -622,6 +651,14 @@ describe('estimated charges', () => {
     await waitForDialogToClose();
     expect(await screen.findByRole('heading', { name: '0 estimates to check' })).toBeInTheDocument();
     expect(await db.transactions.filter((t) => t.estimated === true).count()).toBe(0);
+  });
+
+  it('can be the only entries listed, from the filters', async () => {
+    await estimate(`${shiftMonth(thisMonth, -1)}-20`);
+    renderApp(db, '/transactions');
+    fireEvent.click(await screen.findByRole('button', { name: 'Filters' }));
+    fireEvent.click(await screen.findByLabelText('Only estimates to check (1)'));
+    expect(await screen.findByRole('heading', { name: '1 estimate to check' })).toBeInTheDocument();
   });
 
   it('keep the mark when only the note changes', async () => {

@@ -2,6 +2,20 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vitest/config';
 
+/** npm package → the separate file it's bundled into. */
+const VENDOR_CHUNKS: Record<string, string> = {
+  react: 'react',
+  'react-dom': 'react',
+  scheduler: 'react',
+  'react-router': 'react',
+  'react-router-dom': 'react',
+  dexie: 'dexie',
+  'dexie-react-hooks': 'dexie',
+  i18next: 'i18n',
+  'i18next-browser-languagedetector': 'i18n',
+  'react-i18next': 'i18n',
+};
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -33,6 +47,18 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Libraries change far less often than the app; separate files stay cached
+        // when an update only touches app code.
+        manualChunks(id) {
+          const name = /[\\/]node_modules[\\/]([^\\/]+)/.exec(id)?.[1];
+          return name && VENDOR_CHUNKS[name];
+        },
+      },
+    },
+  },
   test: {
     environment: 'happy-dom',
     globals: true,

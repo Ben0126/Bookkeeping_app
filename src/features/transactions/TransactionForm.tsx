@@ -8,6 +8,7 @@ import {
   deleteTransaction,
   getTransactionGroup,
   parseMoney,
+  toDateKey,
   toMajor,
   toMoneyInput,
   undoTransactionChange,
@@ -55,6 +56,8 @@ interface TransactionFormProps {
   baseCurrency: CurrencyCode;
   /** Stored exchange rates, to estimate charges for amounts paid in another currency. */
   rates: RateResolver;
+  /** Told the date shown, so rates for it can be loaded. */
+  onDateChange?: (date: string) => void;
   /** Recent entries, newest first, for frequent entries and payee suggestions (new entries only). */
   history?: readonly Transaction[];
   /** Record or transfer id when editing. */
@@ -71,6 +74,7 @@ export function TransactionForm({
   initial,
   baseCurrency,
   rates,
+  onDateChange,
   history = NO_HISTORY,
   editingId,
   onSaved,
@@ -95,6 +99,7 @@ export function TransactionForm({
   const amountInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => onDirtyChange(isFormDirty(state, baseline)), [state, baseline, onDirtyChange]);
+  useEffect(() => onDateChange?.(state.date), [state.date, onDateChange]);
 
   // Archived accounts and categories stay selectable only if the entry already uses them.
   const selectableAccounts = accounts.filter(
@@ -316,16 +321,40 @@ export function TransactionForm({
     return t('transactionForm.feeTotal', { account: account.name, total: fmt.money(amount + fee, account.currency) });
   })();
 
+  const today = toDateKey(new Date());
+  const yesterday = toDateKey(new Date(Date.now() - 86_400_000));
   const dateField = (
     <Field label={t('transactionForm.date')} htmlFor={`${id}-date`}>
-      <input
-        id={`${id}-date`}
-        type="date"
-        required
-        className={inputClass}
-        value={state.date}
-        onChange={(e) => update({ date: e.target.value })}
-      />
+      <div className="flex gap-2">
+        {/* Most entries are from today or yesterday; the calendar is for the rest. */}
+        {[
+          { date: today, label: t('transactionForm.today') },
+          { date: yesterday, label: t('transactionForm.yesterday') },
+        ].map((option) => (
+          <button
+            key={option.label}
+            type="button"
+            aria-pressed={state.date === option.date}
+            onClick={() => update({ date: option.date })}
+            className={
+              'shrink-0 rounded-lg px-3 text-sm font-medium ring-1 ' +
+              (state.date === option.date
+                ? 'bg-indigo-50 text-indigo-800 ring-2 ring-indigo-500'
+                : 'bg-surface text-slate-700 ring-slate-300 hover:bg-slate-50 dark:hover:bg-slate-100')
+            }
+          >
+            {option.label}
+          </button>
+        ))}
+        <input
+          id={`${id}-date`}
+          type="date"
+          required
+          className={`${inputClass} min-w-0 flex-1`}
+          value={state.date}
+          onChange={(e) => update({ date: e.target.value })}
+        />
+      </div>
     </Field>
   );
   const noteField = (
@@ -361,75 +390,6 @@ export function TransactionForm({
           ]}
         />
         {state.kind === 'refund' && <p className="-mt-2 text-xs text-slate-500">{t('transactionForm.refundHint')}</p>}
-
-        {quickPicks.length > 0 && (
-          <div className="space-y-1">
-            <p id={`${id}-picks`} className="text-sm font-medium text-slate-700">
-              {t('transactionForm.quickPicks')}
-            </p>
-            <div role="group" aria-labelledby={`${id}-picks`} className="-mx-1 flex gap-2 overflow-x-auto px-1 pt-0.5 pb-1">
-              {quickPicks.map((pick) => {
-                const category = categories.find((c) => c.id === pick.categoryId);
-                const name = pick.payee ?? fmt.categoryName(category);
-                const picked = isPicked(pick);
-                return (
-                  <button
-                    key={`${pick.payee}|${pick.categoryId}|${pick.accountId}`}
-                    type="button"
-                    aria-pressed={picked}
-                    aria-label={t('transactionForm.quickPickLabel', {
-                      name,
-                      category: fmt.categoryName(category),
-                      account: accounts.find((a) => a.id === pick.accountId)?.name ?? '?',
-                    })}
-                    onClick={() => applyPick(pick)}
-                    className={
-                      'flex shrink-0 items-center gap-1.5 rounded-full py-1.5 pr-3 pl-2 text-sm whitespace-nowrap ring-1 ' +
-                      (picked
-                        ? 'bg-indigo-50 font-semibold text-indigo-800 ring-2 ring-indigo-500'
-                        : 'bg-surface text-slate-700 ring-slate-300 hover:bg-slate-50 dark:hover:bg-slate-100')
-                    }
-                  >
-                    <span aria-hidden="true">{category?.icon ?? '🏷️'}</span>
-                    {name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {state.kind === 'transfer' ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t('transactionForm.fromAccount')} htmlFor={`${id}-accountId`} error={errorMessage('accountId')}>
-              <AccountSelect
-                id={`${id}-accountId`}
-                accounts={selectableAccounts}
-                value={state.accountId}
-                onChange={(accountId) => update({ accountId })}
-                invalidProps={invalidProps('accountId')}
-              />
-            </Field>
-            <Field label={t('transactionForm.toAccount')} htmlFor={`${id}-toAccountId`} error={errorMessage('toAccountId')}>
-              <AccountSelect
-                id={`${id}-toAccountId`}
-                accounts={selectableAccounts.filter((a) => a.id !== state.accountId)}
-                value={state.toAccountId}
-                onChange={(toAccountId) => update({ toAccountId })}
-                invalidProps={invalidProps('toAccountId')}
-              />
-            </Field>
-          </div>
-        ) : (
-          <AccountPicker
-            id={`${id}-accountId`}
-            label={t('transactionForm.account')}
-            accounts={selectableAccounts}
-            value={state.accountId}
-            onChange={changeAccount}
-            error={errorMessage('accountId')}
-          />
-        )}
 
         {mode === 'none' ? (
           <Field
@@ -567,6 +527,75 @@ export function TransactionForm({
           )
         )}
 
+        {state.kind === 'transfer' ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label={t('transactionForm.fromAccount')} htmlFor={`${id}-accountId`} error={errorMessage('accountId')}>
+              <AccountSelect
+                id={`${id}-accountId`}
+                accounts={selectableAccounts}
+                value={state.accountId}
+                onChange={(accountId) => update({ accountId })}
+                invalidProps={invalidProps('accountId')}
+              />
+            </Field>
+            <Field label={t('transactionForm.toAccount')} htmlFor={`${id}-toAccountId`} error={errorMessage('toAccountId')}>
+              <AccountSelect
+                id={`${id}-toAccountId`}
+                accounts={selectableAccounts.filter((a) => a.id !== state.accountId)}
+                value={state.toAccountId}
+                onChange={(toAccountId) => update({ toAccountId })}
+                invalidProps={invalidProps('toAccountId')}
+              />
+            </Field>
+          </div>
+        ) : (
+          <AccountPicker
+            id={`${id}-accountId`}
+            label={t('transactionForm.account')}
+            accounts={selectableAccounts}
+            value={state.accountId}
+            onChange={changeAccount}
+            error={errorMessage('accountId')}
+          />
+        )}
+
+        {quickPicks.length > 0 && (
+          <div className="space-y-1">
+            <p id={`${id}-picks`} className="text-sm font-medium text-slate-700">
+              {t('transactionForm.quickPicks')}
+            </p>
+            <div role="group" aria-labelledby={`${id}-picks`} className="-mx-1 flex gap-2 overflow-x-auto px-1 pt-0.5 pb-1">
+              {quickPicks.map((pick) => {
+                const category = categories.find((c) => c.id === pick.categoryId);
+                const name = pick.payee ?? fmt.categoryName(category);
+                const picked = isPicked(pick);
+                return (
+                  <button
+                    key={`${pick.payee}|${pick.categoryId}|${pick.accountId}`}
+                    type="button"
+                    aria-pressed={picked}
+                    aria-label={t('transactionForm.quickPickLabel', {
+                      name,
+                      category: fmt.categoryName(category),
+                      account: accounts.find((a) => a.id === pick.accountId)?.name ?? '?',
+                    })}
+                    onClick={() => applyPick(pick)}
+                    className={
+                      'flex shrink-0 items-center gap-1.5 rounded-full py-1.5 pr-3 pl-2 text-sm whitespace-nowrap ring-1 ' +
+                      (picked
+                        ? 'bg-indigo-50 font-semibold text-indigo-800 ring-2 ring-indigo-500'
+                        : 'bg-surface text-slate-700 ring-slate-300 hover:bg-slate-50 dark:hover:bg-slate-100')
+                    }
+                  >
+                    <span aria-hidden="true">{category?.icon ?? '🏷️'}</span>
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {crossCurrency && toAccount && (
           <Field
             label={t('transactionForm.amountReceived', { currency: toAccount.currency })}
@@ -631,30 +660,28 @@ export function TransactionForm({
           </fieldset>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          {dateField}
-          {state.kind === 'transfer' ? (
-            noteField
-          ) : (
-            <Field label={t('transactionForm.payee')} htmlFor={`${id}-payee`}>
-              <input
-                id={`${id}-payee`}
-                className={inputClass}
-                autoComplete="off"
-                list={payees.length > 0 ? `${id}-payees` : undefined}
-                value={state.payee}
-                onChange={(e) => changePayee(e.target.value)}
-              />
-              {payees.length > 0 && (
-                <datalist id={`${id}-payees`}>
-                  {payees.map((payee) => (
-                    <option key={payee} value={payee} />
-                  ))}
-                </datalist>
-              )}
-            </Field>
-          )}
-        </div>
+        {dateField}
+        {state.kind === 'transfer' ? (
+          noteField
+        ) : (
+          <Field label={t('transactionForm.payee')} htmlFor={`${id}-payee`}>
+            <input
+              id={`${id}-payee`}
+              className={inputClass}
+              autoComplete="off"
+              list={payees.length > 0 ? `${id}-payees` : undefined}
+              value={state.payee}
+              onChange={(e) => changePayee(e.target.value)}
+            />
+            {payees.length > 0 && (
+              <datalist id={`${id}-payees`}>
+                {payees.map((payee) => (
+                  <option key={payee} value={payee} />
+                ))}
+              </datalist>
+            )}
+          </Field>
+        )}
 
         {state.kind !== 'transfer' && (
           <details
@@ -766,7 +793,7 @@ function AccountPicker({
         role="radiogroup"
         aria-labelledby={`${id}-label`}
         aria-describedby={error ? `${id}-error` : undefined}
-        className="flex flex-wrap gap-2"
+        className="-mx-1 flex gap-2 overflow-x-auto px-1 pt-0.5 pb-1"
       >
         {accounts.map((account, index) => {
           const selected = account.id === value;
@@ -779,7 +806,7 @@ function AccountPicker({
               aria-checked={selected}
               onClick={() => onChange(account.id)}
               className={
-                'flex items-center gap-1.5 rounded-full py-1.5 pr-3 pl-1.5 text-sm ring-1 ' +
+                'flex shrink-0 items-center gap-1.5 rounded-full py-1.5 pr-3 pl-1.5 text-sm whitespace-nowrap ring-1 ' +
                 (selected
                   ? 'bg-indigo-600 font-semibold text-white ring-indigo-600'
                   : 'bg-surface text-slate-700 ring-slate-300 hover:bg-slate-50 dark:hover:bg-slate-100')

@@ -41,9 +41,49 @@ export async function deleteExchangeRate(db: LedgerDB, id: string): Promise<void
   await db.exchangeRates.delete(id);
 }
 
-export async function listExchangeRates(db: LedgerDB): Promise<ExchangeRate[]> {
-  const rates = await db.exchangeRates.toArray();
+/** Days `from` to `to`, inclusive; either end may be left open. */
+export interface RateRange {
+  from?: string;
+  to?: string;
+}
+
+/**
+ * Stored rates, newest first. With a range, only what `createRateResolver`
+ * needs to answer for dates in it, with the same results as from every rate:
+ * each pair's rates in the range, plus its latest one before (or, for a pair
+ * with nothing up to `to`, its first one after). Rates pile up by the day, so
+ * screens load just the stretch they convert.
+ */
+export async function listExchangeRates(db: LedgerDB, { from, to }: RateRange = {}): Promise<ExchangeRate[]> {
+  const rates =
+    from === undefined && to === undefined
+      ? await db.exchangeRates.toArray()
+      : await db.transaction('r', db.exchangeRates, async () => {
+          const pairs = await db.exchangeRates.orderBy('[from+to]').uniqueKeys();
+          const perPair = await Promise.all(
+            pairs.map((pair) => ratesForPair(db, (pair as unknown as string[]).join(':'), from, to)),
+          );
+          return perPair.flat();
+        });
   return rates.sort((a, b) => (a.date === b.date ? a.id.localeCompare(b.id) : a.date < b.date ? 1 : -1));
+}
+
+/** Ids are `${from}:${to}:${date}`, so one pair's (`${from}:${to}`) rates are a key range in date order. */
+async function ratesForPair(
+  db: LedgerDB,
+  pair: string,
+  start: string | undefined,
+  end: string | undefined,
+): Promise<ExchangeRate[]> {
+  const prefix = `${pair}:`;
+  const lowest = prefix + (start ?? '');
+  const highest = prefix + (end ?? '\uffff');
+  const ids = db.exchangeRates.where(':id');
+  const inRange = await ids.between(lowest, highest, true, true).toArray();
+  const before = start === undefined ? undefined : await ids.between(prefix, lowest, true, false).last();
+  const after =
+    before === undefined && inRange.length === 0 ? await ids.between(highest, `${prefix}\uffff`, false, true).first() : undefined;
+  return [...(before ? [before] : []), ...inRange, ...(after ? [after] : [])];
 }
 
 /** Returns units of `to` per unit of `from` on `date`, or undefined if unknown. */

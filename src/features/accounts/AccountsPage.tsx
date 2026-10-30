@@ -44,7 +44,9 @@ export function AccountsPage() {
   const accounts = useLiveQuery(() => listAccounts(db, { includeArchived: true }), [db]);
   const balances = useLiveQuery(() => getBalances(db), [db]);
   const settings = useLiveQuery(() => getSettings(db), [db]);
-  const rates = useLiveQuery(() => listExchangeRates(db), [db]);
+  const today = toDateKey(new Date());
+  // Balances are converted at today's rates.
+  const rates = useLiveQuery(() => listExchangeRates(db, { from: today }), [db, today]);
   // Estimated foreign charges still to check against each account's statement.
   const estimates = useLiveQuery(async () => {
     const counts = new Map<string, number>();
@@ -68,7 +70,7 @@ export function AccountsPage() {
       ? netWorth(
           balances,
           { accounts: active, baseCurrency: settings.baseCurrency, rates: createRateResolver(rates) },
-          toDateKey(new Date()),
+          today,
         )
       : undefined;
 

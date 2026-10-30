@@ -94,7 +94,11 @@ export function TransactionsPage() {
     const legs = transferIds.length > 0 ? await db.transactions.where('transferId').anyOf(transferIds).toArray() : [];
     return { rows, entries: toEntries(rows, legs, accountId), categoryIds };
   }, [db, from, to, accountId, kind, search, searchCategoryKey, categoryFilter, estimatedOnly]);
-  const estimateCount = useLiveQuery(() => db.transactions.filter((t) => t.estimated === true).count(), [db]);
+  // Counting reads every entry, so only while the filters, where it's shown, are open.
+  const estimateCount = useLiveQuery(
+    () => (filtersOpen ? db.transactions.filter((t) => t.estimated === true).count() : 0),
+    [db, filtersOpen],
+  );
 
   const accountsById = useMemo(() => new Map((accounts ?? []).map((a) => [a.id, a])), [accounts]);
   const categoriesById = useMemo(() => new Map((categories ?? []).map((c) => [c.id, c])), [categories]);

@@ -103,6 +103,8 @@
     "toAccount": "To account",
     "chooseAccount": "Choose an account",
     "date": "Date",
+    "today": "Today",
+    "yesterday": "Yesterday",
     "amountReceived": "Amount received ({{currency}})",
     "impliedRate": "≈ 1 {{from}} = {{rate}} {{to}}",
     "category": "Category",
@@ -261,7 +263,12 @@
     "never": "Your data has never been backed up and lives only on this device.",
     "stale": "Your last backup was {{when}}; changes since then aren't backed up.",
     "later": "Later",
-    "backUp": "Back up now"
+    "backUp": "Back up now",
+    "shareHint": "“Back up now” opens the share sheet: pick Save to Files → iCloud Drive, Google Drive, or send it to yourself in a chat.",
+    "downloadHint": "“Back up now” downloads a backup file; keep it somewhere safe such as a cloud drive.",
+    "done": "Backed up: {{counts}}",
+    "failed": "The backup didn't go through.",
+    "openSettings": "Try again from Settings"
   },
   "csvExport": {
     "title": "Export to a spreadsheet (CSV)",
@@ -320,7 +327,25 @@
     "ratesNone": "No exchange rates yet",
     "refreshRates": "Update rates",
     "refreshing": "Updating…",
-    "refreshFailed": "Couldn't get exchange rates. Check your connection and try again."
+    "refreshFailed": "Couldn't get exchange rates. Check your connection and try again.",
+    "viewLabel": "Period",
+    "views": {
+      "month": "Month",
+      "semester": "Semester",
+      "year": "Year"
+    },
+    "previous_semester": "Previous semester",
+    "next_semester": "Next semester",
+    "previous_year": "Previous year",
+    "next_year": "Next year",
+    "periodSpent_semester": "Spent in the semester",
+    "periodSpent_year": "Spent in the year",
+    "monthlyAverage": "{{amount}} a month on average",
+    "monthsTitle": "Spending by month",
+    "monthBar": "{{month}}: {{amount}}",
+    "noSpendingPeriod": "No spending in this period.",
+    "semesterStart": "First semester starts in",
+    "semesterStartHint": "The second starts six months later. Match your school's calendar."
   },
   "budgetForm": {
     "title": "Monthly budget",
@@ -415,7 +440,7 @@
       },
       "backup": {
         "title": "Back up now and then",
-        "body": "Clearing browser data or changing phones erases your records. Download a backup from Settings to your cloud drive now and then; you’ll be reminded after 7 days."
+        "body": "Clearing browser data or changing phones erases your records. After 7 days without a backup, the Transactions page reminds you; tap “Back up now” to save one to iCloud Drive or Google Drive."
       },
       "install": {
         "title": "Add it to your home screen",
@@ -436,7 +461,7 @@
     },
     "record": {
       "title": "Adding an entry",
-      "body": "Tap “+” in the middle of the bottom bar, pick the account, type the amount, tap a category and save. To enter several in a row, use “Save & add another”.\nPlaces you go often appear under “Frequent” at the top of the form: tap one and only the amount is left. Typing a payee you have used before also picks its usual category."
+      "body": "Tap the “+” in the middle of the bottom bar, type the amount, tap a category and Save. The account you've used most lately is already picked; tap another in the row under the amount to switch. To record several in a row, use “Save & add another”.\nPlaces you go often appear under “Frequent”: one tap leaves only the amount to type. Typing a payee you've used before brings its usual category. For something from yesterday, tap “Yesterday” next to the date."
     },
     "foreignCard": {
       "title": "Using your home card abroad",
@@ -455,8 +480,8 @@
       "body": "When adding the entry, open “More” and tick “Repeats monthly”. Each month when it is due, the Transactions page asks you to record or skip it.\nIn Settings → Monthly entries you can change the amount or day (say, after a price rise) or stop it."
     },
     "overview": {
-      "title": "What’s left this month",
-      "body": "Overview converts every currency into your main one: spending this month, what is left of your budget, how much you can spend per day, and which categories the money went to. Tap a category to see its entries.",
+      "title": "What’s left, and what a semester cost",
+      "body": "Overview converts every currency into your main currency and shows this month's spending, how much of the budget is left, how much you can spend per day, and where the money went. Tap a category to see its entries.\nSwitch to “Semester” or “Year” at the top to see the whole semester or year: the total, the monthly average, each month's spending and how each category changed month by month. Set the month semesters start in at the bottom of the semester view.",
       "link": "Go to Overview"
     },
     "search": {
@@ -465,7 +490,7 @@
     },
     "backup": {
       "title": "Backups and new phones",
-      "body": "Your data lives only in this browser and is never uploaded. Download a backup from Settings now and then and keep it in your cloud drive; on a new phone, restore it. You are reminded after 7 days without one.\nAdd the app to your home screen (iPhone: Safari “Share → Add to Home Screen”; Android: Chrome menu “Install app”) so it works offline and the browser is less likely to clear its data.",
+      "body": "Your data lives only in this browser and is never uploaded. After 7 days without a backup, a reminder appears on the Transactions page: tap “Back up now” and pick Save to Files → iCloud Drive, or Google Drive, in the share sheet. You can also back up from Settings any time. On a new phone, restore the backup.\nAdd the app to your home screen (iPhone: Safari “Share → Add to Home Screen”; Android: Chrome menu “Install app”) so it works offline and the browser is less likely to clear its data.",
       "link": "Go to Settings"
     },
     "undo": {

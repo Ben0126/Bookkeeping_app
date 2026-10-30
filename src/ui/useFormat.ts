@@ -36,6 +36,9 @@ export function useFormat() {
   return useMemo(() => {
     const currencyNames = new Intl.DisplayNames([locale], { type: 'currency' });
     const monthFormat = new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' });
+    const shortMonthFormat = new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short' });
+    const monthNameFormat = new Intl.DateTimeFormat(locale, { month: 'short' });
+    const yearFormat = new Intl.DateTimeFormat(locale, { year: 'numeric' });
     const dayFormat = new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', weekday: 'short' });
     const dayWithYearFormat = new Intl.DateTimeFormat(locale, {
       year: 'numeric',
@@ -58,6 +61,12 @@ export function useFormat() {
       percent: (bps: number) => percentFormat.format(bps / 10_000),
       currencyName: (currency: CurrencyCode) => currencyNames.of(currency) ?? currency,
       month: (month: string) => monthFormat.format(fromDateKey(`${month}-01`)),
+      /** "9月" / "Sep", without the year. */
+      monthName: (month: string) => monthNameFormat.format(fromDateKey(`${month}-01`)),
+      /** "2026年9月 – 2027年2月" / "Sep 2026 – Feb 2027" */
+      monthSpan: (first: string, last: string) =>
+        `${shortMonthFormat.format(fromDateKey(`${first}-01`))} – ${shortMonthFormat.format(fromDateKey(`${last}-01`))}`,
+      year: (month: string) => yearFormat.format(fromDateKey(`${month}-01`)),
       day: (dateKey: string) => dayFormat.format(fromDateKey(dateKey)),
       dayWithYear: (dateKey: string) => dayWithYearFormat.format(fromDateKey(dateKey)),
       dateTime: (time: number) => dateTimeFormat.format(time),
