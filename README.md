@@ -141,10 +141,16 @@ src/
 
 ## 版本
 
-版本號寫在 `package.json`，每個版本的變更記在 [`CHANGELOG.md`](CHANGELOG.md)。發佈新版的步驟：
+版本號寫在 `package.json`，每個版本的變更記在 [`CHANGELOG.md`](CHANGELOG.md)。目前還在開發階段，版本號是 `0.x.y`：
 
-1. 更新 `package.json` 的版本號和 `CHANGELOG.md`，合併到 `main`。
-2. 在 `main` 的那個 commit 打上 tag，例如 `v2.0.0`，並推上 GitHub（`git tag v2.0.0 && git push origin v2.0.0`）。
+- **有新功能或改動**：中間的數字加 1，最後一位歸零，例如 `0.2.0` → `0.3.0`。
+- **只修 bug**：最後一位加 1，例如 `0.2.0` → `0.2.1`。
+- 等功能穩定、準備正式推廣時，再改成 `1.0.0`。
+
+發佈新版的步驟：
+
+1. 更新 `package.json` 的版本號，並在 `CHANGELOG.md` 最上面加上這一版的變更，合併到 `main`。
+2. 在 GitHub 的 **Releases → Draft a new release** 建立新版本：tag 填 `v0.3.0` 這種格式，Target 選 `main`，內容貼上 `CHANGELOG.md` 裡這一版的段落。
 
 使用者的 App 會自動更新到最新部署的版本，所以 tag 主要是用來對照「線上跑的是哪一版」，有問題時也方便回到上一版重新部署。
 

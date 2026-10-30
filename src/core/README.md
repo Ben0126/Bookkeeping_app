@@ -1,4 +1,4 @@
-# v2 記帳核心（`src/core`）
+# 記帳核心（`src/core`）
 
 記帳的資料層，不依賴任何 UI。資料存在 IndexedDB `studybudget-v2`，畫面透過 `ledgerDb`（`db.ts`）存取。
 
