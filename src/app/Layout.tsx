@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, Outlet } from 'react-router-dom';
 import { ChartIcon, HelpIcon, ListIcon, PlusIcon, SettingsIcon, WalletIcon } from '../ui/icons';
+import { DemoBanner } from '../features/onboarding/DemoBanner';
 import { ToastProvider } from '../ui/ToastProvider';
 import { useOpenNewEntry } from './useOpenNewEntry';
 
@@ -55,6 +56,7 @@ export function Layout() {
 
       <main className="mx-auto max-w-3xl px-4 pt-4 pb-40 md:pb-12">
         <ToastProvider>
+          <DemoBanner />
           <Outlet />
         </ToastProvider>
       </main>

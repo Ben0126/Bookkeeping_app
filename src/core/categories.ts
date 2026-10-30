@@ -55,19 +55,21 @@ export const DEFAULT_CATEGORIES: readonly DefaultCategory[] = [
 export async function seedDefaultCategories(db: LedgerDB): Promise<boolean> {
   return db.transaction('rw', db.categories, async () => {
     if ((await db.categories.count()) > 0) return false;
-    const now = Date.now();
-    await db.categories.bulkAdd(
-      DEFAULT_CATEGORIES.map((category, index) => ({
-        id: `default-${category.key}`,
-        ...category,
-        archived: false,
-        sortOrder: index,
-        createdAt: now,
-        updatedAt: now,
-      })),
-    );
+    await db.categories.bulkAdd(defaultCategoryRecords(Date.now()));
     return true;
   });
+}
+
+/** The default categories as stored, with ids `default-${key}`. */
+export function defaultCategoryRecords(now: number): Category[] {
+  return DEFAULT_CATEGORIES.map((category, index) => ({
+    id: `default-${category.key}`,
+    ...category,
+    archived: false,
+    sortOrder: index,
+    createdAt: now,
+    updatedAt: now,
+  }));
 }
 
 export interface NewCategory {

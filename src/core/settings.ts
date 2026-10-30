@@ -11,6 +11,8 @@ export interface Settings {
    * starts in, for semester reports. Unset until chosen; the UI then guesses.
    */
   semesterStart?: number;
+  /** The ledger holds the sample data, loaded to look around before starting for real. */
+  demo?: true;
 }
 
 export const DEFAULT_SETTINGS: Settings = { baseCurrency: 'TWD' };
@@ -25,6 +27,7 @@ export async function getSettings(db: LedgerDB): Promise<Settings> {
   if (isCurrencyCode(baseCurrency)) settings.baseCurrency = baseCurrency;
   const semesterStart = (await db.settings.get('semesterStart'))?.value;
   if (isMonthNumber(semesterStart)) settings.semesterStart = semesterStart;
+  if ((await db.settings.get('demo'))?.value === true) settings.demo = true;
   return settings;
 }
 

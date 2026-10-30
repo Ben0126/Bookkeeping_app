@@ -400,6 +400,7 @@
     "readGuide": "Read the guide first",
     "start": "Get started (about a minute)",
     "restore": "Restore a backup",
+    "tryDemo": "Look around with sample data",
     "skip": "Skip",
     "stepOf": "Step {{step}} of {{total}}",
     "back": "Back",
@@ -504,5 +505,19 @@
     "deleted": "Deleted: {{entry}}",
     "undo": "Undo",
     "undone": "Undone"
+  },
+  "demo": {
+    "banner": "You're looking at sample data: half a year of a student's spending in Tokyo. Tap and change anything you like.",
+    "exit": "Clear the sample and start my own",
+    "exitConfirm": "All sample data will be cleared, then you'll set up your own accounts. Continue?",
+    "names": {
+      "cash": "Cash",
+      "localBank": "Japanese bank",
+      "homeBank": "Taiwan bank",
+      "homeCard": "Taiwan credit card",
+      "landlord": "Landlord",
+      "partTimeJob": "Izakaya job",
+      "friendPaidBack": "Friend paid back dinner"
+    }
   }
 }

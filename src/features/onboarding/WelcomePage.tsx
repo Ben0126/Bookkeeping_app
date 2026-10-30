@@ -3,13 +3,14 @@ import { useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLedgerDb } from '../../app/ledgerContext';
-import { CURRENCY_CODES, getSettings, type CurrencyCode } from '../../core';
+import { CURRENCY_CODES, getSettings, importBackup, toDateKey, type CurrencyCode } from '../../core';
 import { LANGUAGE_NAMES, LANGUAGES } from '../../i18n';
 import { ErrorBanner, Field, Segmented } from '../../ui/form';
 import { guessLocalCurrency } from '../../ui/localCurrency';
 import { MoneyInput } from '../../ui/MoneyInput';
 import { inputClass, primaryButtonClass, secondaryButtonClass } from '../../ui/styles';
 import { useFormat } from '../../ui/useFormat';
+import { buildDemoBackup, demoNames } from './demoData';
 import { completeSetup, draftsToAccounts, suggestAccounts, type AccountDraft, type DraftError, type SuggestionId } from './setup';
 
 const STEPS = ['intro', 'currencies', 'accounts', 'safety'] as const;
@@ -92,6 +93,17 @@ export function WelcomePage() {
       return;
     }
     goTo('safety');
+  };
+
+  const tryDemo = async () => {
+    setSaving(true);
+    try {
+      await importBackup(db, buildDemoBackup({ today: toDateKey(new Date()), names: demoNames(t), now: Date.now() }));
+      navigate('/transactions', { replace: true });
+    } catch (error) {
+      setSaveError(fmt.error(error));
+      setSaving(false);
+    }
   };
 
   const finish = async () => {
@@ -232,14 +244,19 @@ export function WelcomePage() {
         <footer className="sticky bottom-0 -mx-4 space-y-2 border-t border-slate-200 bg-slate-50/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
           {step === 'intro' ? (
             <>
+              <ErrorBanner message={saveError} />
               <button type="button" className={`${primaryButtonClass} w-full`} onClick={() => goTo('currencies')}>
                 {t('welcome.start')}
               </button>
-              <div className="flex gap-2">
-                <Link to="/settings#restore" className={`${secondaryButtonClass} flex-1`}>
+              {/* For a look around first, e.g. someone who came from the README. */}
+              <button type="button" className={`${secondaryButtonClass} w-full`} disabled={saving} onClick={() => void tryDemo()}>
+                {t('welcome.tryDemo')}
+              </button>
+              <div className="flex justify-center gap-2">
+                <Link to="/settings#restore" className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100">
                   {t('welcome.restore')}
                 </Link>
-                <Link to="/accounts" className="rounded-lg px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100">
+                <Link to="/accounts" className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100">
                   {t('welcome.skip')}
                 </Link>
               </div>

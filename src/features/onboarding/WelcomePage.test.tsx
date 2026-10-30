@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getSettings, listAccounts, seedDefaultCategories, type LedgerDB } from '../../core';
 import { addAccount, createTestDb } from '../../test/ledgerDb';
 import { renderApp } from '../../test/renderApp';
@@ -122,5 +122,42 @@ describe('guide', () => {
     renderApp(db, '/welcome');
     fireEvent.click(await screen.findByRole('link', { name: 'Read the guide first' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Guide' })).toBeInTheDocument();
+  });
+});
+
+describe('sample data', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete (window as unknown as Record<string, unknown>).confirm;
+  });
+
+  it('loads a sample to look around, then clears it to start for real', async () => {
+    renderApp(db, '/transactions');
+    fireEvent.click(await screen.findByRole('button', { name: 'Look around with sample data' }));
+
+    expect(await screen.findByText(/You're looking at sample data/)).toBeInTheDocument();
+    expect((await screen.findAllByRole('button', { name: /Dining out/ })).length).toBeGreaterThan(0);
+    expect((await getSettings(db)).demo).toBe(true);
+
+    const confirm = vi.fn(() => true);
+    Object.defineProperty(window, 'confirm', { value: confirm, configurable: true, writable: true });
+    fireEvent.click(screen.getByRole('button', { name: 'Clear the sample and start my own' }));
+
+    expect(await screen.findByRole('button', { name: 'Get started (about a minute)' })).toBeInTheDocument();
+    expect(confirm).toHaveBeenCalled();
+    expect(await db.transactions.count()).toBe(0);
+    expect(await listAccounts(db)).toEqual([]);
+    expect((await getSettings(db)).demo).toBeUndefined();
+  });
+
+  it('keeps the sample when clearing is cancelled', async () => {
+    renderApp(db, '/transactions');
+    fireEvent.click(await screen.findByRole('button', { name: 'Look around with sample data' }));
+    const exit = await screen.findByRole('button', { name: 'Clear the sample and start my own' });
+
+    Object.defineProperty(window, 'confirm', { value: vi.fn(() => false), configurable: true, writable: true });
+    fireEvent.click(exit);
+    expect(screen.getByText(/You're looking at sample data/)).toBeInTheDocument();
+    expect(await db.transactions.count()).toBeGreaterThan(0);
   });
 });
