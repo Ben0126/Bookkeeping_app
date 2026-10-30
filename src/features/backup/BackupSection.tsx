@@ -1,13 +1,9 @@
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLedgerDb } from '../../app/ledgerContext';
-import { countBackup, exportBackup } from '../../core';
-import { canShareFiles, downloadFile, shareFile } from '../../ui/files';
 import { ErrorBanner } from '../../ui/form';
 import { primaryButtonClass, secondaryButtonClass } from '../../ui/styles';
 import { useFormat } from '../../ui/useFormat';
-import { toBackupFile, writeLastBackupAt } from './backupFile';
+import { useBackupSaver } from './useBackupSaver';
 
 interface BackupSectionProps {
   lastBackupAt: number | undefined;
@@ -17,26 +13,14 @@ interface BackupSectionProps {
 export function BackupSection({ lastBackupAt, onBackedUp }: BackupSectionProps) {
   const { t } = useTranslation();
   const fmt = useFormat();
-  const db = useLedgerDb();
-  // Kept ready ahead of time: sharing must start straight from the click, with no await before it.
-  const backup = useLiveQuery(() => exportBackup(db), [db]);
-  const [shareSupported] = useState(() => canShareFiles());
+  const { ready, counts, shareSupported, save: saveBackup } = useBackupSaver();
   const [error, setError] = useState<string | null>(null);
-  const counts = backup ? countBackup(backup.data) : undefined;
 
   const save = async (method: 'download' | 'share') => {
-    if (!backup) return;
     setError(null);
-    const now = new Date();
-    const file = toBackupFile(backup, now);
     try {
-      if (method === 'share') {
-        if ((await shareFile(file)) === 'cancelled') return;
-      } else {
-        downloadFile(file);
-      }
-      writeLastBackupAt(now.getTime());
-      onBackedUp(now.getTime());
+      const time = await saveBackup(method);
+      if (time !== undefined) onBackedUp(time);
     } catch (cause) {
       console.error('Could not save the backup', cause);
       setError(t('backup.saveFailed'));
@@ -62,11 +46,11 @@ export function BackupSection({ lastBackupAt, onBackedUp }: BackupSectionProps) 
       </dl>
 
       <div className="flex flex-wrap gap-2">
-        <button type="button" className={primaryButtonClass} disabled={!backup} onClick={() => void save('download')}>
+        <button type="button" className={primaryButtonClass} disabled={!ready} onClick={() => void save('download')}>
           {t('backup.download')}
         </button>
         {shareSupported && (
-          <button type="button" className={secondaryButtonClass} disabled={!backup} onClick={() => void save('share')}>
+          <button type="button" className={secondaryButtonClass} disabled={!ready} onClick={() => void save('share')}>
             {t('backup.share')}
           </button>
         )}

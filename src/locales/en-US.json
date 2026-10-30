@@ -263,7 +263,12 @@
     "never": "Your data has never been backed up and lives only on this device.",
     "stale": "Your last backup was {{when}}; changes since then aren't backed up.",
     "later": "Later",
-    "backUp": "Back up now"
+    "backUp": "Back up now",
+    "shareHint": "“Back up now” opens the share sheet: pick Save to Files → iCloud Drive, Google Drive, or send it to yourself in a chat.",
+    "downloadHint": "“Back up now” downloads a backup file; keep it somewhere safe such as a cloud drive.",
+    "done": "Backed up: {{counts}}",
+    "failed": "The backup didn't go through.",
+    "openSettings": "Try again from Settings"
   },
   "csvExport": {
     "title": "Export to a spreadsheet (CSV)",
@@ -435,7 +440,7 @@
       },
       "backup": {
         "title": "Back up now and then",
-        "body": "Clearing browser data or changing phones erases your records. Download a backup from Settings to your cloud drive now and then; you’ll be reminded after 7 days."
+        "body": "Clearing browser data or changing phones erases your records. After 7 days without a backup, the Transactions page reminds you; tap “Back up now” to save one to iCloud Drive or Google Drive."
       },
       "install": {
         "title": "Add it to your home screen",
@@ -485,7 +490,7 @@
     },
     "backup": {
       "title": "Backups and new phones",
-      "body": "Your data lives only in this browser and is never uploaded. Download a backup from Settings now and then and keep it in your cloud drive; on a new phone, restore it. You are reminded after 7 days without one.\nAdd the app to your home screen (iPhone: Safari “Share → Add to Home Screen”; Android: Chrome menu “Install app”) so it works offline and the browser is less likely to clear its data.",
+      "body": "Your data lives only in this browser and is never uploaded. After 7 days without a backup, a reminder appears on the Transactions page: tap “Back up now” and pick Save to Files → iCloud Drive, or Google Drive, in the share sheet. You can also back up from Settings any time. On a new phone, restore the backup.\nAdd the app to your home screen (iPhone: Safari “Share → Add to Home Screen”; Android: Chrome menu “Install app”) so it works offline and the browser is less likely to clear its data.",
       "link": "Go to Settings"
     },
     "undo": {

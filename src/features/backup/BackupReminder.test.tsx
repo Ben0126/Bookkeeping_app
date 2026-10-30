@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTransaction, seedDefaultCategories, type LedgerDB } from '../../core';
 import { addAccount, createTestDb } from '../../test/ledgerDb';
 import { renderApp } from '../../test/renderApp';
-import { readSnoozedUntil, writeLastBackupAt } from './backupFile';
+import { readLastBackupAt, readSnoozedUntil, writeLastBackupAt } from './backupFile';
 
 const DAY = 24 * 60 * 60 * 1000;
 let db: LedgerDB;
@@ -13,7 +13,16 @@ beforeEach(async () => {
   await seedDefaultCategories(db);
 });
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  for (const key of ['share', 'canShare']) {
+    delete (navigator as unknown as Record<string, unknown>)[key];
+  }
+});
+
+function stubNavigator(key: string, value: unknown) {
+  Object.defineProperty(navigator, key, { value, configurable: true, writable: true });
+}
 
 /** Records an account and an expense as if made `daysAgo` days ago. */
 async function addDataFrom(daysAgo: number) {
@@ -50,7 +59,7 @@ describe('BackupReminder', () => {
     await addDataFrom(2);
     await renderTransactions();
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(screen.queryByRole('link', { name: 'Back up now' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Back up now' })).not.toBeInTheDocument();
   });
 
   it('stays quiet when everything was backed up afterwards', async () => {
@@ -58,13 +67,73 @@ describe('BackupReminder', () => {
     writeLastBackupAt(Date.now() - DAY);
     await renderTransactions();
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(screen.queryByRole('link', { name: 'Back up now' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Back up now' })).not.toBeInTheDocument();
   });
 
-  it('leads to the backup settings', async () => {
+  it('backs up in one tap through the share sheet', async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    stubNavigator('canShare', () => true);
+    stubNavigator('share', share);
     await addDataFrom(8);
     await renderTransactions();
-    fireEvent.click(await screen.findByRole('link', { name: 'Back up now' }));
+
+    expect(await screen.findByText(/opens the share sheet/)).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: 'Back up now' });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
+    expect(await screen.findByText('Backed up: Accounts: 1 · Transactions: 1')).toBeInTheDocument();
+    expect(screen.queryByText(/never been backed up/)).not.toBeInTheDocument();
+    const [{ files }] = share.mock.calls[0] as [{ files: File[] }];
+    expect(files[0].name).toMatch(/^studybudget-.*\.json$/);
+    expect(JSON.parse(await files[0].text()).data.transactions).toHaveLength(1);
+    expect(readLastBackupAt()).toBeGreaterThan(Date.now() - 60_000);
+  });
+
+  it('downloads the file where sharing is unsupported', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:backup');
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    await addDataFrom(8);
+    await renderTransactions();
+
+    expect(await screen.findByText(/downloads a backup file/)).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: 'Back up now' });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
+    await waitFor(() => expect(click).toHaveBeenCalled());
+    expect(await screen.findByText(/^Backed up/)).toBeInTheDocument();
+  });
+
+  it('keeps reminding when the share sheet is closed', async () => {
+    stubNavigator('canShare', () => true);
+    stubNavigator('share', vi.fn().mockRejectedValue(new DOMException('cancelled', 'AbortError')));
+    await addDataFrom(8);
+    await renderTransactions();
+
+    const button = await screen.findByRole('button', { name: 'Back up now' });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
+    await waitFor(() => expect(navigator.share).toHaveBeenCalled());
+    expect(screen.getByText(/never been backed up/)).toBeInTheDocument();
+    expect(readLastBackupAt()).toBeUndefined();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('points to Settings when the backup fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    stubNavigator('canShare', () => true);
+    stubNavigator('share', vi.fn().mockRejectedValue(new DOMException('not allowed', 'NotAllowedError')));
+    await addDataFrom(8);
+    await renderTransactions();
+
+    const button = await screen.findByRole('button', { name: 'Back up now' });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent("The backup didn't go through.");
+    fireEvent.click(screen.getByRole('link', { name: 'Try again from Settings' }));
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument());
   });
 });
